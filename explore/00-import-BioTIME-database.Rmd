@@ -1,0 +1,60 @@
+---
+title: "00-import-BioTIME-database"
+date: "Compiled at `r format(Sys.time(), '%Y-%m-%d %H:%M:%S', tz = 'UTC')` UTC"
+output: github_document
+params:
+  name: "00-import-BioTIME-database" # change if you rename file
+---
+
+```{r here, message=FALSE}
+here::i_am(paste0(params$name, ".Rmd"), uuid = "92e0b108-b72d-4d77-bf7a-4e46e4cde787")
+```
+
+The purpose of this document is to import and have a first look into the BioTIME database from the paper "BioTIME: A database of biodiversity time series for the Anthropocene".
+
+```{r packages}
+library("conflicted")
+library(dplyr)
+```
+
+```{r directories}
+# create or *empty* the target directory, used to write this file's data: 
+projthis::proj_create_dir_target(params$name, clean = TRUE)
+
+# function to get path to target directory: path_target("sample.csv")
+path_target <- projthis::proj_path_target(params$name)
+
+# function to get path to previous data: path_source("00-import", "sample.csv")
+path_source <- projthis::proj_path_source(params$name)
+```
+
+## Tasks
+
+#####The example below uses data from a single study *(Study ID 163)*.
+
+```{r include=FALSE}
+#### read the file
+fullquery <- read.csv("data/BioTIME/BioTIMEQuery_24_06_2021.csv")
+
+```
+
+```{r}
+query <- fullquery %>%
+  filter(STUDY_ID == 163)
+```
+
+### Read BioTime Metadata
+
+```{r include=FALSE}
+#### read the file
+biotimeMeta <- read.csv("data/BioTIME/BioTIMEMetadata_24_06_2021.csv")
+
+```
+
+## Files written
+
+These files have been written to the target directory, ```r paste0("data/", params$name)```:
+
+```{r list-files-target}
+projthis::proj_dir_info(path_target())
+```
