@@ -15,6 +15,8 @@ The purpose of this document is to import and have a first look into the BioTIME
 ```{r packages}
 library("conflicted")
 library(dplyr)
+library(data.table)
+library(ggplot2)
 ```
 
 ```{r directories}
@@ -30,26 +32,183 @@ path_source <- projthis::proj_path_source(params$name)
 
 ## Tasks
 
+### Code from BioTIMEInteractions_02_04_2018.Rmd
+
 #####The example below uses data from a single study *(Study ID 163)*.
 
 ```{r include=FALSE}
 #### read the file
-fullquery <- read.csv("data/BioTIME/BioTIMEQuery_24_06_2021.csv")
+fullquery <- fread("data/BioTIME/BioTIMEQuery_24_06_2021.csv")
 
 ```
 
 ```{r}
-query <- fullquery %>%
-  filter(STUDY_ID == 163)
+query <- 
+  fullquery[STUDY_ID == 56]
 ```
+
+
+#####Sample-based Rarefaction code
+
+```{r}
+# Maria Dornelas 09.06.2015
+rarefysamples <- function(Year, SampleID, Species, Abundance, resamps) {
+  #######################################################################
+  # takes as input a  Year, SampleID, Species, Abundance and number of resamples
+  # which should be in dataframe so that elements match
+  # calculates turnover:
+  # 1) between each year and the first year
+  # 2) between pairs of adjacent years
+  # 3) between each year and the lasy year of the time series
+  # for the rarefied pooled samples
+  ###########################################################################
+  
+  rareftab <- data.frame(array(NA, dim = c(0, 3)))
+  # getting vector with number of samples per year
+  nsamples <- c()
+  for (y in unique(Year)) {
+    nsamples <- c(nsamples, length(unique(SampleID[Year == y])))
+  }
+  t <- 1
+  minsample <- min(nsamples)
+  for (repeats in 1:resamps) {
+    raref <- data.frame(array(NA, dim = c(1, 3)))
+    names(raref) <- c("Year", "Species", "Abundance")
+    for (y in unique(Year)) {
+      #getting samples for this year
+      samps <- unique(SampleID[Year == y])
+      # re-sampling samples to equalize number of samples
+      sam <- as.character(sample(samps, minsample, replace = T))
+      # getting data that belongs to bootstraped samples
+      rarefyear <-
+        data.frame(SampleID[which(SampleID %in% sam & Year == y)],
+                   Species[which(SampleID %in% sam & Year == y)],
+                   Abundance[which(SampleID %in% sam & Year == y)])
+      names(rarefyear) <- c("SampleID", "Species", "Abundance")
+      # calculating pooled abundances of each species to store
+      spabun <-
+        tapply(as.numeric(rarefyear[, 3]), as.character(rarefyear[, 2]), sum)
+      spar <-
+        data.frame(rep(y, length(spabun)), names(spabun), spabun, row.names = NULL)
+      names(spar) <- c("Year", "Species", "Abundance")
+      raref <- rbind(raref, spar)
+    }
+    # calculating year by species table of abundance
+    rareftab <-
+      rbind(rareftab, cbind(rep(repeats, dim(raref)[1]), raref))
+  }
+  return (rareftab)
+}
+```
+
+<br>
+
+#####Run the rarefaction code
+
+```{r}
+TSrf <- list()
+IDs <- unique(query$STUDY_ID)
+
+for(i in 1:length(IDs)) {
+  data <- query[query$STUDY_ID == IDs[i], ]
+  TSrf[[i]] <-
+    rarefysamples(
+      data$YEAR,
+      data$SAMPLE_DESC,
+      data$GENUS_SPECIES,
+      data$sum.allrawdata.ABUNDANCE,
+      1
+    )
+}
+names(TSrf) <- IDs
+
+rf <- do.call(rbind, TSrf)
+rf <-
+  data.frame(rf, ID = rep(names(TSrf), times = unlist(lapply(TSrf, nrow))))
+rf <- rf[!is.na(rf$Year), -1]
+
+#### prepare the rarefied output for diversity metric code
+t1 <- with(rf, tapply(Abundance, list(Year, Species, ID), sum))
+t2 <- unique(rf[, c("ID", "Year")])
+
+#### produces a list of matrices for each study - in this case is only a single dataset
+dsList <- list()
+
+for (i in 1:dim(t1)[3]) {
+  id <- dimnames(t1)[[3]][i]
+  a <- subset(t2, ID == id)$Year
+  b <- t1[dimnames(t1)[[1]] %in% as.character(a), , i]
+  dsList[[i]] <- data.frame(Year = rownames(b), b)
+}
+
+names(dsList) <- dimnames(t1)[[3]]
+
+#### replacing NA with zero
+for(i in 1:(length(dsList))) {
+  dsList[[i]][is.na(dsList[[i]])] <- 0
+}
+```
+
+
+### Own Examples
+
+#### plot time series
+
+```{r}
+  
+## group species
+rf_grouped <- as.data.table(rf) %>% 
+  .[, c("Genus", "Species") := tstrsplit(Species, " ")] %>% 
+  .[, .(Abundance_sum = sum(Abundance)),
+        by = c("Year", "Genus")]
+
+ggplot(rf_grouped, aes(Year, Abundance_sum, col = Genus)) +
+  geom_line() +
+  theme(legend.position = "none")
+
+```
+
+
 
 ### Read BioTime Metadata
 
 ```{r include=FALSE}
 #### read the file
-biotimeMeta <- read.csv("data/BioTIME/BioTIMEMetadata_24_06_2021.csv")
+biotimeMeta <- fread("data/BioTIME/BioTIMEMetadata_24_06_2021.csv")
 
 ```
+
+#### Analysis of BioTIME Dataset
+
+```{r}
+biotimeMeta %>% head()
+
+print("REALM")
+biotimeMeta$REALM %>% unique()
+cat("\n")
+print("CLIMATE")
+biotimeMeta$CLIMATE %>% unique()
+cat("\n")
+print("TAXA")
+biotimeMeta$TAXA %>% unique()
+cat("\n")
+print("NUMBER_OF_SPECIES")
+biotimeMeta$NUMBER_OF_SPECIES %>% unique()
+cat("\n")
+print("NUMBER_OF_SAMPLES")
+biotimeMeta$NUMBER_OF_SAMPLES %>% unique()
+cat("\n")
+print("NUMBER_LAT_LONG")
+biotimeMeta$NUMBER_LAT_LONG %>% table() # mostly 1
+cat("\n")
+print("ABUNDANCE_TYPE")
+biotimeMeta$ABUNDANCE_TYPE %>% table()
+cat("\n")
+print("BIOMASS_TYPE")
+biotimeMeta$BIOMASS_TYPE %>% table()
+
+```
+
 
 ## Files written
 
