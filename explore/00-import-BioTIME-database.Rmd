@@ -10,7 +10,7 @@ params:
 here::i_am(paste0(params$name, ".Rmd"), uuid = "92e0b108-b72d-4d77-bf7a-4e46e4cde787")
 ```
 
-The purpose of this document is to import and have a first look into the BioTIME database from the paper *BioTIME: A database of biodiversity time series for the Anthropocene*.
+The purpose of this document is to import and have a first look into the BioTIME database from *BioTIME: A database of biodiversity time series for the Anthropocene*.
 
 ```{r packages}
 library("conflicted")
@@ -39,6 +39,12 @@ path_source <- projthis::proj_path_source(params$name)
 #### read the file
 dt_fullquery <- 
   fread("data/BioTIME/BioTIMEquery_24_06_2021.csv")
+
+# number of entries
+dt_fullquery[,.N]
+
+# number of studies
+dt_fullquery$STUDY_ID %>% uniqueN()
 
 # focus on one study
 study_id = 63
@@ -162,7 +168,7 @@ write.csv(rf,
 
 ### plot time series for selected study
 
-```{r, out.width="90%"}
+```{r, fig.width=10}
   
 # ## group species
 # rf_grouped <- as.data.table(rf) %>% 
@@ -201,13 +207,13 @@ dt_biotimeMeta <-
 ```
 
 
-<!-- #### List of all columns -->
+#### List of all columns
 
-<!-- ```{r, results = "asis", echo = FALSE} -->
-<!-- # list all column names of Metadata -->
-<!-- cat(paste("*", colnames(dt_biotimeMeta)), sep="\n") -->
+```{r, results = "asis", echo = FALSE}
+# list all column names of Metadata
+cat(paste("*", colnames(dt_biotimeMeta)), sep="\n")
 
-<!-- ``` -->
+```
 
 
 #### First rows of table (only including important columns)
@@ -276,6 +282,7 @@ dt_biotimeMeta_small <-
     DATA_POINTS,
     NUMBER_OF_SPECIES,
     NUMBER_OF_SAMPLES,
+    NUMBER_LAT_LONG,
     TOTAL,
     ABUNDANCE_TYPE,
     BIOMASS_TYPE
@@ -287,7 +294,7 @@ dt_biotimeMeta_small <-
 Some of the Studies in the BioTIME data are listed in the table below (only studies with at least 10 datapoints):
 
 ```{r}
-knitr::kable(dt_biotimeMeta_small %>% head(n = 20))
+knitr::kable(dt_biotimeMeta_small %>% head(n = 16))
 ```
 
 ### Detailed Info about some columns
@@ -355,8 +362,8 @@ Number of species in study
 ```{r}
 range(dt_biotimeMeta$NUMBER_OF_SPECIES)
 
-# ggplot(dt_biotimeMeta, aes(NUMBER_OF_SPECIES)) +
-#   geom_histogram(binwidth = 10)
+ggplot(dt_biotimeMeta, aes(NUMBER_OF_SPECIES)) +
+  geom_histogram(binwidth = 100)
 
 ggplot(dt_biotimeMeta[NUMBER_OF_SPECIES < 200], aes(NUMBER_OF_SPECIES)) +
   geom_histogram(binwidth = 1)
@@ -364,29 +371,32 @@ ggplot(dt_biotimeMeta[NUMBER_OF_SPECIES < 200], aes(NUMBER_OF_SPECIES)) +
 ```
 
 
-##### NUMBER_OF_SAMPLES
+<!-- ##### NUMBER_OF_SAMPLES -->
 
-Number of unique samples in study
+<!-- Number of unique samples in study -->
 
-```{r}
-dt_biotimeMeta$NUMBER_OF_SAMPLES %>% range()
+<!-- ```{r} -->
+<!-- dt_biotimeMeta$NUMBER_OF_SAMPLES %>% range() -->
 
-# ggplot(dt_biotimeMeta, aes(NUMBER_OF_SAMPLES)) +
-#   geom_histogram(binwidth = 100)
+<!-- # ggplot(dt_biotimeMeta, aes(NUMBER_OF_SAMPLES)) + -->
+<!-- #   geom_histogram(binwidth = 100) -->
 
-ggplot(dt_biotimeMeta[NUMBER_OF_SAMPLES < 100], aes(NUMBER_OF_SAMPLES)) +
-  geom_histogram(binwidth = 1)
+<!-- ggplot(dt_biotimeMeta[NUMBER_OF_SAMPLES < 100], aes(NUMBER_OF_SAMPLES)) + -->
+<!--   geom_histogram(binwidth = 1) -->
 
-```
+<!-- ``` -->
 
 
 ##### NUMBER_LAT_LONG
 
-```{r}
-dt_biotimeMeta$NUMBER_LAT_LONG %>% range()
+Number of studies at **1 location** (NUMBER_LAT_LONG == 1):
+**`r dt_biotimeMeta[NUMBER_LAT_LONG == 1, .N]`**
 
-knitr::kable(dt_biotimeMeta$NUMBER_LAT_LONG %>% table() %>% head(n = 10)) # mostly 1
-```
+Number of studies at **multiple locations** (NUMBER_LAT_LONG > 1): 
+**`r dt_biotimeMeta[NUMBER_LAT_LONG > 1, .N]`**
+
+Max. NUMBER_LAT_LONG: **`r dt_biotimeMeta$NUMBER_LAT_LONG %>% max()`**
+
 
 
 

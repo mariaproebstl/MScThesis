@@ -57,6 +57,7 @@ dt_biotimeMeta <-
 
  * there should be enough DATA_POINTS
  * certain Abundance Type ("Count")
+ * ???
 
 ```{r}
 # Example
@@ -84,7 +85,9 @@ extract_study <- function(data, ID) {
 ```
 
 
-## Bad Example (with gaps in time)
+## Bad Example
+
+with gaps in time and multiple samples on consecutive days
 
 ```{r}
 study_id = 152
@@ -95,7 +98,7 @@ dt_study <-
 
 # summarize over multiple entries in the same year
 dt_study_grouped <-
-  dt_study[, .(Abundance_mean = mean(Abundance)),
+  dt_study[, .(Abundance_sum = sum(Abundance)),
     by = c("Date", "Genus")]
 
 
@@ -105,18 +108,18 @@ ggplot(dt_study, aes(Date, Abundance)) +
   theme(legend.position = "none")
 
 # plot Abundance summed up for same Date
-ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
+ggplot(dt_study_grouped, aes(Date, Abundance_sum)) +
   geom_line(aes(col = Genus))  +
   theme(legend.position = "none")
 
 # plot only first part
-ggplot(dt_study_grouped[Date < "1990-01-01"], aes(Date, Abundance_mean)) +
+ggplot(dt_study_grouped[Date < "1990-01-01"], aes(Date, Abundance_sum)) +
   geom_line(aes(col = Genus)) 
 
 ```
 
 ```{r}
-dt_study_grouped[Genus == "Fritillaria"] %>% View()
+knitr::kable(dt_study_grouped[Genus == "Fritillaria" & Date > "1982-01-01"] %>% .[order(Date)] %>% head(n=10))
 
 # multiple values on consecutive days (e.g. 1982-06-XY)
 ```
@@ -175,66 +178,11 @@ ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
   theme(legend.position = "none") +
   scale_y_log10()
 
-dt_study_grouped[Abundance_mean < 10]
 ```
-
 
 
 
 ## 3rd Example
-
-```{r}
-study_id = 225
-```
-
-#### Information on the study
-
-```{r, results = "asis", echo = FALSE}
-study_Meta <-
-  dt_biotimeMeta[STUDY_ID == study_id]
-
-table_Meta <-
-  data.table(Column = colnames(study_Meta),
-             Info = as.character(study_Meta[1,]))
-
-knitr::kable(table_Meta)
-
-```
-
-### time series plots
-
-```{r}
-
-# extract data of the specific study
-dt_study <-
-  extract_study(dt_fullquery, ID = study_id)
-
-# summarize over multiple entries in the same year
-dt_study_grouped <-
-  dt_study[, .(Abundance_mean = mean(Abundance)),
-    by = c("Date", "Genus")]
-
-
-# plot timeseries
-ggplot(dt_study, aes(Date, Abundance)) +
-  geom_line(aes(col = GENUS_SPECIES))  +
-  theme(legend.position = "none")
-
-# plot Abundance summed up for same Date
-ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
-  geom_line(aes(col = Genus))  +
-  theme(legend.position = "none")
-
-# same plot with y log-scaled
-ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
-  geom_line(aes(col = Genus))  +
-  theme(legend.position = "none") +
-  scale_y_log10()
-
-```
-
-
-## 4th Example
 
 ```{r}
 study_id = 57
@@ -270,6 +218,9 @@ dt_study_grouped <-
 # number of entries per Date and Genus
 dt_study[, .N, by= c("Date", "Genus")]
 
+# number of entries per Date and Species
+dt_study[, .N, by= c("Date", "Species")]
+
 
 # plot timeseries
 ggplot(dt_study, aes(Date, Abundance)) +
@@ -289,6 +240,57 @@ ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
 
 ```
 
+<!-- ## 3rd Example -->
+
+<!-- ```{r} -->
+<!-- study_id = 225 -->
+<!-- ``` -->
+
+<!-- #### Information on the study -->
+
+<!-- ```{r, results = "asis", echo = FALSE} -->
+<!-- study_Meta <- -->
+<!--   dt_biotimeMeta[STUDY_ID == study_id] -->
+
+<!-- table_Meta <- -->
+<!--   data.table(Column = colnames(study_Meta), -->
+<!--              Info = as.character(study_Meta[1,])) -->
+
+<!-- knitr::kable(table_Meta) -->
+
+<!-- ``` -->
+
+<!-- ### time series plots -->
+
+<!-- ```{r} -->
+
+<!-- # extract data of the specific study -->
+<!-- dt_study <- -->
+<!--   extract_study(dt_fullquery, ID = study_id) -->
+
+<!-- # summarize over multiple entries in the same year -->
+<!-- dt_study_grouped <- -->
+<!--   dt_study[, .(Abundance_mean = mean(Abundance)), -->
+<!--     by = c("Date", "Genus")] -->
+
+
+<!-- # plot timeseries -->
+<!-- ggplot(dt_study, aes(Date, Abundance)) + -->
+<!--   geom_line(aes(col = GENUS_SPECIES))  + -->
+<!--   theme(legend.position = "none") -->
+
+<!-- # plot Abundance summed up for same Date -->
+<!-- ggplot(dt_study_grouped, aes(Date, Abundance_mean)) + -->
+<!--   geom_line(aes(col = Genus))  + -->
+<!--   theme(legend.position = "none") -->
+
+<!-- # same plot with y log-scaled -->
+<!-- ggplot(dt_study_grouped, aes(Date, Abundance_mean)) + -->
+<!--   geom_line(aes(col = Genus))  + -->
+<!--   theme(legend.position = "none") + -->
+<!--   scale_y_log10() -->
+
+<!-- ``` -->
 
 
 

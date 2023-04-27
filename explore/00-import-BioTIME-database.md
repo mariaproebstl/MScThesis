@@ -1,6 +1,6 @@
 00-import-BioTIME-database
 ================
-Compiled at 2023-04-27 08:12:24 UTC
+Compiled at 2023-04-27 13:09:22 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "92e0b108-b72d-4d77-bf7a-4e46e4cde787")
@@ -37,6 +37,20 @@ path_source <- projthis::proj_path_source(params$name)
 dt_fullquery <- 
   fread("data/BioTIME/BioTIMEquery_24_06_2021.csv")
 
+# number of entries
+dt_fullquery[,.N]
+```
+
+    ## [1] 8552249
+
+``` r
+# number of studies
+dt_fullquery$STUDY_ID %>% uniqueN()
+```
+
+    ## [1] 381
+
+``` r
 # focus on one study
 study_id = 63
 ```
@@ -73,7 +87,7 @@ ggplot(rf, aes(Year, Abundance, col = Species)) +
   geom_line() #+
 ```
 
-<img src="00-import-BioTIME-database_files/figure-gfm/unnamed-chunk-5-1.png" width="100%" />
+![](00-import-BioTIME-database_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 ``` r
   # theme(legend.position = "none")
@@ -107,11 +121,50 @@ dt_biotimeMeta <-
   fread("data/BioTIME/biotimeMetadata_24_06_2021.csv")
 ```
 
-<!-- #### List of all columns -->
-<!-- ```{r, results = "asis", echo = FALSE} -->
-<!-- # list all column names of Metadata -->
-<!-- cat(paste("*", colnames(dt_biotimeMeta)), sep="\n") -->
-<!-- ``` -->
+#### List of all columns
+
+- STUDY_ID
+- REALM
+- CLIMATE
+- GENERAL_TREAT
+- TREATMENT
+- TREAT_COMMENTS
+- TREAT_DATE
+- HABITAT
+- PROTECTED_AREA
+- BIOME_MAP
+- TAXA
+- ORGANISMS
+- TITLE
+- AB_BIO
+- HAS_PLOT
+- DATA_POINTS
+- START_YEAR
+- END_YEAR
+- CENT_LAT
+- CENT_LONG
+- NUMBER_OF_SPECIES
+- NUMBER_OF_SAMPLES
+- NUMBER_LAT_LONG
+- TOTAL
+- GRAIN_SIZE_TEXT
+- GRAIN_SQ_KM
+- AREA_SQ_KM
+- CONTACT_1
+- CONTACT_2
+- CONT_1\_MAIL
+- CONT_2\_MAIL
+- LICENSE
+- WEB_LINK
+- DATA_SOURCE
+- METHODS
+- SUMMARY_METHODS
+- LINK_ID
+- COMMENTS
+- DATE_STUDY_ADDED
+- ABUNDANCE_TYPE
+- BIOMASS_TYPE
+- SAMPLE_DESC_NAME
 
 #### First rows of table (only including important columns)
 
@@ -122,31 +175,27 @@ Some of the Studies in the BioTIME data are listed in the table below
 (only studies with at least 10 datapoints):
 
 ``` r
-knitr::kable(dt_biotimeMeta_small %>% head(n = 20))
+knitr::kable(dt_biotimeMeta_small %>% head(n = 16))
 ```
 
-| STUDY_ID | REALM       | CLIMATE         | TAXA                      | DATA_POINTS | START_YEAR | END_YEAR | NUMBER_OF_SPECIES | NUMBER_OF_SAMPLES | TOTAL | ABUNDANCE_TYPE   | BIOMASS_TYPE |
-|---------:|:------------|:----------------|:--------------------------|------------:|-----------:|---------:|------------------:|------------------:|------:|:-----------------|:-------------|
-|       18 | Terrestrial | Temperate       | Terrestrial plants        |          29 |       1923 |     1973 |                98 |               542 |  8034 | Count            | NA           |
-|       33 | Marine      | Temperate       | Marine plants             |          18 |       1992 |     2009 |               170 |                 1 | 17841 | Count            | NA           |
-|       39 | Terrestrial | Temperate       | Birds                     |          45 |       1970 |     2015 |                52 |                45 |   959 | Density          | NA           |
-|       41 | Terrestrial | Temperate       | Birds                     |          10 |       1923 |     1940 |                56 |                10 |   418 | Count            | NA           |
-|       45 | Marine      | Tropical        | Fish                      |          10 |       2006 |     2015 |               338 |              1105 | 47282 | Count            | Size         |
-|       46 | Terrestrial | Temperate       | Birds                     |          47 |       1928 |     1979 |                29 |                47 |   528 | Count            | NA           |
-|       47 | Terrestrial | Temperate       | Birds                     |          26 |       1952 |     1977 |                13 |                35 |   392 | Count            | NA           |
-|       51 | Terrestrial | Temperate       | Birds                     |          14 |       1964 |     1977 |                 4 |                 1 |    56 | MeanCount        | NA           |
-|       52 | Terrestrial | Polar           | Mammals                   |          13 |       1968 |     1980 |                 3 |                 5 |   144 | MeanCount        | NA           |
-|       53 | Terrestrial | Temperate       | Mammals                   |          10 |       1966 |     1976 |                 5 |                 1 |    44 | MeanCount        | NA           |
-|       54 | Terrestrial | Tropical        | Terrestrial invertebrates |          24 |       1991 |     2014 |                19 |               798 | 21702 | Count            | NA           |
-|       56 | Terrestrial | Temperate       | Mammals                   |          20 |       1989 |     2008 |                28 |              8026 | 16657 | Count            | Weight       |
-|       57 | Freshwater  | Temperate       | Fish                      |          32 |       1981 |     2012 |                76 |               258 | 10892 | Count            | NA           |
-|       58 | Terrestrial | Tropical        | Birds                     |          18 |       1991 |     2008 |                31 |                 6 |  1171 | Count            | NA           |
-|       59 | Terrestrial | Temperate       | Mammals                   |          26 |       1977 |     2002 |                29 |                 2 |   427 | Count            | NA           |
-|       63 | Terrestrial | Temperate       | Terrestrial invertebrates |          29 |       1959 |     1988 |                 5 |                 1 |   132 | Count            | NA           |
-|       67 | Terrestrial | Temperate       | Birds                     |          24 |       1983 |     2006 |                68 |               417 | 15448 | Count            | NA           |
-|       68 | Marine      | Temperate       | Marine invertebrates      |          13 |       1988 |     2000 |                15 |              2569 | 38535 | Presence/Absence | NA           |
-|       69 | Marine      | Temperate       | Birds                     |          10 |       1994 |     2003 |                27 |              9864 | 22694 | Presence/Absence | NA           |
-|       71 | Marine      | Polar/Temperate | Marine plants             |          10 |       1993 |     2003 |               412 |              3250 | 35323 | Count            | NA           |
+| STUDY_ID | REALM       | CLIMATE   | TAXA                      | AB_BIO | DATA_POINTS | NUMBER_OF_SPECIES | NUMBER_OF_SAMPLES | NUMBER_LAT_LONG | TOTAL | ABUNDANCE_TYPE | BIOMASS_TYPE |
+|---------:|:------------|:----------|:--------------------------|:-------|------------:|------------------:|------------------:|----------------:|------:|:---------------|:-------------|
+|       18 | Terrestrial | Temperate | Terrestrial plants        | A      |          29 |                98 |               542 |               1 |  8034 | Count          | NA           |
+|       33 | Marine      | Temperate | Marine plants             | A      |          18 |               170 |                 1 |               1 | 17841 | Count          | NA           |
+|       39 | Terrestrial | Temperate | Birds                     | A      |          45 |                52 |                45 |               1 |   959 | Density        | NA           |
+|       41 | Terrestrial | Temperate | Birds                     | A      |          10 |                56 |                10 |               1 |   418 | Count          | NA           |
+|       45 | Marine      | Tropical  | Fish                      | AB     |          10 |               338 |              1105 |               1 | 47282 | Count          | Size         |
+|       46 | Terrestrial | Temperate | Birds                     | A      |          47 |                29 |                47 |               1 |   528 | Count          | NA           |
+|       47 | Terrestrial | Temperate | Birds                     | A      |          26 |                13 |                35 |               2 |   392 | Count          | NA           |
+|       51 | Terrestrial | Temperate | Birds                     | A      |          14 |                 4 |                 1 |               1 |    56 | MeanCount      | NA           |
+|       52 | Terrestrial | Polar     | Mammals                   | A      |          13 |                 3 |                 5 |               1 |   144 | MeanCount      | NA           |
+|       53 | Terrestrial | Temperate | Mammals                   | A      |          10 |                 5 |                 1 |               1 |    44 | MeanCount      | NA           |
+|       54 | Terrestrial | Tropical  | Terrestrial invertebrates | A      |          24 |                19 |               798 |               1 | 21702 | Count          | NA           |
+|       56 | Terrestrial | Temperate | Mammals                   | AB     |          20 |                28 |              8026 |               1 | 16657 | Count          | Weight       |
+|       57 | Freshwater  | Temperate | Fish                      | A      |          32 |                76 |               258 |               1 | 10892 | Count          | NA           |
+|       58 | Terrestrial | Tropical  | Birds                     | A      |          18 |                31 |                 6 |               1 |  1171 | Count          | NA           |
+|       59 | Terrestrial | Temperate | Mammals                   | A      |          26 |                29 |                 2 |               1 |   427 | Count          | NA           |
+|       63 | Terrestrial | Temperate | Terrestrial invertebrates | A      |          29 |                 5 |                 1 |               1 |   132 | Count          | NA           |
 
 ### Detailed Info about some columns
 
@@ -160,7 +209,7 @@ ggplot(dt_biotimeMeta, aes(DATA_POINTS)) +
   scale_x_continuous(breaks = seq(0,100,10))
 ```
 
-![](00-import-BioTIME-database_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](00-import-BioTIME-database_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ##### AB_BIO
 
@@ -247,59 +296,37 @@ range(dt_biotimeMeta$NUMBER_OF_SPECIES)
     ## [1]    3 5624
 
 ``` r
-# ggplot(dt_biotimeMeta, aes(NUMBER_OF_SPECIES)) +
-#   geom_histogram(binwidth = 10)
-
-ggplot(dt_biotimeMeta[NUMBER_OF_SPECIES < 200], aes(NUMBER_OF_SPECIES)) +
-  geom_histogram(binwidth = 1)
-```
-
-![](00-import-BioTIME-database_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
-
-##### NUMBER_OF_SAMPLES
-
-Number of unique samples in study
-
-``` r
-dt_biotimeMeta$NUMBER_OF_SAMPLES %>% range()
-```
-
-    ## [1]      1 171843
-
-``` r
-# ggplot(dt_biotimeMeta, aes(NUMBER_OF_SAMPLES)) +
-#   geom_histogram(binwidth = 100)
-
-ggplot(dt_biotimeMeta[NUMBER_OF_SAMPLES < 100], aes(NUMBER_OF_SAMPLES)) +
-  geom_histogram(binwidth = 1)
+ggplot(dt_biotimeMeta, aes(NUMBER_OF_SPECIES)) +
+  geom_histogram(binwidth = 100)
 ```
 
 ![](00-import-BioTIME-database_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
+``` r
+ggplot(dt_biotimeMeta[NUMBER_OF_SPECIES < 200], aes(NUMBER_OF_SPECIES)) +
+  geom_histogram(binwidth = 1)
+```
+
+![](00-import-BioTIME-database_files/figure-gfm/unnamed-chunk-18-2.png)<!-- -->
+
+<!-- ##### NUMBER_OF_SAMPLES -->
+<!-- Number of unique samples in study -->
+<!-- ```{r} -->
+<!-- dt_biotimeMeta$NUMBER_OF_SAMPLES %>% range() -->
+<!-- # ggplot(dt_biotimeMeta, aes(NUMBER_OF_SAMPLES)) + -->
+<!-- #   geom_histogram(binwidth = 100) -->
+<!-- ggplot(dt_biotimeMeta[NUMBER_OF_SAMPLES < 100], aes(NUMBER_OF_SAMPLES)) + -->
+<!--   geom_histogram(binwidth = 1) -->
+<!-- ``` -->
+
 ##### NUMBER_LAT_LONG
 
-``` r
-dt_biotimeMeta$NUMBER_LAT_LONG %>% range()
-```
+Number of studies at **1 location** (NUMBER_LAT_LONG == 1): **170**
 
-    ## [1]     1 93906
+Number of studies at **multiple locations** (NUMBER_LAT_LONG \> 1):
+**211**
 
-``` r
-knitr::kable(dt_biotimeMeta$NUMBER_LAT_LONG %>% table() %>% head(n = 10)) # mostly 1
-```
-
-| .   | Freq |
-|:----|-----:|
-| 1   |  170 |
-| 2   |   14 |
-| 3   |    4 |
-| 4   |    5 |
-| 5   |    2 |
-| 6   |    7 |
-| 7   |    5 |
-| 8   |    3 |
-| 9   |    3 |
-| 10  |    5 |
+Max. NUMBER_LAT_LONG: **93906**
 
 ## Files written
 
@@ -310,6 +337,7 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 0 × 4
-    ## # ℹ 4 variables: path <fs::path>, type <fct>, size <fs::bytes>,
-    ## #   modification_time <dttm>
+    ## # A tibble: 1 × 4
+    ##   path                     type         size modification_time  
+    ##   <fs::path>               <fct> <fs::bytes> <dttm>             
+    ## 1 BioTIME_Meta_reduced.csv file        60.4K 2023-04-27 13:09:28

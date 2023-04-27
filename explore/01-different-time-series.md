@@ -1,6 +1,6 @@
 Different time series
 ================
-Compiled at 2023-04-27 10:07:48 UTC
+Compiled at 2023-04-27 13:15:16 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "964cf30c-e7ec-4fee-a704-f01c350f8766")
@@ -51,6 +51,7 @@ dt_biotimeMeta <-
 
 - there should be enough DATA_POINTS
 - certain Abundance Type (“Count”)
+- ???
 
 ``` r
 # Example
@@ -59,7 +60,9 @@ dt_biotimeMeta[DATA_POINTS > 10 & ABUNDANCE_TYPE == "Count" & NUMBER_LAT_LONG ==
 
     ##  [1]  18  33  57 225 240 248 249 313 335 336 340 379 419 427 441 473 478
 
-## Bad Example (with gaps in time)
+## Bad Example
+
+with gaps in time and multiple samples on consecutive days
 
 ``` r
 study_id = 152
@@ -70,7 +73,7 @@ dt_study <-
 
 # summarize over multiple entries in the same year
 dt_study_grouped <-
-  dt_study[, .(Abundance_mean = mean(Abundance)),
+  dt_study[, .(Abundance_sum = sum(Abundance)),
     by = c("Date", "Genus")]
 
 
@@ -84,7 +87,7 @@ ggplot(dt_study, aes(Date, Abundance)) +
 
 ``` r
 # plot Abundance summed up for same Date
-ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
+ggplot(dt_study_grouped, aes(Date, Abundance_sum)) +
   geom_line(aes(col = Genus))  +
   theme(legend.position = "none")
 ```
@@ -93,15 +96,30 @@ ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
 
 ``` r
 # plot only first part
-ggplot(dt_study_grouped[Date < "1990-01-01"], aes(Date, Abundance_mean)) +
+ggplot(dt_study_grouped[Date < "1990-01-01"], aes(Date, Abundance_sum)) +
   geom_line(aes(col = Genus)) 
 ```
 
 ![](01-different-time-series_files/figure-gfm/unnamed-chunk-4-3.png)<!-- -->
 
 ``` r
-dt_study_grouped[Genus == "Fritillaria"] %>% View()
+knitr::kable(dt_study_grouped[Genus == "Fritillaria" & Date > "1982-01-01"] %>% .[order(Date)] %>% head(n=10))
+```
 
+| Date       | Genus       | Abundance_sum |
+|:-----------|:------------|--------------:|
+| 1982-06-12 | Fritillaria |           556 |
+| 1982-06-13 | Fritillaria |            54 |
+| 1982-06-14 | Fritillaria |           185 |
+| 1982-06-15 | Fritillaria |          2074 |
+| 1982-06-16 | Fritillaria |         20064 |
+| 1982-06-17 | Fritillaria |            71 |
+| 1982-06-18 | Fritillaria |            22 |
+| 1982-06-20 | Fritillaria |            14 |
+| 1982-06-21 | Fritillaria |            48 |
+| 1983-06-11 | Fritillaria |            16 |
+
+``` r
 # multiple values on consecutive days (e.g. 1982-06-XY)
 ```
 
@@ -173,96 +191,7 @@ ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
 
 ![](01-different-time-series_files/figure-gfm/unnamed-chunk-8-3.png)<!-- -->
 
-``` r
-dt_study_grouped[Abundance_mean < 10]
-```
-
-    ##            Date            Genus Abundance_mean
-    ##   1: 1996-07-01         Diomedea       5.932432
-    ##   2: 1996-07-01      Diomedeidae       3.166667
-    ##   3: 1996-07-01 Procellariformes       2.800000
-    ##   4: 1996-07-01            Lamna       3.187500
-    ##   5: 1996-07-01          Larinae       9.862069
-    ##  ---                                           
-    ## 342: 2003-07-02             Uria       3.250000
-    ## 343: 2003-07-02         Sarritor       3.000000
-    ## 344: 2003-07-02     Hydrobatidae       3.000000
-    ## 345: 2003-07-02         Prionace       2.500000
-    ## 346: 2003-07-02     Gymnocanthus       3.000000
-
 ## 3rd Example
-
-``` r
-study_id = 225
-```
-
-#### Information on the study
-
-| Column            | Info                                                                                                                              |
-|:------------------|:----------------------------------------------------------------------------------------------------------------------------------|
-| STUDY_ID          | 225                                                                                                                               |
-| REALM             | Terrestrial                                                                                                                       |
-| CLIMATE           | Temperate                                                                                                                         |
-| TAXA              | Birds                                                                                                                             |
-| TITLE             | Point count bird censusing long-term monitoring of bird distrubution and diversity in central Arizona-Phoenix period 2000 to 2011 |
-| AB_BIO            | A                                                                                                                                 |
-| DATA_POINTS       | 12                                                                                                                                |
-| START_YEAR        | 2000                                                                                                                              |
-| END_YEAR          | 2011                                                                                                                              |
-| NUMBER_OF_SPECIES | 278                                                                                                                               |
-| NUMBER_OF_SAMPLES | 4865                                                                                                                              |
-| NUMBER_LAT_LONG   | 1                                                                                                                                 |
-| TOTAL             | 48841                                                                                                                             |
-| ABUNDANCE_TYPE    | Count                                                                                                                             |
-| BIOMASS_TYPE      | NA                                                                                                                                |
-
-### time series plots
-
-``` r
-# extract data of the specific study
-dt_study <-
-  extract_study(dt_fullquery, ID = study_id)
-
-# summarize over multiple entries in the same year
-dt_study_grouped <-
-  dt_study[, .(Abundance_mean = mean(Abundance)),
-    by = c("Date", "Genus")]
-
-
-# plot timeseries
-ggplot(dt_study, aes(Date, Abundance)) +
-  geom_line(aes(col = GENUS_SPECIES))  +
-  theme(legend.position = "none")
-```
-
-    ## Warning: Removed 209 rows containing missing values (`geom_line()`).
-
-![](01-different-time-series_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
-
-``` r
-# plot Abundance summed up for same Date
-ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
-  geom_line(aes(col = Genus))  +
-  theme(legend.position = "none")
-```
-
-    ## Warning: Removed 49 rows containing missing values (`geom_line()`).
-
-![](01-different-time-series_files/figure-gfm/unnamed-chunk-11-2.png)<!-- -->
-
-``` r
-# same plot with y log-scaled
-ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
-  geom_line(aes(col = Genus))  +
-  theme(legend.position = "none") +
-  scale_y_log10()
-```
-
-    ## Warning: Removed 49 rows containing missing values (`geom_line()`).
-
-![](01-different-time-series_files/figure-gfm/unnamed-chunk-11-3.png)<!-- -->
-
-## 4th Example
 
 ``` r
 study_id = 57
@@ -318,13 +247,31 @@ dt_study[, .N, by= c("Date", "Genus")]
     ## 964: 2012  Salvelinus  5
 
 ``` r
+# number of entries per Date and Species
+dt_study[, .N, by= c("Date", "Species")]
+```
+
+    ##       Date      Species  N
+    ##    1: 1981    rupestris 23
+    ##    2: 1981   commersoni 14
+    ##    3: 1981      bairdii  3
+    ##    4: 1981       lucius  8
+    ##    5: 1981  masquinongy  3
+    ##   ---                     
+    ## 1348: 2012  masquinongy  1
+    ## 1349: 2012 omiscomaycus  1
+    ## 1350: 2012 clupeaformis  3
+    ## 1351: 2012    namaycush  5
+    ## 1352: 2012    annularis  1
+
+``` r
 # plot timeseries
 ggplot(dt_study, aes(Date, Abundance)) +
   geom_line(aes(col = GENUS_SPECIES))  +
   theme(legend.position = "none")
 ```
 
-![](01-different-time-series_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](01-different-time-series_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ``` r
 # plot Abundance summed up for same Date
@@ -333,7 +280,7 @@ ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
   theme(legend.position = "none")
 ```
 
-![](01-different-time-series_files/figure-gfm/unnamed-chunk-14-2.png)<!-- -->
+![](01-different-time-series_files/figure-gfm/unnamed-chunk-11-2.png)<!-- -->
 
 ``` r
 # same plot with y log-scaled
@@ -343,7 +290,44 @@ ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
   scale_y_log10()
 ```
 
-![](01-different-time-series_files/figure-gfm/unnamed-chunk-14-3.png)<!-- -->
+![](01-different-time-series_files/figure-gfm/unnamed-chunk-11-3.png)<!-- -->
+
+<!-- ## 3rd Example -->
+<!-- ```{r} -->
+<!-- study_id = 225 -->
+<!-- ``` -->
+<!-- #### Information on the study -->
+<!-- ```{r, results = "asis", echo = FALSE} -->
+<!-- study_Meta <- -->
+<!--   dt_biotimeMeta[STUDY_ID == study_id] -->
+<!-- table_Meta <- -->
+<!--   data.table(Column = colnames(study_Meta), -->
+<!--              Info = as.character(study_Meta[1,])) -->
+<!-- knitr::kable(table_Meta) -->
+<!-- ``` -->
+<!-- ### time series plots -->
+<!-- ```{r} -->
+<!-- # extract data of the specific study -->
+<!-- dt_study <- -->
+<!--   extract_study(dt_fullquery, ID = study_id) -->
+<!-- # summarize over multiple entries in the same year -->
+<!-- dt_study_grouped <- -->
+<!--   dt_study[, .(Abundance_mean = mean(Abundance)), -->
+<!--     by = c("Date", "Genus")] -->
+<!-- # plot timeseries -->
+<!-- ggplot(dt_study, aes(Date, Abundance)) + -->
+<!--   geom_line(aes(col = GENUS_SPECIES))  + -->
+<!--   theme(legend.position = "none") -->
+<!-- # plot Abundance summed up for same Date -->
+<!-- ggplot(dt_study_grouped, aes(Date, Abundance_mean)) + -->
+<!--   geom_line(aes(col = Genus))  + -->
+<!--   theme(legend.position = "none") -->
+<!-- # same plot with y log-scaled -->
+<!-- ggplot(dt_study_grouped, aes(Date, Abundance_mean)) + -->
+<!--   geom_line(aes(col = Genus))  + -->
+<!--   theme(legend.position = "none") + -->
+<!--   scale_y_log10() -->
+<!-- ``` -->
 
 ## Files written
 
