@@ -56,9 +56,11 @@ knitr::kable(head(dt_query))
 ```
 
 
-#### Some code from BioTIMEInteractions_02_04_2018.Rmd
 
 ```{r, include=FALSE}
+#### Some code from BioTIMEInteractions_02_04_2018.Rmd
+
+
 # Maria Dornelas 09.06.2015
 rarefysamples <- function(Year, SampleID, Species, Abundance, resamps) {
   #######################################################################
@@ -110,7 +112,7 @@ rarefysamples <- function(Year, SampleID, Species, Abundance, resamps) {
 ```
 
 
-```{r}
+```{r, include = FALSE}
 TSrf <- list()
 IDs <- unique(dt_query$STUDY_ID)
 
@@ -152,36 +154,37 @@ names(dsList) <- dimnames(t1)[[3]]
 for(i in 1:(length(dsList))) {
   dsList[[i]][is.na(dsList[[i]])] <- 0
 }
+
+write.csv(rf,
+          paste0("data/BioTIME-Study-", study_id, ".csv"))
 ```
 
 
-### Own Examples
+### plot time series for selected study
 
-#### plot time series for selected study
-
-```{r}
+```{r, out.width="90%"}
   
-## group species
-rf_grouped <- as.data.table(rf) %>% 
-  # .[, c("Genus", "Species") := tstrsplit(Species, " ")] %>% 
-  .[, .(Abundance_sum = sum(Abundance)),
-        by = c("Year", "Species")]
+# ## group species
+# rf_grouped <- as.data.table(rf) %>% 
+#   # .[, c("Genus", "Species") := tstrsplit(Species, " ")] %>% 
+#   .[, .(Abundance_sum = sum(Abundance)),
+#         by = c("Year", "Species")]
 
-ggplot(rf_grouped, aes(Year, Abundance_sum, col = Species)) +
+ggplot(rf, aes(Year, Abundance, col = Species)) +
   geom_line() #+
   # theme(legend.position = "none")
 
 ```
 
 
-#### create table of the selected time series
+### values of selected time series
 
 ```{r}
 rf_time <- as.data.table(rf) %>% 
   # .[, c("Genus", "Species") := tstrsplit(Species, " ")] %>% 
   dcast(., Species ~ Year, value.var = "Abundance")
 
-knitr::kable(rf_time, format="html")
+knitr::kable(rf_time)
 ```
 
 
@@ -190,14 +193,24 @@ knitr::kable(rf_time, format="html")
 
 #### Read file
 
-```{r include=FALSE}
+```{r}
 #### read the file
 dt_biotimeMeta <-
   fread("data/BioTIME/biotimeMetadata_24_06_2021.csv")
 
 ```
 
-### Analysis of BioTIME Metadata
+
+<!-- #### List of all columns -->
+
+<!-- ```{r, results = "asis", echo = FALSE} -->
+<!-- # list all column names of Metadata -->
+<!-- cat(paste("*", colnames(dt_biotimeMeta)), sep="\n") -->
+
+<!-- ``` -->
+
+
+#### First rows of table (only including important columns)
 
 Select some important columns to get a better overview which studies are included in the dataset.
 
@@ -216,8 +229,8 @@ dt_biotimeMeta_small <-
     # BIOME_MAP,
     TAXA,
     # ORGANISMS,
-    # TITLE,
-    # AB_BIO,
+    TITLE,
+    AB_BIO,
     # HAS_PLOT,
     DATA_POINTS,
     START_YEAR,
@@ -226,7 +239,7 @@ dt_biotimeMeta_small <-
     # CENT_LONG,
     NUMBER_OF_SPECIES,
     NUMBER_OF_SAMPLES,
-    # NUMBER_LAT_LONG,
+    NUMBER_LAT_LONG,
     TOTAL,
     # GRAIN_SIZE_TEXT,
     # GRAIN_SQ_KM,
@@ -246,23 +259,70 @@ dt_biotimeMeta_small <-
     ABUNDANCE_TYPE,
     BIOMASS_TYPE
     # SAMPLE_DESC_NAME
-  )] %>% 
-# take only studys with at least 10 time points (DATA_POINTS)
+  )]
+
+write.csv(dt_biotimeMeta_small,
+          "data/00-import-BioTIME-database/BioTIME_Meta_reduced.csv",
+          row.names = FALSE)
+
+dt_biotimeMeta_small <-
+  fread("data/00-import-BioTIME-database/BioTIME_Meta_reduced.csv") %>%
+  .[, .(
+    STUDY_ID,
+    REALM,
+    CLIMATE,
+    TAXA,
+    AB_BIO,
+    DATA_POINTS,
+    NUMBER_OF_SPECIES,
+    NUMBER_OF_SAMPLES,
+    TOTAL,
+    ABUNDANCE_TYPE,
+    BIOMASS_TYPE
+  )] %>%
+  # take only studys with at least 10 time points (DATA_POINTS)
   .[DATA_POINTS >= 10]
 ```
 
 Some of the Studies in the BioTIME data are listed in the table below (only studies with at least 10 datapoints):
 
 ```{r}
-knitr::kable(dt_biotimeMeta_small[1:10, ])
+knitr::kable(dt_biotimeMeta_small %>% head(n = 20))
+```
+
+### Detailed Info about some columns
+
+##### DATA_POINTS
+
+Number of years covered by study
+
+```{r}
+ggplot(dt_biotimeMeta, aes(DATA_POINTS)) +
+  geom_histogram(binwidth = 5) +
+  scale_x_continuous(breaks = seq(0,100,10))
 ```
 
 
-#### Columns and their meaning
+##### AB_BIO
+
+Does study contain abundance, biomass or both (A, B or AB)
 
 ```{r}
-# list all column names of Metadata
-dt_biotimeMeta %>% colnames()
+knitr::kable(dt_biotimeMeta$AB_BIO %>% table(useNA = "ifany"))
+```
+
+
+##### ABUNDANCE_TYPE
+
+```{r}
+knitr::kable(dt_biotimeMeta$ABUNDANCE_TYPE %>% table(useNA = "ifany"))
+```
+
+
+##### BIOMASS_TYPE
+
+```{r}
+knitr::kable(dt_biotimeMeta$BIOMASS_TYPE %>% table(useNA = "ifany"))
 
 ```
 
@@ -290,23 +350,29 @@ dt_biotimeMeta$TAXA %>% unique()
 
 ##### NUMBER_OF_SPECIES
 
-```{r}
-ggplot(dt_biotimeMeta, aes(NUMBER_OF_SPECIES)) +
-  geom_histogram(binwidth = 10)
+Number of species in study
 
-ggplot(dt_biotimeMeta[NUMBER_OF_SPECIES < 500], aes(NUMBER_OF_SPECIES)) +
-  geom_histogram(binwidth = 2)
+```{r}
+range(dt_biotimeMeta$NUMBER_OF_SPECIES)
+
+# ggplot(dt_biotimeMeta, aes(NUMBER_OF_SPECIES)) +
+#   geom_histogram(binwidth = 10)
+
+ggplot(dt_biotimeMeta[NUMBER_OF_SPECIES < 200], aes(NUMBER_OF_SPECIES)) +
+  geom_histogram(binwidth = 1)
 
 ```
 
 
 ##### NUMBER_OF_SAMPLES
 
+Number of unique samples in study
+
 ```{r}
 dt_biotimeMeta$NUMBER_OF_SAMPLES %>% range()
 
-ggplot(dt_biotimeMeta, aes(NUMBER_OF_SAMPLES)) +
-  geom_histogram(binwidth = 100)
+# ggplot(dt_biotimeMeta, aes(NUMBER_OF_SAMPLES)) +
+#   geom_histogram(binwidth = 100)
 
 ggplot(dt_biotimeMeta[NUMBER_OF_SAMPLES < 100], aes(NUMBER_OF_SAMPLES)) +
   geom_histogram(binwidth = 1)
@@ -319,23 +385,9 @@ ggplot(dt_biotimeMeta[NUMBER_OF_SAMPLES < 100], aes(NUMBER_OF_SAMPLES)) +
 ```{r}
 dt_biotimeMeta$NUMBER_LAT_LONG %>% range()
 
-knitr::kable(dt_biotimeMeta$NUMBER_LAT_LONG %>% table() %>% head()) # mostly 1
+knitr::kable(dt_biotimeMeta$NUMBER_LAT_LONG %>% table() %>% head(n = 10)) # mostly 1
 ```
 
-
-##### ABUNDANCE_TYPE
-
-```{r}
-knitr::kable(dt_biotimeMeta$ABUNDANCE_TYPE %>% table())
-```
-
-
-##### BIOMASS_TYPE
-
-```{r}
-knitr::kable(dt_biotimeMeta$BIOMASS_TYPE %>% table())
-
-```
 
 
 ## Files written

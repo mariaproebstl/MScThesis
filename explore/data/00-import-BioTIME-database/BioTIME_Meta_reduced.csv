@@ -1,0 +1,382 @@
+"STUDY_ID","REALM","CLIMATE","TAXA","TITLE","AB_BIO","DATA_POINTS","START_YEAR","END_YEAR","NUMBER_OF_SPECIES","NUMBER_OF_SAMPLES","NUMBER_LAT_LONG","TOTAL","ABUNDANCE_TYPE","BIOMASS_TYPE"
+10,"Terrestrial","Temperate","Terrestrial plants","Windstorm disturbance without patch dynamics twelve years of change in a Minnesota forest","A",3,1984,1996,25,191,1,1406,"Count",NA
+18,"Terrestrial","Temperate","Terrestrial plants","Mapped quadrats in sagebrush steppe long-term data for analyzing demographic rates and plant to plant interactions","A",29,1923,1973,98,542,1,8034,"Count",NA
+33,"Marine","Temperate","Marine plants","Long-term phytoplankton community dynamics in the Western English Channel","A",18,1992,2009,170,1,1,17841,"Count",NA
+39,"Terrestrial","Temperate","Birds","Bird community dynamics in a temperate deciduous forest Long-term trends at Hubbard Brook","A",45,1970,2015,52,45,1,959,"Density",NA
+41,"Terrestrial","Temperate","Birds","Time and space and the variation of species","A",10,1923,1940,56,10,1,418,"Count",NA
+45,"Marine","Tropical","Fish","MCR LTER Coral Reef Long-term Population and Community Dynamics Fishes","AB",10,2006,2015,338,1105,1,47282,"Count","Size"
+46,"Terrestrial","Temperate","Birds","Skokholm Bird Observatory","A",47,1928,1979,29,47,1,528,"Count",NA
+47,"Terrestrial","Temperate","Birds","Detection of Density-Dependent Effects in Annual Duck Censuses","A",26,1952,1977,13,35,2,392,"Count",NA
+51,"Terrestrial","Temperate","Birds","Fluctuations and long-term in the relative densities of tetraonid populations in Finland. 1964-77","A",14,1964,1977,4,1,1,56,"MeanCount",NA
+52,"Terrestrial","Polar","Mammals","A transect survey of small land carnivore and red fox populations on a subarctic fell in Finnish forest Lapland over 13 winters","A",13,1968,1980,3,5,1,144,"MeanCount",NA
+53,"Terrestrial","Temperate","Mammals","An 11-year study of small mammal populations at Mont St. Hilaire. Quebec","A",10,1966,1976,5,1,1,44,"MeanCount",NA
+54,"Terrestrial","Tropical","Terrestrial invertebrates","El Verde Grid invertebrate data (Big Grid Snail Captures 1991-2007)","A",24,1991,2014,19,798,1,21702,"Count",NA
+56,"Terrestrial","Temperate","Mammals","Small Mammal Mark-Recapture Population Dynamics at Core Research Sites","AB",20,1989,2008,28,8026,1,16657,"Count","Weight"
+57,"Freshwater","Temperate","Fish","North Temperate Lakes LTER Fish Abundance","A",32,1981,2012,76,258,1,10892,"Count",NA
+58,"Terrestrial","Tropical","Birds","Avian populations long-term monitoring dataset. San Juan. Puerto Rico Luquillo Long Term Ecological Research Site Database Grid points bird counts DBAS 23","A",18,1991,2008,31,6,1,1171,"Count",NA
+59,"Terrestrial","Temperate","Mammals","Long-term monitoring and experimental manipulation of a Chihuahuan Desert ecosystem near Portal. Arizona. USA","A",26,1977,2002,29,2,1,427,"Count",NA
+60,"Terrestrial","Tropical","Terrestrial plants","Forest Census Plot on Barro Colorado Island","A",8,1982,2015,325,8,1,2429,"Count",NA
+63,"Terrestrial","Temperate","Terrestrial invertebrates","The development of dragonfly communities and the consequences of territorial behaviour A 27-year study on small ponds at Woodwalton Fen. Cambridgeshire. United Kingdom","A",29,1959,1988,5,1,1,132,"Count",NA
+67,"Terrestrial","Temperate","Birds","Animal Demography Unit - Coordinated Waterbird Counts (CWAC) (AfrOBIS)","A",24,1983,2006,68,417,417,15448,"Count",NA
+68,"Marine","Temperate","Marine invertebrates","Marine and Coastal Management - Copepod Surveys (AfrOBIS)","A",13,1988,2000,15,2569,2569,38535,"Presence/Absence",NA
+69,"Marine","Temperate","Birds","Seabird 2000 (EurOBIS)","A",10,1994,2003,27,9864,1476,22694,"Presence/Absence",NA
+71,"Marine","Polar/Temperate","Marine plants","Phytoplankton from the White Sea. Barents Sea. Norwegian Sea and Arctic Basin 1993-2003","A",10,1993,2003,412,3250,133,35323,"Count",NA
+72,"Marine","Polar/Temperate","Marine invertebrates","White Sea Plankton","A",5,1998,2003,107,7569,127,12471,"Count",NA
+73,"Marine","Polar","Marine invertebrates","Copepoda collected from Fletcher's Ice Island (T-3) in the Canadian Basin of the Arctic Ocean","A",4,1966,1969,43,6722,132,16063,"Count",NA
+74,"Marine","Polar","Marine invertebrates","Copepoda collected from the Canada Basin Arctic Ocean Fletcher's Ice Island (T-3) 1970-1972 and AIDJEX. 1975. Phytoplankton Primary Production Below Arctic Ocean Pack Ice An Ecosystems Analysis","A",4,1970,1975,37,3141,77,6672,"Count",NA
+75,"Marine","Polar","Marine invertebrates","Zooplankton Data from the Canadian Beaufort Sea Shelf. 1984 and 1985 NOGAP B2. Zooplankton Data from the Canadian Beaufort Sea Shelf. 1986. Central and Arctic Region","AB",3,1985,1987,304,321,112,12643,"Density","Weight"
+76,"Marine","Temperate","Benthos","A comparison of benthic biodiversity in the North Sea. English Channel and Celtic Seas","A",5,1992,1996,212,59,58,1347,"Count",NA
+77,"Marine","Temperate","Birds","MEDITS Seabird surveys 1999 - 2000 - 2002","A",3,1999,2002,16,703,703,1072,"Count",NA
+78,"Marine","Temperate","Benthos","IOW Macrozoobenthos monitoring Baltic Sea (1980-2005) (EurOBIS)","A",25,1980,2005,212,19,19,3587,"Count",NA
+81,"Marine","Temperate","Mammals","CRRU Cetacean sighting in Scotland waters 1997-2010","A",14,1997,2010,9,1600,1600,1613,"Count",NA
+84,"Marine","Temperate","Marine plants","Macroalgae of the Crimean coastal zone (Black Sea. 1967-2007)","A",11,1967,2007,104,117,112,5070,"Presence/Absence",NA
+85,"Marine","Temperate","Marine invertebrates","North Sea observations of Crustacea. Polychaeta. Echinodermata. Mollusca and some other groups between 1986 and 2003","A",12,1992,2003,354,791,297,9984,"Density",NA
+86,"Marine","Temperate","Marine plants","Phytoplankton of the Ukrainian Black Sea shelf (1985-2005)","AB",9,1985,1998,368,1432,299,9998,"Count","Weight"
+87,"Marine","Temperate","Marine plants","Phytoplankton in the Oosterschelde before. during and after the storm-surge barrier (1982-1990)","A",9,1982,1990,109,2,2,6155,"Count",NA
+90,"Marine","Temperate","Marine invertebrates","Zooplankton in the Bay of Biscay (1995-2004. yearly DEPM surveys)","A",6,1995,2004,66,512,499,9059,"Presence/Absence",NA
+91,"Marine","Temperate","Birds","Baltic seabirds transect surveys","A",8,1992,1999,68,2329,2329,6318,"Count",NA
+92,"Marine","Polar/Temperate","Benthos","Benthos of the White Sea - A database","A",23,1981,2010,526,365,290,7452,"Presence/Absence",NA
+96,"Marine","Polar","Marine invertebrates","Structure and function of contemporary food webs on Arctic shelves A panarctic comparison. The pelagic system of the Kara Sea- communities and components of carbon flow (ArcOD/AOOS)","A",4,1997,2001,100,104,100,2633,"Count",NA
+97,"Marine","Polar/Temperate","Marine invertebrates","Archives of the Arctic Seas Zooplankton (ARC)","A",22,1921,1973,402,835,802,15016,"Count",NA
+98,"Marine","Polar","Benthos","Zoobenthos data from the Southern Beaufort Sea. 1971-1975 (ArcOD/AOOS)","A",4,1971,1975,336,97,93,2133,"Count",NA
+99,"Marine","Temperate/Tropical","Fish","CSIRO Marine Data Warehouse (OBIS Australia)","B",15,1978,1997,761,2566,2443,40884,NA,"Weight"
+108,"Marine","Global","Birds","Seabirds of the Southern and South Indian Ocean (Australian Antarctic Data Centre)","A",29,1977,2006,123,59928,57723,116226,"Count",NA
+110,"Marine","Temperate","Benthos","Marine Nature Conservation Review (MNCR) and associated benthic marine data held and managed by JNCC (EurOBIS)","A",38,1954,2000,4120,9922,987,398501,"Presence/Absence",NA
+112,"Marine","Temperate/Tropical","Fish","NOAA Southeast Fishery Science Center (SEFSC) Commercial Pelagic Observer Program (POP) Data (SEFSC_POP)","A",22,1973,2005,540,136554,93906,466437,"Count",NA
+113,"Marine","Global","Marine invertebrates","Southampton Oceanography Center Discovery Collections Midwater Database (collections from Discovery sailings - 1979 only year with furthest afield data)","A",25,1965,1999,2055,2324,2207,89972,"Presence/Absence",NA
+117,"Marine","Temperate","Marine invertebrates","South Western Pacific Regional OBIS Data Asteroid Subset (South Western Pacific OBIS)","A",44,1956,2003,156,1394,1394,2253,"Count",NA
+119,"Marine","Temperate","Fish","DFO Maritimes Research Vessel Trawl Surveys Fish Observations (OBIS Canada)","AB",41,1970,2010,231,13945,13507,121804,"Count","Weight"
+120,"Marine","Temperate/Tropical","Marine plants","CRED REA Algal Quadrate Images in the Pacific Ocean 2002-2008 (OBIS-USA)","A",7,2002,2008,260,466,466,10198,"Presence/Absence",NA
+121,"Marine","Temperate/Tropical","Fish","CRED Rapid Ecological Assessments of Fish Belt Transect Surveys and Fish Stationary Point Count Surveys in the Pacific Ocean 2000-2010 (OBIS-USA)","A",11,2000,2010,148,11408,52,21577,"Count",NA
+122,"Marine","Temperate/Tropical","Marine invertebrates","CRED Rapid Ecological Assessments of Coral Population in the Pacific Ocean 2007-2010 (OBIS-USA)","A",4,2007,2010,209,1864,546,18535,"Presence/Absence",NA
+123,"Marine","Temperate","Fish","Maine Department of Marine Resources Inshore Trawl Survey 2000?2009 (OBIS-USA)","AB",10,2000,2009,144,1750,1749,36935,"Count","Weight"
+124,"Marine","Temperate","Marine invertebrates","A Biological Survey of the Waters of Woods Hole and Vicinity","A",7,1903,1909,606,768,323,41346,"Presence/Absence",NA
+125,"Marine","Temperate","Fish","MARMAP Chevron Trap Survey 1990-2009 (OBIS-USA)","AB",12,1988,2000,101,1205,422,15092,"Count","Weight"
+126,"Marine","Temperate","Fish","MARMAP Neuston Nets 1990-2009 (OBIS-USA)","A",8,1973,1980,438,467,467,7614,"Count",NA
+127,"Marine","Temperate","Fish","MARMAP Florida Antillean Trap Survey 1990-2009 (OBIS-USA)","AB",10,1980,1989,48,352,173,4546,"Count","Weight"
+128,"Marine","Temperate","Marine invertebrates","Zooplankton Sampled with 10m2MOCNESS Net in Georges Bank 1995-1999 (OBIS-USA)","A",5,1995,1999,341,783,39,15246,"Presence/Absence",NA
+129,"Marine","Temperate","Marine invertebrates","South TX Outer Continental Shelf and MI. AL. and FL Outer Continental Shelf benthic organism sampling 1974-1978 (OBIS-USA)","A",5,1974,1978,2561,431,431,58162,"Count",NA
+133,"Marine","Temperate/Tropical","Marine invertebrates","Copepods (Tropical and Subtropical Western South Atlantic OBIS)","A",8,1954,1961,119,106,95,2300,"Count",NA
+135,"Marine","Temperate/Tropical","Fish","Previous_fisheries_REVIZEE_Program (Tropical and Subtropical Western South Atlantic OBIS)","B",11,1972,1986,151,2013,1796,8468,NA,"Weight"
+142,"Marine","Temperate/Tropical","Fish","Pelagic and Demersal Fish Database II. REVIZEE South Area (WSAOBIS)","A",3,1997,2002,189,276,276,4125,"Count",NA
+143,"Marine","Temperate/Tropical","Marine invertebrates","COPEPODA-ESPOBIS Data Base IMO-UdeC","A",8,2002,2009,106,60,10,1313,"Count",NA
+147,"Marine","Temperate","Marine invertebrates","South Western Pacific Regional OBIS Data Bryozoan Subset (South Western Pacific OBIS)","A",51,1874,2003,599,555,555,6329,"Presence/Absence",NA
+148,"Marine","Temperate/Tropical","Fish","South Western Pacific Regional OBIS Data provider for the NIWA Marine Biodata Information System (South Western Pacific OBIS)","B",38,1964,2005,430,28775,28332,351472,NA,"Weight"
+150,"Marine","Temperate","Marine invertebrates","Admiralty Bay Benthos Diversity Data Base (ABBED).","A",5,1979,1986,44,130,116,428,"Presence/Absence",NA
+152,"Marine","Temperate","Marine invertebrates","CMarZ (Census of Marine Zooplankton)-Asia Database","A",15,1977,2002,163,309,138,2493,"Count",NA
+162,"Marine","Temperate/Tropical","Benthos","EPA'S EMAP Database","A",13,1990,2004,5624,6588,6073,173040,"Presence/Absence",NA
+163,"Marine","Temperate","Benthos","North Pacific Groundfish Observer (North Pacific Research Board)","AB",12,1993,2004,355,1827,1827,419940,"Count","Weight"
+164,"Marine","Temperate","Marine invertebrates","North American Sessile Marine Invertebrate SurveyCitation","A",6,2000,2005,94,230,224,1401,"Presence/Absence",NA
+166,"Marine","Global","All","PIROP Northwest Atlantic 1965-1992 (SEAMAP)","A",25,1965,1992,213,144510,51670,155600,"Count",NA
+169,"Marine","Temperate","All","CalCOFI and NMFS Seabird and Marine Mammal Observation Data. 1987-2006 (SEAMAP)","A",20,1987,2006,185,56832,56813,61714,"Count",NA
+171,"Marine","Temperate/Tropical","Mammals","Bahamas Marine Mammal Research Organisation Opportunistic Sightings (SEAMAP)","A",19,1988,2008,28,2362,2362,4774,"Count",NA
+172,"Marine","Temperate","All","POPA cetacean. seabird. and sea turtle sightings in the Azores area 1998-2009 (OBIS SEAMAP)","A",12,1998,2009,47,34883,34883,52291,"Count",NA
+173,"Marine","Temperate/Tropical","Marine invertebrates","Marine Biological Sample Database. JAMSTEC (OBIS_JAPAN)","A",16,1996,2012,678,1038,721,4523,"Presence/Absence",NA
+176,"Marine","Temperate","Marine invertebrates","Atlantic Zone Monitoring Program Maritimes Region (AZMP) plankton datasets. In Fisheries and Oceans Canada - BioChem archive (OBIS Canada)","AB",13,1998,2010,320,1763,1232,56938,"Count","Weight"
+178,"Marine","Temperate","Fish","Pacific Shrimp Trawl Survey (OBIS Canada)","A",39,1963,2007,476,8065,8032,128311,"Presence/Absence",NA
+180,"Marine","Polar/Temperate","Fish","ECNASAP - East Coast North America Strategic Assessment (OBIS Canada)","A",26,1970,1995,273,46466,43126,410802,"Count",NA
+182,"Marine","Temperate","All","Snow crab research trawl survey database (Southern Gulf of St. Lawrence. Gulf region. Canada) from 1988 to 2010 (OBIS Canada)","A",22,1988,2009,33,5777,5765,35005,"Count",NA
+183,"Marine","Temperate","Marine invertebrates","DFO Maritimes Research Vessel Trawl Surveys Invertebrate Observations (OBIS Canada)","A",13,1999,2011,16,4475,4475,14906,"Count",NA
+184,"Marine","Polar/Temperate","Marine invertebrates","DFO Central and Arctic Multi-species Stock Assessment Surveys (OBIS_CANADA)","A",5,2006,2010,306,685,685,16976,"Presence/Absence",NA
+186,"Marine","Temperate/Tropical","Benthos","Great Barrier Reef Seabed Biodiversity Study 2003-2006 (CMAR_ANACC)","A",4,2003,2006,4080,1251,1251,93707,"Presence/Absence",NA
+187,"Marine","Temperate/Tropical","Benthos","National Benthic Infaunal Database (NOAA NBI)","A",14,1991,2006,4415,2180,2156,111354,"Presence/Absence",NA
+189,"Marine","Tropical","Fish","St. John. USVI Fish Assessment and Monitoring Data (2002 - Present) (NOAA-CCMA)","A",10,2001,2010,254,1510,1510,28123,"Count",NA
+190,"Marine","Tropical","Fish","St. Croix. USVI Fish Assessment and Monitoring Data (2002 - Present) (NOAA-CCMA)","A",10,2001,2010,247,2000,2000,28017,"Count",NA
+191,"Marine","Temperate","Marine invertebrates","NEFSC Benthic Database (OBIS-USA)","A",28,1900,1975,1614,4790,4386,51456,"Count",NA
+192,"Marine","Polar/Temperate","Mammals","Whale Catches in Southern Ocean (OBIS - Australian Antarctic Data Centre)","A",42,1932,1980,6,455,455,7122,"Count",NA
+194,"Terrestrial","Temperate","Terrestrial invertebrates","Spatial and temporal distribution and abundance of moths in the Andrews Experimental Forest. 1994 to 2004","A",6,1994,2004,578,254,1,17647,"Count",NA
+195,"Terrestrial","Temperate","Birds","Breeding birds survey North America","A",30,1978,2007,385,440,440,699449,"Count",NA
+196,"Marine","Temperate","Benthos","SOTEAG Rocky Shore Survey (Sullom Voe)","A",35,1976,2012,252,910,47,91491,"Count",NA
+199,"Marine","Temperate/Tropical","Fish","Taiwan bottom trawl survey","A",4,2000,2003,631,48,48,3513,"Count",NA
+200,"Marine","Temperate","Marine invertebrates","NEFSC Benthic Database (OBIS-USA)","A",30,1956,1989,2105,2945,2427,102143,"Count",NA
+201,"Terrestrial","Tropical","Terrestrial plants","Pasoh Forest Dynamics Plot. Malaysia - Smithsonian Tropical Research Institute","A",4,1987,2000,840,1,1,3292,"Count",NA
+202,"Terrestrial","Tropical","Terrestrial plants","Mudumalai Forest Dynamics Plot. India - Smithsonian Tropical Research Institute","A",3,1988,2000,75,1,1,225,"Count",NA
+204,"Marine","Temperate","Benthos","MACROBEL Long term trends in the macrobenthos of the Belgian Continental Shelf","A",19,1976,2001,344,1049,768,15901,"Count",NA
+211,"Marine","Temperate","Fish","MARMAP Fly Net 1990-2009","AB",8,1980,1987,127,140,60,1653,"Count","Weight"
+212,"Marine","Temperate","Fish","MARMAP Yankee Trawl 1990-2009","AB",8,1973,1980,522,1170,1051,15532,"Count","Weight"
+213,"Marine","Temperate","Benthos","Northeast Fisheries Science Center Bottom Trawl Survey Data (OBIS-USA)","AB",48,1948,2008,1023,35644,30824,439452,"Count","Weight"
+214,"Terrestrial","Temperate","Terrestrial plants","Long-term growth mortality and regeneration of trees in permanent vegetation plots in the Pacific Northwest 1910 to present","A",88,1910,2010,39,14565,151,37350,"Count",NA
+217,"Terrestrial","Temperate","Birds","Landbird Monitoring Program (UMT-LBMP)","A",14,1992,2006,268,43839,13800,336516,"Count",NA
+221,"Terrestrial","Temperate","Terrestrial plants","Vegetation Plots of the Bonanza Creek LTER Control Plots Species Count (1975 - 2004)","A",26,1975,2008,52,195,32,1157,"Count",NA
+224,"Terrestrial","Temperate","Terrestrial plants","Experiment 133 - Effect of Burning Patterns on Vegetation in the Fish Lake Burn Compartments - Shrub Survey","A",3,1995,2005,50,1582,1,5973,"Count",NA
+225,"Terrestrial","Temperate","Birds","Point count bird censusing long-term monitoring of bird distrubution and diversity in central Arizona-Phoenix period 2000 to 2011","A",12,2000,2011,278,4865,1,48841,"Count",NA
+226,"Terrestrial","Temperate","Birds","Transect bird survey with data synthesis from multiple transects in the central Arizona-Phoenix area period 1998 to 2000","A",3,1998,2000,220,3256,1,45361,"Count",NA
+227,"Marine","Temperate","Fish","Coastal ecological data from the Virginian Biogeographic Province 1990 to 1993","A",4,1990,1993,107,371,371,1868,"Count",NA
+228,"Marine","Temperate","Benthos","Coastal ecological data from the Virginian Biogeographic Province 1990 to 1993","A",4,1990,1993,762,407,400,13184,"Count",NA
+229,"Freshwater","Temperate","Fish","Upper Little Tennessee River Biomonitoring Program Database - LTWA Biomonitoring Database","A",26,1988,2013,69,754,228,11184,"Count",NA
+230,"Marine","Temperate","Marine plants","Macrophyte count data collected from Northeast Shark Slough Everglades National Park (FCE) from September 2006 to Present","A",3,2006,2008,59,122,30,1561,"Count",NA
+231,"Marine","Temperate","All","Consumer Stocks Fish Vegetation and other Non-physical Data from Everglades National Park (FCE) South Florida from February 2000 to April 2005","A",6,2000,2005,138,1806,31,12806,"Count",NA
+232,"Marine","Polar/Temperate","Fish","Pelagic Fish Observations 1968-1999","AB",25,1968,1999,185,3143,1168,6446,"Count","Weight"
+233,"Terrestrial","Temperate","Terrestrial plants","HF044. Land Use on the Southern New England and New York Coasts 1600-2001","A",3,1999,2001,47,577,1,1870,"Count",NA
+234,"Terrestrial","Temperate","Terrestrial plants","Forest Inventory of a Northern Hardwood Forest Watershed 6","AB",5,1982,2002,15,1040,1,4815,"Count","Weight"
+235,"Terrestrial","Temperate","Terrestrial plants","Forest Inventory of a Northern Hardwood Forest Watershed 5?","AB",4,1982,1999,18,681,1,2823,"Count","Weight"
+236,"Freshwater","Temperate","Fish","Fish population on selected watersheds at Konza Prairie - CFP012 - Konza fish population","A",12,1995,2006,19,129,1,1169,"Count",NA
+237,"Freshwater","Temperate","Freshwater invertebrates","Madison Wisconsin Lakes Zooplankton 1976 - 1994 - old net","A",19,1976,1994,89,811,4,10610,"Count",NA
+238,"Freshwater","Temperate","Freshwater invertebrates","North Temperate Lakes LTER Zooplankton - Madison Lakes Area 1997 - current","A",20,1995,2014,32,731,3,7331,"Count",NA
+239,"Terrestrial","Temperate","Terrestrial plants","Pinon Juniper Net Primary Production Quadrat Data from the Sevilleta National Wildlife Refuge New Mexico 1999-2001","AB",3,1999,2001,123,1377,1,5288,"Count","Cover"
+240,"Terrestrial","Temperate","Terrestrial plants","Pinon-Juniper (Core Site) Quadrat Data for the Net Primary Production Study at the Sevilleta National Wildlife Refuge New Mexico (2003-present )","AB",13,2003,2015,167,2882,1,15561,"Count","Cover"
+241,"Terrestrial","Tropical","Terrestrial plants","Sherman Forest Dynamics Plot Panama","A",4,1996,2009,272,4,1,947,"Count",NA
+242,"Terrestrial","Temperate","Terrestrial plants","Lac Croche understory vegetation data set (1998 to 2006)","A",7,1998,2006,12,298,43,1030,"Count",NA
+243,"Terrestrial","Temperate","Terrestrial plants","Long-term N-fertilized vegetation plots on Hog Island Virginia Coastal Barrier Islands 1992 to 2014","AB",22,1992,2014,51,2640,4,8508,"Count","Cover"
+245,"Marine","Temperate","Fish","Migratory Fishes in the river Scheldt Trekvis","A",4,2007,2010,49,415,42,2253,"Count",NA
+246,"Marine","Temperate","Fish","Long-term monitoring dataset of fish assemblages impinged at nuclear power plants in northern Taiwan","A",15,2000,2014,335,339,2,3722,"Count",NA
+247,"Freshwater","Temperate","Freshwater invertebrates","Zooplankton survey of Oneida Lake New York 1964 to present","AB",32,1975,2006,31,4047,6,30307,"Density","Weight"
+248,"Terrestrial","Temperate","Terrestrial plants","Evidence for long-term shift in plant community composition under decadal experimental warming","A",13,2000,2012,95,78,1,1032,"Count",NA
+249,"Terrestrial","Temperate","Terrestrial invertebrates","Resource specialists lead local insect community turnover associated with temperature - analysis of an 18-year full-seasonal record of moths and beetles","A",24,1992,2009,1534,577,1,44069,"Count",NA
+252,"Marine","Temperate","Fish","MARMAP Blackfish Trap Survey 1990-2009","AB",13,1977,1989,48,1422,218,4692,"Count","Weight"
+253,"Freshwater","Temperate","Freshwater invertebrates","North Temperate Lakes LTER Zooplankton - Trout Lake Area 1982 - current","A",29,1986,2014,133,1748,7,30750,"Count",NA
+254,"Freshwater","Temperate","Freshwater plants","North Temperate Lakes LTER Phytoplankton - Madison Lakes Area 1995 - current","AB",20,1995,2014,374,585,2,12652,"Count","Weight"
+255,"Terrestrial","Temperate","Terrestrial plants","Multi-decade. spatially explicit population studies of canopy dynamics in Michigan old-growth forests","A",10,1989,2007,22,508,1,2915,"Count",NA
+257,"Freshwater","Temperate","Freshwater invertebrates","Madison Wisconsin Lakes Zooplankton 1976 - 1994 - new net","A",4,1991,1994,19,122,2,1373,"Count",NA
+270,"Terrestrial","Temperate","Terrestrial plants","Experimental evidence of reduced diversity of seedlings due to climate modification in a Mediterranean-type community.","A",4,1999,2002,19,1,1,76,"Density",NA
+271,"Marine","Temperate","Fish","Santa Barbara Coastal LTER","A",15,2000,2014,62,42,42,6287,"Count",NA
+272,"Marine","Temperate","Marine invertebrates","Santa Barbara Coastal LTER","A",15,2000,2014,36,50,11,5363,"Count",NA
+273,"Marine","Temperate","Marine invertebrates","Santa Barbara Coastal LTER","A",15,2000,2014,27,51,11,15498,"Count",NA
+274,"Marine","Temperate","All","Santa Barbara Coastal LTER","B",15,2000,2014,132,553,41,8769,NA,"Cover"
+275,"Terrestrial","Temperate","Reptiles","Response of an urban remnant reptile community to summer wildfire","AB",6,2009,2014,19,10,10,1549,"Count","Size"
+276,"Freshwater","Temperate","Freshwater invertebrates","Eutrophication and Dreissena Invasion as Drivers of Biodiversity A Century of Change in the Mollusc Community of Oneida Lake","A",3,1917,2012,32,1,1,96,"Density",NA
+278,"Marine","Temperate/Tropical","Fish","South Western Pacific Regional OBIS Data provider for the NIWA Marine Biodata Information System (South Western Pacific OBIS)","A",40,1961,2005,278,5177,4894,25534,"Presence/Absence",NA
+280,"Marine","Polar","Benthos","Zoobenthos data from the Southern Beaufort Sea. 1971-1975 (ArcOD/AOOS)","A",4,1971,1975,9,47,44,60,"Presence/Absence",NA
+281,"Marine","Temperate","Marine invertebrates","South TX Outer Continental Shelf and MI. AL. and FL Outer Continental Shelf benthic organism sampling 1974-1978 (OBIS-USA)","A",5,1974,1978,6,335,335,1267,"Presence/Absence",NA
+282,"Marine","Polar","Marine invertebrates","Zooplankton Data from the Canadian Beaufort Sea Shelf. 1984 and 1985 NOGAP B2. Zooplankton Data from the Canadian Beaufort Sea Shelf. 1986. Central and Arctic Region","A",4,1984,1987,211,183,103,8661,"Density",NA
+283,"Marine","Polar","Marine invertebrates","Zooplankton Data from the Canadian Beaufort Sea Shelf. 1984 and 1985 NOGAP B2. Zooplankton Data from the Canadian Beaufort Sea Shelf. 1986. Central and Arctic Region","B",2,1985,1986,177,164,61,1720,NA,"Weight"
+284,"Marine","Temperate/Tropical","Fish","Previous_fisheries_REVIZEE_Program (Tropical and Subtropical Western South Atlantic OBIS)","AB",10,1972,1986,136,1282,1174,5906,"Count","Weight"
+285,"Marine","Temperate/Tropical","Fish","Previous_fisheries_REVIZEE_Program (Tropical and Subtropical Western South Atlantic OBIS)","A",13,1972,1989,206,506,490,1693,"Count",NA
+286,"Marine","Temperate","Fish","Maine Department of Marine Resources Inshore Trawl Survey 2000?2009 (OBIS-USA)","B",10,2000,2009,29,678,678,883,NA,"Weight"
+287,"Marine","Temperate","Fish","Maine Department of Marine Resources Inshore Trawl Survey 2000?2009 (OBIS-USA)","A",9,2001,2009,82,493,493,828,"Count",NA
+288,"Marine","Temperate","Fish","DFO Maritimes Research Vessel Trawl Surveys Fish Observations (OBIS Canada)","A",34,1970,2006,195,6774,6474,19074,"Count",NA
+289,"Marine","Temperate","Fish","DFO Maritimes Research Vessel Trawl Surveys Fish Observations (OBIS Canada)","B",14,1995,2010,68,189,189,452,NA,"Weight"
+290,"Marine","Temperate/Tropical","Fish","CSIRO Marine Data Warehouse (OBIS Australia)","AB",12,1978,1995,915,2109,1728,25494,"Count","Weight"
+291,"Marine","Temperate/Tropical","Fish","CSIRO Marine Data Warehouse (OBIS Australia)","A",12,1978,1990,734,1497,1427,22998,"Presence/Absence",NA
+292,"Marine","Temperate/Tropical","Fish","CSIRO Marine Data Warehouse (OBIS Australia)","A",11,1978,1995,837,2118,1728,16966,"Count",NA
+294,"Terrestrial","Tropical","Terrestrial invertebrates","Tam Dao Butterfly communities","A",8,2003,2013,277,45,1,8356,"Count",NA
+295,"Marine","Temperate","Fish","Systematic global assessment of reef fish communities by the Reef Life Survey program","AB",9,2008,2016,450,1078,127,25469,"Count","Weight"
+296,"Marine","Temperate","Marine invertebrates","Systematic global assessment of reef fish communities by the Reef Life Survey program","A",9,2008,2016,412,1077,127,10092,"Count",NA
+297,"Marine","Tropical","Marine invertebrates","MCR LTERCoral Reef Long-term Population and Community Dynamics Other Benthic Invertebrates. ongoing since 2005","A",11,2005,2015,13,1825,6,2734,"Count",NA
+298,"Terrestrial","Temperate","Terrestrial plants","Long-term mapped quadrats from Kansas prairie demographic information for herbaceaous plants","B",56,1903,1972,146,147201,1,147201,NA,"Cover"
+299,"Terrestrial","Temperate","Terrestrial invertebrates","Elba Island Butterflies","A",6,1898,1998,54,6,1,224,"Presence/Absence",NA
+300,"Terrestrial","Temperate","Terrestrial invertebrates","Insect Populations via Sticky Traps at KBS-LTER (Kellogg Biological Station. MI)","A",25,1989,2013,21,5888,255,47798,"Count",NA
+301,"Terrestrial","Temperate","Terrestrial invertebrates","Konza grasshoppers CGR022","A",31,1984,2018,33,128,1,903,"Count",NA
+302,"Terrestrial","Tropical","Terrestrial plants","Patterns and processes affecting the dynamics and structure of seasonally semideciduous forests in SE Brazil(Padroes e processos que influenciam a dinamica e a estrutura das Florestas Estacionais Semideciduais SE Brasil)","A",3,2002,2011,151,768,1,12412,"Count",NA
+303,"Terrestrial","Temperate/Tropical","Terrestrial plants","The influence of environmental variables on tree species component dynamics in a montane forest fragment in Lages SC Brazil Influencia de variaveis ambientais na dinamica do componente arboreo em um fragmento de Floresta Ombrofila Mista em Lages SC","A",3,2008,2016,92,150,50,2529,"Count",NA
+304,"Terrestrial","Temperate","Terrestrial plants","Cape of Good Hope Permanent Plots","A",2,1966,1996,418,126,63,4834,"Count",NA
+305,"Terrestrial","Temperate","Amphibians","Population estimates of Appalachian salamanders. Coweeta LTER","A",15,1976,1990,4,15,1,60,"Count",NA
+306,"Freshwater","Temperate","Reptiles","Edwin S. George Reserve Turtles. The Global Population Dynamics Database Version 2","A",16,1975,1992,3,16,1,46,"Count",NA
+307,"Terrestrial","Temperate","Terrestrial plants","Kellogg LTER seed bank","A",3,1993,2002,83,405,1,2084,"Count",NA
+308,"Terrestrial","Temperate","Mammals","Powdermill Nature Reserve monitored small mammal populations from 1979-1999.","AB",21,1979,1999,14,30243,1,35398,"Count","Weight"
+310,"Marine","Temperate/Tropical","Marine invertebrates","Marine microplankton diversity database","A",11,1992,2002,576,1038,293,37524,"Density",NA
+311,"Terrestrial","Temperate","Mammals","Seasonal summary of numbers of small mammals on 14 LTER traplines in prairie habitats at Konza Prairie","A",33,1981,2013,15,847,1,2458,"Count",NA
+312,"Terrestrial","Tropical","Mammals","Stability in a Multi-Species Assemblage of Large Herbivores in East Africa","A",9,1959,1984,13,9,1,117,"Count",NA
+313,"Terrestrial","Temperate","Terrestrial invertebrates","Successional Dynamics on a Resampled Chronosequence Core Old Field Grasshopper Sampling","A",18,1989,2006,61,1409,1,7958,"Count",NA
+314,"Terrestrial","Temperate","Mammals","Successional Dynamics on a Resampled Chronosequence Small mammal abundance","A",3,1983,1985,6,110,1,118,"Count",NA
+315,"Terrestrial","Temperate","Terrestrial invertebrates","Jornada Grasshopper Data","A",3,1983,1985,40,1395,1,3027,"Count",NA
+316,"Terrestrial","Temperate","Reptiles","Lizard pitfall trap data (LTER-II LTER-III)","AB",18,1989,2006,21,2620,1,2650,"Count","Weight"
+317,"Terrestrial","Temperate","Terrestrial plants","Mangrove Forest Growth from the Shark River Slough Everglades National Park (FCE) South Florida from January 1995 to Present","A",9,1995,2005,4,33,4,93,"Count",NA
+319,"Terrestrial","Temperate","All","Effects of rangeland management on community dynamics of herpetofauna to the tallgrass prairie","A",14,1989,2003,35,14,1,232,"Count",NA
+321,"Terrestrial","Temperate","Mammals","Small Mammal Exclosure Study. Jornada LTER.  SMES rodent trapping data","AB",13,1995,2007,19,11757,766,12787,"Count","Weight"
+322,"Terrestrial","Tropical","Terrestrial plants","Forest destructuring as revealed by the temporal dynamics of fundamental species - Case study of Santa Genebra Forest in Brazil","A",4,1983,2004,132,400,1,789,"Count",NA
+323,"Terrestrial","Tropical","Reptiles","The Response of Anolis Lizards to Hurricane-Induced Habitat Changes in a Puerto Rican Rain Forest.","A",4,1989,1992,4,18,1,54,"Count",NA
+324,"Terrestrial","Tropical","Terrestrial plants","Temporal evaluation of natural regeneration in a semi-deciduous forest in Pirenopolis. Goias. Brazil","A",5,2003,2007,60,65,1,237,"Count",NA
+325,"Terrestrial","Tropical","Terrestrial plants","Temporal evaluation of natural regeneration in a semi-deciduous forest in Pirenopolis. Goias. Brazil","A",5,2003,2007,91,79,1,727,"Count",NA
+326,"Terrestrial","Tropical","Terrestrial plants","Temporal evaluation of natural regeneration in a semi-deciduous forest in Pirenopolis. Goias. Brazil","A",2,2003,2007,140,32,1,1591,"Count",NA
+327,"Terrestrial","Temperate","Mammals","Fray Jorge Small Mammals 1989-2005","AB",17,1989,2005,12,171843,1,256469,"Count","Weight"
+328,"Freshwater","Temperate","Amphibians","The Rainbow Bay Long-term Study","A",30,1979,2008,10,30,1,301,"Count",NA
+329,"Terrestrial","Tropical","Terrestrial plants","Twenty years tree demography in an undisturbed Dipterocarp permanent sample plot at Uppangala Western Ghats of India","A",6,1990,2010,102,48,1,2397,"Count",NA
+330,"Marine","Temperate/Tropical","Marine invertebrates","Over 75 years of zooplankton data from Australia","A",49,1938,2014,639,4179,2277,80764,"Density",NA
+332,"Freshwater","Temperate","Fish","Stream Fish Assemblage stability in a southern Appalachian stream (Coweeta Hydro Lab 1984 - 1995)","A",12,1984,1995,14,112,1,590,"Count",NA
+333,"Terrestrial","Temperate","Birds","Weekly record of bird species observed on Konza Prairie","A",29,1981,2009,132,903,1,9261,"Presence/Absence",NA
+334,"Terrestrial","Polar","Terrestrial plants","Above ground plant biomass in a mesic acidic tussock tundra experimental site from 1982 to 20000 Toolik lake Alaska","B",6,1982,2000,40,608,1,14003,NA,"Weight"
+335,"Freshwater","Temperate","Fish","Stochasticity in structural and functional characteristics of an Indiana stream fish assemblage  a test of community theory","A",12,1962,1974,62,27,1,588,"Count",NA
+336,"Terrestrial","Temperate","Terrestrial plants","Long term monitoring and experimental manipulation of a Chihuahuan Desert ecosystem near Portal Arizona","A",14,1989,2002,100,611,1,35978,"Count",NA
+337,"Terrestrial","Temperate","Birds","Mountain Birdwatch","A",11,2000,2010,87,45,1,763,"Presence/Absence",NA
+338,"Marine","Temperate","Fish","Dynamics and Organization of a Rocky Intertidal Fish Assemblage","A",3,1979,1981,29,13,1,203,"Count",NA
+339,"Terrestrial","Temperate","Birds","Species trends turnover and composition of a woodland bird community in southern Sweden during a period of 57 years.","A",57,1953,2009,39,57,1,1210,"Count",NA
+340,"Terrestrial","Temperate","Terrestrial plants","Small Mammal Exclosure Study (SMES) Vegetation Data from the Chihuahuan Desert","A",15,1995,2009,93,128,1,1608,"Count",NA
+341,"Terrestrial","Temperate/Tropical","Amphibians","Brazil Dataset 1","A",3,2014,2016,73,111,41,2009,"Count",NA
+342,"Terrestrial","Tropical","Terrestrial plants","Brazil Dataset 2","A",3,1992,2010,69,3,1,184,"Count",NA
+343,"Terrestrial","Tropical","Terrestrial plants","Brazil Dataset 3","A",2,1992,2009,84,4,2,180,"Count",NA
+344,"Terrestrial","Tropical","Terrestrial plants","Brazil Dataset 4","A",2,1992,2004,65,2,1,118,"Count",NA
+345,"Terrestrial","Tropical","Terrestrial plants","Brazil Dataset 5","A",2,1993,2005,48,2,1,84,"Count",NA
+346,"Terrestrial","Tropical","Terrestrial plants","Monitoring experiences at the Atlantic rainforest biome using permanent plots.","A",3,2002,2011,131,768,1,16900,"Count",NA
+347,"Marine","Tropical","Marine invertebrates","Zooplankton community of the Vitoria Bay estuarine system (southeastern Brazil). Characterization during a three-year study","A",3,1998,2000,64,30,10,2074,"Count",NA
+348,"Terrestrial","Temperate/Tropical","Mammals","Bats (Mammalia Chiroptera) in restinga in the municipality of Jaguaruna south of Santa Catarina Brazil.","AB",10,2006,2016,13,16,2,177,"Count","Weight"
+349,"Marine","Temperate","Benthos","St. M polychaete species time-series","AB",10,1991,2011,141,89,21,1730,"Count","Weight"
+350,"Marine","Temperate","Benthos","Megafauna PAP time series","AB",12,1989,2011,50,15,1,563,"Density","Weight"
+351,"Marine","Temperate","Benthos","Megafauna Sta M time series","AB",13,1989,2004,10,37,1,350,"Density","Weight"
+352,"Terrestrial","Tropical","Terrestrial plants","Flooded forest plot sampling in Peru","A",4,1999,2002,98,120,1,906,"Count",NA
+353,"Terrestrial","Tropical","Terrestrial plants","La Planada Forest Dynamics Plots","A",2,1997,2003,180,2,1,345,"Count",NA
+354,"Marine","Temperate/Tropical","Marine plants","A database of marine phytoplankton abundance biomass and species composition in Australian waters","AB",24,1928,2015,734,5536,2258,75604,"Density","Weight"
+355,"Terrestrial","Temperate","Terrestrial plants","Plant Species Composition on Selected Watersheds at Konza Prairie","B",33,1983,2015,324,44696,1,580983,NA,"Cover"
+356,"Terrestrial","Tropical","Terrestrial plants","Long-term stem inventory data from tropical rain forest plots in Australia","A",34,1971,2013,478,258,20,14938,"Count",NA
+357,"Terrestrial","Temperate","Mammals","Small Mammal Trapping Webs on the Central Plains Experimental Range","A",13,1994,2006,10,506,1,1104,"Count",NA
+358,"Terrestrial","Temperate","Birds","Neotropical Migratory Bird Communities in a Developing Pine Plantation","A",16,1977,1992,14,16,1,140,"Density",NA
+359,"Marine","Temperate","Fish","SBC LTER Reef Kelp Forest Community Dynamics Fish abundance","A",13,2000,2012,61,487,9,3285,"Count",NA
+360,"Terrestrial","Temperate","Birds","Bialowieza National Park bird assemblage","B",40,1975,2014,86,277,1,10061,NA,"Weight"
+361,"Terrestrial","Temperate","Birds","A long-term bird population study in an Appalachian spruce forest","A",22,1962,1983,20,22,1,213,"Count",NA
+362,"Terrestrial","Tropical","Mammals","Plant and small-mammal responses to large-herbivore exclusion in an African savanna","A",4,2009,2012,18,11052,81,30969,"Count",NA
+363,"Terrestrial","Temperate","Birds","The 37-year dynamics of a subalpine bird community with special emphasis on the influence of environmental temperature and Epirrita autumnata cycles.","A",37,1963,1999,35,37,1,636,"Count",NA
+364,"Freshwater","Temperate","Freshwater plants","Long-term reductions in anthropogenic nutrients link to improvements in Chesapeake Bay habitat","B",14,1990,2007,14,14,1,196,NA,"Cover"
+365,"Marine","Temperate","Fish","Hahei marine dataset (1997-2002)","A",6,1997,2002,44,1477,120,6409,"Count",NA
+366,"Terrestrial","Temperate","Mammals","Small Mammal Exclosure Study (SMES)","A",25,1989,2013,24,342,1,3389,"Count",NA
+367,"Marine","Temperate","Marine invertebrates","Monitoring site 1000 Coastal zone research - Tidal flat survey","A",6,2008,2013,412,2059,444,7599,"Count",NA
+368,"Freshwater","Temperate","Freshwater invertebrates","Monitoring site 1000 Land waters research- Lakes benthic animal research","A",2,2010,2011,12,2,1,20,"Count",NA
+369,"Terrestrial","Temperate","Terrestrial invertebrates","Monitoring site 1000 Alpine research - Surface wandering beetles","A",6,2009,2014,29,29,3,158,"Count",NA
+370,"Marine","Temperate","Marine plants","Monitoring site 1000 coastal zone research - Algae survey permanent quadrats","B",7,2008,2014,159,300,6,2917,NA,"Cover"
+371,"Marine","Temperate","Marine plants","Monitoring site 1000 coastal zone research - Algae survey transects","B",7,2008,2014,168,431,6,2887,NA,"Cover"
+372,"Terrestrial","Temperate","Birds","Monitoring site 1000 Village survey - Bird survey data","A",9,2005,2013,219,1435,86,25195,"Count",NA
+373,"Terrestrial","Temperate","Mammals","Village survey Medium and large mammal survey data","A",8,2005,2012,25,18189,31,22347,"Count",NA
+374,"Marine","Temperate","Birds","Monitoring site 1000 Shorebird Survey","A",11,2004,2014,70,13830,143,38674,"Count",NA
+375,"Terrestrial","Temperate","Terrestrial invertebrates","Surface of the earth wandering beetles survey data","AB",11,2004,2014,424,4553,32,19937,"Count","Weight"
+376,"Terrestrial","Temperate","Birds","Monitoring site 1000 forest and grassland research - Bird survey data -1st phase","A",5,2004,2008,240,1122,316,18417,"Count",NA
+377,"Terrestrial","Temperate","Birds","Monitoring site 1000 forest and grassland research - Bird survey data -2nd phase","A",6,2008,2013,251,8735,437,78253,"Count",NA
+378,"Marine","Temperate","Marine invertebrates","Calafuria Mid-shore Intertidal Dataset (1991-2014)","A",16,1991,2006,42,95,1,1239,"Count",NA
+379,"Marine","Temperate","Marine invertebrates","Calafuria Low-shore Intertidal Dataset (1991-2014)","A",22,1991,2014,61,76,1,1153,"Count",NA
+380,"Terrestrial","Temperate","Terrestrial invertebrates","Monitoring butterfly numbers","A",10,1978,1987,23,10,1,217,"Count",NA
+381,"Terrestrial","Temperate","All","Long-term sampling of a herpetofaunal assemblage on an isolated urban bushland","A",7,1986,1992,29,7,1,160,"Count",NA
+382,"Terrestrial","Temperate","Mammals","Small Mammals and Vegetation Changes After Fire in a Mixed Conifer-Hardwood Forest","A",13,1955,1967,7,39,1,214,"Count",NA
+383,"Terrestrial","Temperate","Terrestrial plants","Boubin","AB",3,1972,2010,9,3,1,24,"Count","Weight"
+384,"Terrestrial","Temperate","Terrestrial plants","Cahnov-Soutok","AB",3,1973,2006,14,3,1,40,"Count","Weight"
+385,"Terrestrial","Temperate","Terrestrial plants","Milesice","AB",3,1972,2011,5,3,1,14,"Count","Weight"
+386,"Terrestrial","Temperate","Terrestrial plants","Mionsi-V","AB",2,1994,2009,6,2,1,12,"Count","Weight"
+387,"Terrestrial","Temperate","Terrestrial plants","Mionsi-R","AB",3,1958,2009,4,3,1,12,"Count","Weight"
+388,"Terrestrial","Temperate","Terrestrial plants","Mionsi-C","AB",3,1957,2014,5,3,1,15,"Count","Weight"
+389,"Terrestrial","Temperate","Terrestrial plants","Ranspurk","AB",3,1973,2006,20,3,1,49,"Count","Weight"
+390,"Terrestrial","Temperate","Terrestrial plants","Razula","AB",3,1972,2009,8,3,1,18,"Count","Weight"
+391,"Terrestrial","Temperate","Terrestrial plants","Salajka","AB",3,1974,2007,6,3,1,18,"Count","Weight"
+392,"Terrestrial","Temperate","Terrestrial plants","Stozec","AB",3,1974,2013,10,3,1,29,"Count","Weight"
+393,"Terrestrial","Temperate","Terrestrial plants","Velka Ples","AB",3,1976,2013,15,3,1,40,"Count","Weight"
+394,"Terrestrial","Temperate","Terrestrial plants","Zakova hora","AB",3,1974,2011,10,3,1,26,"Count","Weight"
+395,"Terrestrial","Temperate","Terrestrial plants","Zofin","AB",3,1975,2008,9,3,1,24,"Count","Weight"
+396,"Terrestrial","Temperate","Terrestrial plants","Doutnac","AB",2,2006,2016,22,2,1,44,"Count","Weight"
+397,"Terrestrial","Temperate","Terrestrial plants","Polednik","AB",2,2002,2010,6,2,1,11,"Count","Weight"
+398,"Terrestrial","Temperate","Terrestrial plants","Polom","AB",2,1973,1995,16,2,1,31,"Count","Weight"
+399,"Terrestrial","Temperate","Terrestrial plants","V Kluci","AB",2,1973,2000,8,2,1,15,"Count","Weight"
+400,"Terrestrial","Temperate","Terrestrial plants","Jirina","A",2,1978,1999,9,2,1,17,"Count",NA
+401,"Terrestrial","Temperate","Terrestrial plants","Kohoutov","A",2,1978,1998,11,2,1,21,"Count",NA
+402,"Freshwater","Tropical","Fish","Brazil Dataset 6","A",6,2010,2015,74,42,7,926,"Count",NA
+403,"Freshwater","Tropical","Amphibians","Community ecology of anura amphibia at Northwest region of Sao Paulo state","A",7,1989,1995,16,7,1,276,"Count",NA
+404,"Terrestrial","Tropical","Terrestrial plants","Brazil Dataset 7","A",3,2014,2016,54,239,1,575,"Density",NA
+405,"Terrestrial","Tropical","Terrestrial plants","Brazil Dataset 8","A",3,2009,2011,36,120,5,697,"Density",NA
+406,"Terrestrial","Temperate","Terrestrial plants","Short-term changes caused by fire and mowing in Brazilian?Campos?grasslands with different long-term fire histories","A",3,2005,2007,117,33,1,841,"Density",NA
+407,"Marine","Temperate","Fish","Conicyt-Fondecyt Fish Data","AB",2,2012,2013,15,108,2,293,"Density","Weight"
+408,"Marine","Temperate","Marine invertebrates","Conicyt-Fondecyt Turf Algae Data","B",2,2012,2013,18,369,6,1113,NA,"Cover"
+409,"Marine","Temperate","Fish","Conicyt-Fondecyt Fish Data","AB",2,2012,2013,20,265,5,798,"Density","Weight"
+412,"Marine","Temperate","Fish","Icthyoplankton data collected from Yenliao Bay in 6 stations northeast of Taiwan (1995-2000)","A",6,1995,2000,214,296,6,1955,"Density",NA
+413,"Terrestrial","Temperate","Birds","Bird populations in east central Illinois. Fluctuations variations and development over a half-century","A",44,1927,1976,60,177,1,1196,"Density",NA
+414,"Terrestrial","Temperate","Birds","Bird populations in east central Illinois. Fluctuations variations and development over a half-century","A",48,1924,1976,48,48,1,963,"Density",NA
+415,"Terrestrial","Temperate","Birds","Bird populations in east central Illinois. Fluctuations variations and development over a half-century","A",8,1949,1967,45,52,1,310,"Density",NA
+416,"Terrestrial","Temperate","Birds","Bird populations in east central Illinois. Fluctuations variations and development over a half-century","A",25,1946,1971,53,118,1,766,"Density",NA
+418,"Marine","Tropical","Fish","Long-term Monitoring of the Great Barrier reef","A",24,1992,2015,249,3256,279,147466,"Presence/Absence",NA
+419,"Marine","Temperate","Birds","Data collected aboard cruises off the coast of the Western Antarctic Penninsula","A",19,1993,2011,54,342,1,3050,"Count",NA
+420,"Terrestrial","Polar/Temperate","Birds","Species composition and population fluctuations of alpine bird communities during 38 years in the Scandinavian mountain range","A",38,1964,2001,47,99,2,1010,"Count",NA
+421,"Terrestrial","Temperate","Terrestrial invertebrates","Boulder County Open Space butterfly diversity and abundance","A",3,1999,2000,58,314,66,1574,"Count",NA
+422,"Terrestrial","Temperate","Terrestrial invertebrates","Monitoring site 1000 Alpine research - Butterfly Survey","A",6,2009,2014,43,23,6,159,"Count",NA
+423,"Terrestrial","Temperate","Terrestrial invertebrates","Monitoring site 1000 Alpine research - Butterfly Survey","A",6,2009,2014,46,26,12,180,"Count",NA
+424,"Terrestrial","Temperate","Terrestrial invertebrates","Monitoring site 1000 Alpine research - Bumblebee Survey","A",5,2010,2014,7,36,8,132,"Count",NA
+425,"Marine","Temperate","Benthos","Faunal communities and habitat characteristics of the Big Bend seagrass meadows 2009–2010","A",2,2009,2010,319,169,169,5029,"Count",NA
+426,"Freshwater","Temperate","Freshwater invertebrates","Phytoplankton time series from Lake Zurich","B",35,1976,2010,64,388,1,2082,NA,"Volume"
+427,"Freshwater","Temperate","Freshwater invertebrates","Zooplankton time series from Lake Zurich","AB",32,1977,2008,65,465,1,4819,"Count","Volume"
+428,"Marine","Temperate","All","Long term monitoring of fish abundances from coastal SKagerrak","A",97,1919,2015,59,10725,200,101221,"Count",NA
+429,"Marine","Tropical","Marine invertebrates","Scleractinian corals from Orpheus and Magnetic Islands 2013 to 2016","B",4,2013,2016,180,30,8,734,NA,"Cover"
+430,"Freshwater","Temperate","Fish","The New Zealand Freshwater Fish Database - Electric fishing - Backpack","A",32,1985,2016,57,9457,8984,22054,"Count",NA
+431,"Freshwater","Temperate","Fish","The New Zealand Freshwater Fish Database - Traps- Gee Minnow traps","A",33,1984,2016,44,2404,2059,3804,"Count",NA
+432,"Freshwater","Temperate","Fish","The New Zealand Freshwater Fish Database - Observation (Spotlighting visual)","A",19,1998,2016,36,1354,1291,3520,"Count",NA
+433,"Freshwater","Polar","Freshwater invertebrates","Zooplankton density for lake samples collected near Toolik Lake Arctic LTER in the summers (1983-1992 & 1993-2002)","A",18,1983,2002,18,643,32,2729,"Count",NA
+434,"Freshwater","Polar","Freshwater invertebrates","Summer Phytoplankton Densities 1992-2001","A",10,1992,2001,50,61,4,450,"Count",NA
+435,"Marine","Polar/Temperate","Marine invertebrates","Zooplankton collected with a 2-m 700-um net towed from surface to 120 m aboard Palmer Station Antarctica LTER annual cruises off the western antarctic peninsula 2009 - present","AB",8,2009,2016,40,300,300,5187,"Count","Volume"
+436,"Marine","Tropical","Fish","Karimunjawa WCS fish survey","AB",5,2005,2012,394,1056,43,34176,"Density","Weight"
+437,"Marine","Tropical","Fish","Aceh WCS fish survey 2010 to 2016","AB",4,2010,2016,188,63,16,2340,"Density","Weight"
+438,"Marine","Tropical","Fish","Aceh WCS fish surveys","AB",7,2006,2014,598,1097,29,35263,"Density","Weight"
+439,"Terrestrial","Temperate","Birds","Long-term dynamics of bird populations in pine forests of Ilmen Nature Reserve during the breeding period individuals / km2","A",13,1985,1997,52,13,1,280,"Density",NA
+440,"Terrestrial","Temperate","Birds","Long-term dynamics of bird populations in pine-birch forests of Ilmen Nature Reserve during the breeding period individuals / km2","A",13,1985,1997,68,13,1,493,"Density",NA
+441,"Terrestrial","Temperate","Birds","Long-term dynamics of bird populations in birch forests of Ilmen Nature Reserve during the breeding period individuals / km2","A",13,1985,1997,61,14,1,384,"Count",NA
+442,"Terrestrial","Temperate","Birds","Composition and abundance of bird species in the village Matabay in June 1980-1985 (absolute indicators (area 025 km2))","A",6,1980,1985,33,6,1,145,"Count",NA
+443,"Terrestrial","Temperate","Birds","Composition and abundance of bird species in the village Verhnjaja Elovka in June 1980-1985 (absolute indicators (area 025 km2))","A",4,1980,1983,35,4,1,87,"Count",NA
+444,"Terrestrial","Temperate","Birds","The dynamics of species composition and abundance of migratory birds of prey in the Irkut River mouth (absolute figures)","A",5,1983,1987,20,5,1,59,"Density",NA
+445,"Terrestrial","Temperate","Birds","A number of waterfowl after periods of breeding and molting in the lower reaches of Ob River (thous. individuals / 22 thous. km2)","A",3,1976,1978,11,3,1,33,"Density",NA
+446,"Terrestrial","Temperate","Mammals","The density of population (ind/1000ha.) of hunting species of mammals in the Republic of Mordovia (Chamzinsky district)","A",5,2007,2011,9,5,1,45,"Density",NA
+447,"Terrestrial","Temperate","Mammals","Long-term population dynamics of small mammals in the Natural Boundary Morozova Gora (individuals / 100 trap-nights)","A",9,2006,2014,10,9,1,48,"Density",NA
+448,"Terrestrial","Temperate","Mammals","Number of small mammals in Verkhnyaya Angara basin (accounting period since 20.07 to 20.08 individuals /100 trap-nights","A",4,1979,1982,16,4,1,59,"Density",NA
+449,"Terrestrial","Temperate","Mammals","Indicators of abundance (individuals / 100 trap-nights) of different species of small mammals in different years with using trap grooves and a coefficient characterizing the adverse conditions winter","A",10,2000,2009,9,10,1,54,"Density",NA
+450,"Marine","Temperate","Fish","Composition (%) and biomass (thous. tons) of fish species  in Olyutorsky-Navarin area in 2005-2012","B",4,2005,2012,26,4,1,103,NA,"Weight"
+451,"Marine","Temperate","Fish","Composition (%) and biomass (thous. tons) of fish species  in  Gulf of Anadyr in 2005-2012","B",4,2005,2012,20,4,1,78,NA,"Weight"
+452,"Marine","Temperate","Fish","Year-to-year dynamics of total nekton biomass (thous. tons) in the upper epipelagic of the North-West Pacific in June-July of 2000s","B",8,2004,2012,13,8,1,100,NA,"Weight"
+453,"Freshwater","Polar/Temperate","Freshwater invertebrates","Population dynamics of some species founded in all periods of study in the lake Bolshoi Kharbei in late July - early August (thous.individuals/m3)","A",3,1969,2010,15,3,1,42,"Density",NA
+454,"Freshwater","Temperate","Freshwater invertebrates","Damselfly abundance data from freshwater ponds around Cairngorms region","A",3,2014,2016,6,200,94,522,"Density",NA
+455,"Marine","Tropical","Marine invertebrates","Dynamics of a coral reef community","A",3,2003,2005,58,9,3,160,"MeanCount",NA
+456,"Marine","Tropical","Marine invertebrates","Dynamics of a coral reef community","A",6,2003,2010,133,6,1,443,"MeanCount",NA
+457,"Marine","Tropical","Marine invertebrates","Dynamics of a coral reef community","A",8,2003,2014,226,35,8,2297,"MeanCount",NA
+458,"Terrestrial","Temperate","Terrestrial invertebrates","Beetles from the Bavarian Forest logged","A",4,2008,2011,150,88,22,1932,"Count",NA
+459,"Terrestrial","Temperate","Birds","Birds from the Bavarian Forest logged","A",3,2010,2014,44,63,21,343,"Count",NA
+460,"Terrestrial","Temperate","Fungi","Fungi from the Bavarian Forest logged","A",5,2007,2011,85,86,19,591,"Count",NA
+461,"Terrestrial","Temperate","Fungi","Lichens (obj) from the Bavarian Forest logged","A",5,2007,2011,20,93,19,544,"Count",NA
+462,"Terrestrial","Temperate","Fungi","Lichens (soil) from the Bavarian Forest logged","A",5,2007,2011,4,21,10,25,"Count",NA
+463,"Terrestrial","Temperate","Terrestrial plants","Mosses (obj) from the Bavarian Forest logged","A",5,2007,2011,33,93,19,633,"Count",NA
+464,"Terrestrial","Temperate","Terrestrial plants","Mosses (soil) from the Bavarian Forest logged","",5,2007,2011,33,120,24,739,"Count",NA
+465,"Terrestrial","Temperate","Terrestrial plants","Plants from the Bavarian Forest logged","B",6,2007,2012,45,130,22,875,"Count",NA
+466,"Marine","Temperate","Fish","Trawl Survey Data from Rockall Scotland (1986 - 2008)","A",23,1986,2008,94,1936,1401,27592,"Count",NA
+467,"Marine","Temperate","Fish","Spatial and temporal organisation of a coastal lagoon fish community","AB",4,1987,1999,72,36,9,819,"Count","Weight"
+468,"Marine","Temperate","Benthos","A multi-decade time series of kelp forest community structure at San Nicolas Island California.","A",31,1980,2011,151,3568,7,27700,"Density",NA
+469,"Marine","Temperate","Benthos","A multi-decade time series of kelp forest community structure at the California Channel Islands.","A",30,1982,2011,38,595,33,10443,"Density",NA
+471,"Terrestrial","Temperate","Terrestrial plants","Prescribed Burn Effect on Chihuahuan Desert Grasses and Shrubs at the Sevilleta National Wildlife Refuge","A",10,2004,2013,162,7600,1,37979,"Count",NA
+473,"Terrestrial","Temperate","Terrestrial plants","Fourteen years of mapped permanent quadrats in a northern mixed prairie","A",14,1932,1945,95,504,1,2350,"Count",NA
+475,"Terrestrial","Temperate","Birds","Structure and dynamics of a passerine bird community in a spruce-dominated boreal forest","A",12,1960,1972,34,12,1,327,"Count",NA
+476,"Terrestrial","Tropical","Terrestrial invertebrates","Bromeliad invertebrate counts at different elevations in the Luquillo Experimental Forest","A",4,1993,1997,304,210,1,3268,"Count",NA
+477,"Marine","Temperate","Marine invertebrates","Epifaunal invertebrate survey from Goodwin Islands York River Estuary Chesapeake Bay","AB",15,1998,2012,41,840,1,5914,"Count","Weight"
+478,"Freshwater","Temperate","Freshwater invertebrates","Long term study of the stream ecosystems in the Breitenbach","A",37,1969,2005,90,37,1,1537,"Count",NA
+479,"Terrestrial","Polar","Terrestrial plants","ITEX Dataset 1 - Abisko (Wet, Dry, Peatland), Kanger (Bashful, Dopey, Sneezy) and Kilpisjarvi","B",9,1999,2008,75,369,7,2553,NA,"Cover"
+480,"Terrestrial","Temperate","Terrestrial plants","ITEX Dataset 2 - Wolfcreek","B",3,1998,2008,33,50,1,543,NA,"Cover"
+481,"Terrestrial","Polar","Terrestrial plants","ITEX Dataset 3 - Bylot (Mesprairie and Mespolygon)","B",3,2001,2008,23,57,2,452,NA,"Cover"
+482,"Terrestrial","Polar","Terrestrial plants","ITEX Dataset 4 - Qhi (He and Ko)","B",3,1999,2009,48,36,2,640,NA,"Cover"
+483,"Terrestrial","Temperate","Terrestrial plants","ITEX Dataset 5 - Teberda (Malaya Alpine-Snowbed and Geranium Hedysarum Meadow)","B",24,1986,2009,54,830,1,6445,NA,"Cover"
+484,"Terrestrial","Polar","Terrestrial plants","ITEX Dataset 6 - Atqasuk (AW, AD) and Barrow (BW, BD)","B",6,1995,2008,88,576,4,9136,NA,"Cover"
+485,"Terrestrial","Temperate","Terrestrial plants","ITEX Dataset 7 - Akureyri (GA66, MD72, SB63, SY59), Blonduos (SD33, SD34), Dalsmynni (AG4, KD24, KD25), Hjardarland (LH92, SH90), Holtavorduheidi (AH37, AH38, VH49), Modruvellir (LH69, MV51, MV52), Oxnadalsheidi (SA16, SA17, SA19) and Thykkvibaer (HH100, RT81, VE82)","B",3,1997,2005,128,460,23,6325,NA,"Cover"
+486,"Terrestrial","Temperate","Terrestrial plants","ITEX Dataset 8 - Valbercla (Alpine)","B",3,1994,2009,47,45,1,761,NA,"Cover"
+487,"Terrestrial","Polar","Terrestrial plants","ITEX Dataset 9 - Alexfiord (Levdolomite, Levgranite) and Sverdrup","B",2,1992,2009,19,143,3,536,NA,"Cover"
+488,"Terrestrial","Temperate","Terrestrial plants","ITEX Dataset 10 - RMBL","B",14,1991,2005,3,140,1,347,NA,"Cover"
+489,"Terrestrial","Temperate","Terrestrial plants","ITEX Dataset 11 - Finse (Ridge)","B",3,2000,2008,55,150,1,3266,NA,"Cover"
+490,"Terrestrial","Temperate","Terrestrial plants","ITEX Dataset 12 - Finse (Slope)","B",2,2000,2003,57,40,1,1053,NA,"Cover"
+491,"Terrestrial","Polar","Terrestrial plants","ITEX Dataset 13 - Toolik (Dry, Moist)","B",7,1994,2008,86,74,1,1450,NA,"Cover"
+492,"Terrestrial","Polar","Terrestrial plants","ITEX Dataset 14 - Toolik (LTER Heath, LTER Moist acidic tussock, LTER non-acidic tussock, LTER wet sedge, SAG wet sedge2, Tussock 1981 plots)","B",13,1982,2006,30,81,1,797,NA,"Cover"
+493,"Terrestrial","Polar","Terrestrial plants","ITEX Dataset 15 - Sadvent (MES-cover, MES-photo, wet-cover, wet-photo)","B",2,2003,2008,50,60,1,486,NA,"Cover"
+494,"Terrestrial","Temperate","Terrestrial plants","ITEX Dataset 16 - Finse (Nfinse, Ridge cover)","B",4,1997,2008,67,172,2,778,NA,"Cover"
+495,"Terrestrial","Temperate","Terrestrial plants","ITEX Dataset 17 - Dovre (Kuntshoe) and Faroe (Sornfelli)","B",4,1999,2008,77,122,2,1703,NA,"Cover"
+496,"Terrestrial","Temperate","Terrestrial plants","ITEX Dataset 18 - Alpine plots (Sonja Wipf)","B",2,2000,2008,222,54,15,1967,NA,"Cover"
+497,"Terrestrial","Temperate","Terrestrial plants","ITEX Dataset 19 - Teberda (Festuca Varia Grassland, Malaya Alpine Lichen-Heath)","B",29,1981,2009,59,2699,1,24350,NA,"Cover"
+498,"Terrestrial","Temperate","Terrestrial plants","ITEX Dataset 20 - Torngats (Nakvakdry, Nakvakwet)","B",3,2007,2010,51,80,1,913,NA,"Cover"
+499,"Marine","Temperate","Marine invertebrates","Macrobenthos monitoring at long-term monitoring stations in the Belgian part of the North Sea between 1979 and 1999","A",20,1979,1999,212,141,9,2619,"Density",NA
+500,"Marine","Temperate","Marine invertebrates","Macrobenthos monitoring at long-term monitoring stations in the Belgian part of the North Sea from 2001 on","A",12,2001,2012,442,362,24,8700,"Density",NA
+501,"Marine","Temperate","Marine invertebrates","Epibenthos and demersal fish monitoring at long-term monitoring stations in the Belgian part of the North Sea","A",9,2004,2012,165,205,14,6259,"Count",NA
+502,"Terrestrial","Temperate","Terrestrial plants","Long-term tree demography in old-growth forests of Huron Mts, MI from permanent-plot censuses, 1962-2009","AB",7,1962,2009,12,6042,1,6042,"Count","Size"
+503,"Marine","Tropical","Marine invertebrates","Coral data from Lizard Island","A",2,2015,2016,114,2,1,156,"Count",NA
+504,"Marine","Temperate","Fish","Red Sea artificial reefs","A",5,2003,2007,67,153,1,858,"Count",NA
+505,"Marine","Temperate","All","Fish and marine invertebrates from the Israeli Eastern Mediterranean sea  1990-4, 2000, 2008-2012","A",11,1990,2012,275,694,21,13941,"Count",NA
+507,"Marine","Temperate","Fish","Trawl fisheries in Israeli Mediterranean","B",28,1976,2010,41,7068,1194,16721,NA,"Weight"
+508,"Terrestrial","Polar","Terrestrial plants","ITEX Dataset 21 - Sadvent (MES-Pointframe, Wet-Pointframe)","B",2,2003,2005,52,40,1,457,NA,"Cover"
+509,"Terrestrial","Polar","Terrestrial plants","ITEX Dataset 22 - Toolik (Imnavait, Tussockgrid)","B",8,1989,2008,218,624,2,13374,NA,"Cover"
+510,"Terrestrial","Temperate","Terrestrial invertebrates","Butterfly fauna in Mount Gariwang-san Korea","A",7,1987,2015,105,55,1,548,"Count",NA
+511,"Marine","Tropical","Fish","Demersal fish hauls from Guanabara Bay Brazil 2005-2015","AB",6,2005,2015,105,28,7,2928,"Count","Weight"
+512,"Terrestrial","Temperate","Terrestrial plants","The Hundt 2001 data - Rudolf Hundt","B",4,1964,1994,231,62,18,1133,NA,"Cover"
+515,"Terrestrial","Tropical","Mammals","Assemblage-level responses of phyllostomid bats to tropical forest fragmentation","A",3,2003,2005,43,452,17,1585,"MeanCount",NA
+516,"Terrestrial","Tropical","Mammals","A large-scale fragmentation experiment for Neotropical bats","A",5,1997,2013,45,225,12,1380,"Count",NA
+528,"Terrestrial","Temperate","Terrestrial invertebrates","Konza grasshoppers CGR022","A",31,1984,2018,41,140,1,1119,"Count",NA
+529,"Terrestrial","Temperate","Terrestrial invertebrates","Konza grasshoppers CGR022","A",28,1985,2018,40,132,1,1058,"Count",NA
+530,"Terrestrial","Temperate","Terrestrial invertebrates","Konza grasshoppers CGR022","A",33,1982,2018,38,202,1,1257,"Count",NA
+531,"Terrestrial","Temperate","Terrestrial invertebrates","Konza grasshoppers CGR022","A",28,1987,2018,40,131,1,1033,"Count",NA
+532,"Terrestrial","Temperate","Terrestrial invertebrates","Konza grasshoppers CGR022","A",33,1982,2018,41,183,1,1354,"Count",NA
+533,"Terrestrial","Temperate","Terrestrial invertebrates","Konza grasshoppers CGR022","A",31,1984,2018,36,141,1,1048,"Count",NA
+534,"Terrestrial","Temperate","Terrestrial invertebrates","Konza grasshoppers CGR022","A",33,1982,2018,34,180,1,1242,"Count",NA
+535,"Terrestrial","Temperate","Terrestrial invertebrates","Konza grasshoppers CGR022","A",17,2002,2018,46,68,1,835,"Count",NA
+536,"Terrestrial","Temperate","Terrestrial invertebrates","Konza grasshoppers CGR022","A",20,1982,2018,43,95,1,837,"Count",NA
+537,"Terrestrial","Temperate","Terrestrial invertebrates","Konza grasshoppers CGR022","A",17,2002,2018,45,68,1,824,"Count",NA
+538,"Terrestrial","Temperate","Terrestrial invertebrates","Konza grasshoppers CGR022","A",21,1982,2018,44,95,1,946,"Count",NA
+539,"Terrestrial","Temperate","Terrestrial invertebrates","Konza grasshoppers CGR022","A",17,2002,2018,43,68,1,783,"Count",NA
+540,"Terrestrial","Temperate","Terrestrial invertebrates","Konza grasshoppers CGR022","A",20,1982,2018,41,96,1,880,"Count",NA
+541,"Terrestrial","Temperate","Terrestrial invertebrates","Beetles from the Bavarian Forest unlogged","A",4,2008,2011,145,88,22,2371,"Count",NA
+542,"Terrestrial","Temperate","Birds","Birds from the Bavarian Forest unlogged","A",3,2010,2014,42,63,21,355,"Count",NA
+543,"Terrestrial","Temperate","Fungi","Fungi from the Bavarian Forest unlogged","A",5,2007,2011,74,95,19,870,"Count",NA
+544,"Terrestrial","Temperate","Fungi","Lichens (obj) from the Bavarian Forest unlogged","A",5,2007,2011,25,95,19,807,"Count",NA
+545,"Terrestrial","Temperate","Fungi","Lichens (soil) from the Bavarian Forest unlogged","A",5,2007,2011,7,22,10,35,"Count",NA
+546,"Terrestrial","Temperate","Terrestrial plants","Mosses (obj) from the Bavarian Forest unlogged","A",5,2007,2011,23,95,19,565,"Count",NA
+547,"Terrestrial","Temperate","Terrestrial plants","Mosses (soil) from the Bavarian Forest unlogged","A",5,2007,2011,32,125,25,690,"Count",NA
+548,"Terrestrial","Temperate","Terrestrial plants","Plants from the Bavarian Forest unlogged","B",6,2007,2012,35,130,22,687,"Count",NA
