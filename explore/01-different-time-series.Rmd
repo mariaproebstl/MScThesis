@@ -1,0 +1,301 @@
+---
+title: "Different time series"
+date: "Compiled at `r format(Sys.time(), '%Y-%m-%d %H:%M:%S', tz = 'UTC')` UTC"
+output: github_document
+number_sections: true
+params:
+  name: "01-different-time-series" # change if you rename file
+---
+
+```{r here, message=FALSE}
+here::i_am(paste0(params$name, ".Rmd"), uuid = "964cf30c-e7ec-4fee-a704-f01c350f8766")
+```
+
+The purpose of this document is to give an overview of different time series that can be used in the further process.
+These time series can differ in
+
+  * number of species
+  * number of time points
+
+#### Packages
+
+```{r packages}
+library("conflicted")
+library(dplyr)
+library(data.table)
+library(ggplot2)
+```
+
+```{r directories}
+# create or *empty* the target directory, used to write this file's data: 
+projthis::proj_create_dir_target(params$name, clean = TRUE)
+
+# function to get path to target directory: path_target("sample.csv")
+path_target <- projthis::proj_path_target(params$name)
+
+# function to get path to previous data: path_source("00-import", "sample.csv")
+path_source <- projthis::proj_path_source(params$name)
+```
+
+## BioTIME
+
+#### Read Data
+
+```{r}
+#### read the file
+dt_fullquery <- 
+  fread("data/BioTIME/BioTIMEquery_24_06_2021.csv")
+
+#### read BioTIME Metadata
+dt_biotimeMeta <-
+  fread("data/00-import-BioTIME-database/BioTIME_Meta_reduced.csv")
+
+```
+
+
+#### Criteria to select a suitable study
+
+ * there should be enough DATA_POINTS
+ * certain Abundance Type ("Count")
+
+```{r}
+# Example
+dt_biotimeMeta[DATA_POINTS > 10 & ABUNDANCE_TYPE == "Count" & NUMBER_LAT_LONG == 1 & NUMBER_OF_SPECIES > 50]$STUDY_ID
+```
+
+
+
+```{r, include=FALSE}
+# function to extract one study out of the full query with adjusted Date column
+extract_study <- function(data, ID) {
+  
+  tmp <- data[STUDY_ID == ID]
+  
+  # check if whole dates are given or only years
+  if(tmp[!is.na(DAY) | !is.na(MONTH), .N] != 0) {
+    tmp[, Date := as.Date(paste0(YEAR, "-", MONTH, "-", DAY), format = "%Y-%m-%d")]
+  } else {
+    tmp[, Date := YEAR]
+  }
+  
+  tmp[, .(Date, Abundance = sum.allrawdata.ABUNDANCE,
+          Species = SPECIES, Genus = GENUS, GENUS_SPECIES = GENUS_SPECIES)]
+}
+```
+
+
+## Bad Example (with gaps in time)
+
+```{r}
+study_id = 152
+
+# extract data of the specific study
+dt_study <-
+  extract_study(dt_fullquery, ID = study_id)
+
+# summarize over multiple entries in the same year
+dt_study_grouped <-
+  dt_study[, .(Abundance_mean = mean(Abundance)),
+    by = c("Date", "Genus")]
+
+
+# plot timeseries
+ggplot(dt_study, aes(Date, Abundance)) +
+  geom_line(aes(col = GENUS_SPECIES))  +
+  theme(legend.position = "none")
+
+# plot Abundance summed up for same Date
+ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
+  geom_line(aes(col = Genus))  +
+  theme(legend.position = "none")
+
+# plot only first part
+ggplot(dt_study_grouped[Date < "1990-01-01"], aes(Date, Abundance_mean)) +
+  geom_line(aes(col = Genus)) 
+
+```
+
+```{r}
+dt_study_grouped[Genus == "Fritillaria"] %>% View()
+
+# multiple values on consecutive days (e.g. 1982-06-XY)
+```
+
+
+
+## 2nd Example
+
+Example with multiple locations.
+
+```{r}
+study_id = 163
+```
+
+#### Information on the study
+
+```{r, results = "asis", echo = FALSE}
+study_Meta <-
+  dt_biotimeMeta[STUDY_ID == study_id]
+
+table_Meta <-
+  data.table(Column = colnames(study_Meta),
+             Info = as.character(study_Meta[1,]))
+
+knitr::kable(table_Meta)
+
+```
+
+### time series plots
+
+```{r}
+
+# extract data of the specific study
+dt_study <-
+  extract_study(dt_fullquery, ID = study_id)
+
+# summarize over multiple entries in the same year
+dt_study_grouped <-
+  dt_study[, .(Abundance_mean = mean(Abundance)),
+    by = c("Date", "Genus")]
+
+
+# plot timeseries
+ggplot(dt_study, aes(Date, Abundance)) +
+  geom_line(aes(col = GENUS_SPECIES))  +
+  theme(legend.position = "none")
+
+# plot Abundance summed up for same Date
+ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
+  geom_line(aes(col = Genus))  +
+  theme(legend.position = "none")
+
+# same plot with y log-scaled
+ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
+  geom_line(aes(col = Genus))  +
+  theme(legend.position = "none") +
+  scale_y_log10()
+
+dt_study_grouped[Abundance_mean < 10]
+```
+
+
+
+
+## 3rd Example
+
+```{r}
+study_id = 225
+```
+
+#### Information on the study
+
+```{r, results = "asis", echo = FALSE}
+study_Meta <-
+  dt_biotimeMeta[STUDY_ID == study_id]
+
+table_Meta <-
+  data.table(Column = colnames(study_Meta),
+             Info = as.character(study_Meta[1,]))
+
+knitr::kable(table_Meta)
+
+```
+
+### time series plots
+
+```{r}
+
+# extract data of the specific study
+dt_study <-
+  extract_study(dt_fullquery, ID = study_id)
+
+# summarize over multiple entries in the same year
+dt_study_grouped <-
+  dt_study[, .(Abundance_mean = mean(Abundance)),
+    by = c("Date", "Genus")]
+
+
+# plot timeseries
+ggplot(dt_study, aes(Date, Abundance)) +
+  geom_line(aes(col = GENUS_SPECIES))  +
+  theme(legend.position = "none")
+
+# plot Abundance summed up for same Date
+ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
+  geom_line(aes(col = Genus))  +
+  theme(legend.position = "none")
+
+# same plot with y log-scaled
+ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
+  geom_line(aes(col = Genus))  +
+  theme(legend.position = "none") +
+  scale_y_log10()
+
+```
+
+
+## 4th Example
+
+```{r}
+study_id = 57
+```
+
+#### Information on the study
+
+```{r, results = "asis", echo = FALSE}
+study_Meta <-
+  dt_biotimeMeta[STUDY_ID == study_id]
+
+table_Meta <-
+  data.table(Column = colnames(study_Meta),
+             Info = as.character(study_Meta[1,]))
+
+knitr::kable(table_Meta)
+
+```
+
+### time series plots
+
+```{r}
+
+# extract data of the specific study
+dt_study <-
+  extract_study(dt_fullquery, ID = study_id)
+
+# summarize over multiple entries in the same year
+dt_study_grouped <-
+  dt_study[, .(Abundance_mean = mean(Abundance)),
+    by = c("Date", "Genus")]
+
+# number of entries per Date and Genus
+dt_study[, .N, by= c("Date", "Genus")]
+
+
+# plot timeseries
+ggplot(dt_study, aes(Date, Abundance)) +
+  geom_line(aes(col = GENUS_SPECIES))  +
+  theme(legend.position = "none")
+
+# plot Abundance summed up for same Date
+ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
+  geom_line(aes(col = Genus))  +
+  theme(legend.position = "none")
+
+# same plot with y log-scaled
+ggplot(dt_study_grouped, aes(Date, Abundance_mean)) +
+  geom_line(aes(col = Genus))  +
+  theme(legend.position = "bottom") +
+  scale_y_log10()
+
+```
+
+
+
+
+## Files written
+
+These files have been written to the target directory, ```r paste0("data/", params$name)```:
+
+```{r list-files-target}
+projthis::proj_dir_info(path_target())
+```
