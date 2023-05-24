@@ -1,0 +1,318 @@
+---
+title: "Time series (miaTIME)"
+date: "Compiled at `r format(Sys.time(), '%Y-%m-%d %H:%M:%S', tz = 'UTC')` UTC"
+output: github_document
+params:
+  name: "01c-timeseries-miaTIME" # change if you rename file
+---
+
+```{r here, message=FALSE}
+here::i_am(paste0(params$name, ".Rmd"), uuid = "87d828ae-2f1b-40a8-b559-3784df62c78d")
+```
+
+The purpose of this document is ...
+
+```{r packages, warning=FALSE, message=FALSE}
+library("conflicted")
+library(data.table)
+library(tidyverse)
+
+# # install the miaTIME package from github
+# library(devtools)
+# devtools::install_github("microbiome/miaTime")
+
+library(miaTime)
+# library(tidySingleCellExperiment)
+library(lubridate)
+library(TreeSummarizedExperiment)
+# library(tidySummarizedExperiment)
+```
+
+```{r directories}
+# create or *empty* the target directory, used to write this file's data: 
+projthis::proj_create_dir_target(params$name, clean = TRUE)
+
+# function to get path to target directory: path_target("sample.csv")
+path_target <- projthis::proj_path_target(params$name)
+
+# function to get path to previous data: path_source("00-import", "sample.csv")
+path_source <- projthis::proj_path_source(params$name)
+```
+
+
+## SilvermanAGutData
+
+```{r}
+# load a dataset from miaTIME
+
+data(SilvermanAGutData)
+
+# SilvermanAGutData@rowLinks
+# SilvermanAGutData@colLinks #empty
+# 
+# cols <- 
+#   colData(SilvermanAGutData)
+# 
+# metadata(SilvermanAGutData) #empty
+# 
+# referenceSeq(SilvermanAGutData)
+
+
+# extract taxa information
+dt_taxonomic_tree <-
+  setDT(as.data.frame(rowData(SilvermanAGutData)), keep.rownames = TRUE)
+
+# extract count table
+ma_SilvermanAGut_count <-
+  assays(SilvermanAGutData)[[1]]
+
+dt_SilvermanAGut_count <- 
+  data.table(seq = row.names(ma_SilvermanAGut_count), ma_SilvermanAGut_count) %>% 
+  melt(id.vars = "seq", variable.name = "desc", value.name = "count")
+
+
+# add taxonomic tree to count table
+dt_SilvermanAGut_count <-
+  merge(dt_SilvermanAGut_count, dt_taxonomic_tree,
+        by.x = "seq", by.y = "rn")
+```
+
+
+### Time info
+
+get time info out of count table names
+
+```{r}
+# extract sample names from count table
+sample_names <- 
+  ma_SilvermanAGut_count %>% colnames()
+
+# show all names
+sort(sample_names)
+
+# create columns for day/hour info and vessel number
+# extract the infos from sample names
+sample_cols <- 
+  data.table(names = sample_names,
+             day = tstrsplit(sample_names, "\\.")[[3]],
+             hours = str_extract(sample_names, "[0-9][0-9]h")) %>% 
+  # extract vessel number out of names
+  .[, vessel := str_extract(names, "V[0-9]")] %>% 
+  .[is.na(vessel), vessel := str_extract(names, "V\\.[0-9]")] %>% 
+  .[, vessel := str_remove(vessel, "\\.")] %>% 
+  .[day == 28, vessel := str_extract(names, "V[0-9]\\.[0-9][0-9]")] %>% 
+  .[day == 28 & is.na(vessel),
+    vessel := str_extract(names, "V[0-9]\\.[0-9]")] %>% 
+  # format days and hours as numeric
+  .[, day := as.numeric(str_remove(day, "d"))] %>% 
+  .[, hours := as.numeric(str_remove(hours, "h"))] %>% 
+  # set time to decimal value in days
+  .[, time := day + hours/24] %>% 
+  .[is.na(hours), time := day]
+
+# !! for one time point and one vessel there are still some duplicated rows !!
+
+# detect duplicates
+sample_cols[, .(day, hours, vessel)] %>% uniqueN()
+sample_cols[duplicated(sample_cols[, .(day, hours, vessel)])]
+
+# duplicates examples
+sample_cols[day == 8] %>% .[order(vessel)]
+sample_cols[day == 22 & hours == 16] %>% .[order(vessel)]
+
+```
+
+
+
+```{r}
+# add time info to count data.table
+dt_SilvermanAGut_count <-
+  merge(dt_SilvermanAGut_count, sample_cols,
+        by.x = "desc", by.y = "names")
+```
+
+
+### Plots
+
+```{r}
+# function to create bar plot for data
+barplot_Silverman <- 
+  function(data, v = "V1", time_type = "day", level = "seq", legend = "none"){
+  data <- data[vessel == v]
+  if(time_type == "day"){
+    data <- data[time %% 1 == 0]
+    time_name <- "time (days)"
+  } else if(time_type == "hour"){
+    data <- data[time > 19 & time < 25]
+    time_name = "time (hours)"
+  } else if(time_type == "all"){
+    time_name = "time"
+  }
+  
+  pl <-
+    ggplot(data, aes(time, count)) +
+    geom_bar(aes(fill = get(level)),  stat = "identity", position = "fill") +
+    theme(legend.position = legend) +
+    labs(title = "SilvermanAGut Data",
+         subtitle = paste("Vessel", str_remove(v, "V")),
+         x = time_name)
+  
+  print(pl)
+}
+
+```
+
+
+```{r}
+# plots
+barplot_Silverman(dt_SilvermanAGut_count, "V1", "all")
+barplot_Silverman(dt_SilvermanAGut_count, "V1", "day")
+barplot_Silverman(dt_SilvermanAGut_count, "V2", "day")
+barplot_Silverman(dt_SilvermanAGut_count, "V3", "day")
+barplot_Silverman(dt_SilvermanAGut_count, "V4", "day")
+barplot_Silverman(dt_SilvermanAGut_count, "V1", "hour")
+
+```
+
+
+### Analysis by genus
+
+```{r}
+# sum counts over genus
+dt_SilvermanAGut_count_genus <-
+  dt_SilvermanAGut_count[is.na(Genus), Genus := "unknown"] %>% 
+    .[, .(count = sum(count)),
+      by = c("desc", "Genus", "vessel", "time")]
+
+```
+
+```{r}
+# plot results
+barplot_Silverman(dt_SilvermanAGut_count_genus, "V1", "day", "Genus")
+
+# list of all genus
+dt_SilvermanAGut_count_genus$Genus %>% unique()
+```
+
+
+### Analysis by family
+
+```{r}
+# sum counts over Family
+dt_SilvermanAGut_count_Family <-
+  dt_SilvermanAGut_count[is.na(Family), Family := "unknown"] %>% 
+    .[, .(count = sum(count)),
+      by = c("desc", "Family", "vessel", "time")]
+
+```
+
+```{r}
+# plot results
+barplot_Silverman(dt_SilvermanAGut_count_Family, "V1", "day", "Family")
+barplot_Silverman(dt_SilvermanAGut_count_Family, "V1", "day", "Family", legend = "bottom")
+```
+
+
+## hitchip1006 Data
+
+### miaTIME tutorial
+
+https://microbiome.github.io/miaTime/articles/manipulation.html
+
+<!-- ```{r} -->
+<!-- data("hitchip1006") -->
+<!-- tse <- hitchip1006 -->
+<!-- tse2 <- tse %>% tidySingleCellExperiment::arrange(subject, time) -->
+<!-- ``` -->
+
+```{r}
+
+# Load demo data
+data(hitchip1006)
+tse <- hitchip1006
+
+# Time is given in days in the demo data.
+# Convert days to seconds
+time_in_seconds <- 60*60*24*colData(tse)[,"time"]
+# Convert the time data to period class
+Seconds <- as.period(time_in_seconds, unit="sec")
+# Check the output
+Seconds[1140:1151]
+```
+
+```{r}
+Hours <- as.period(Seconds, unit = "hour")
+Hours[1140:1151]
+```
+
+```{r}
+colData(tse)$timeSec <- Seconds
+colData(tse)
+```
+
+```{r}
+Duration <- as.duration(Seconds)
+Duration[1140:1151]
+```
+
+```{r}
+Timediff <- diff(Duration)
+Timediff <- c(NA, Timediff)
+Timediff[1140:1151]
+```
+
+```{r}
+base <- Hours - Hours[1] #distance from starting point
+base[1140:1151]
+```
+
+```{r}
+base_1140 <- Seconds - Seconds[1140]
+base_1140[1140:1151]
+```
+
+```{r}
+colData(tse)$rank <- rank(colData(tse)$time)
+colData(tse)
+```
+
+```{r}
+colData(tse) <- colData(tse) %>%
+   as.data.frame() %>%
+   group_by(subject) %>%
+   mutate(rank = rank(time, ties.method="average")) %>%
+   DataFrame()
+```
+
+<!-- ```{r} -->
+<!-- # Pick samples with time point 0 -->
+<!-- tse <- hitchip1006 |> filter(time == 0) -->
+<!-- # Or: tse <- tse[, tse$time==0] -->
+
+<!-- # Sample with the smallest time point within each subject -->
+<!-- colData(tse) <- colData(tse) %>% -->
+<!--    as.data.frame() %>% -->
+<!--    group_by(subject) %>% -->
+<!--    mutate(rank = rank(time, ties.method="average")) %>% -->
+<!--    DataFrame -->
+
+<!-- # Pick the subset including first time point per subject -->
+<!-- tse1 <- tse[, tse$rank == 1] -->
+<!-- ``` -->
+
+
+### further analysis
+
+```{r}
+dt_tse <- as.data.table(colData(tse))
+```
+
+
+
+## Files written
+
+These files have been written to the target directory, ```r paste0("data/", params$name)```:
+
+```{r list-files-target}
+projthis::proj_dir_info(path_target())
+```

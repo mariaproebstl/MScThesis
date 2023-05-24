@@ -12,10 +12,17 @@ BugReports: https://github.com/mariaproebstl/MScThesis/issues
 Imports: 
     conflicted,
     data.table,
+    deSolve,
     dplyr,
     ggplot2,
     here,
     knitr,
+    lubridate,
+    miaTime,
+    microbiome,
     projthis,
     rmarkdown,
-    shiny
+    shiny,
+    SummarizedExperiment,
+    tidyverse,
+    TreeSummarizedExperiment
