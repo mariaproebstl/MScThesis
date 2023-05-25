@@ -12,12 +12,12 @@ here::i_am(paste0(params$name, ".Rmd"), uuid = "fbad9ade-134a-4a83-a801-9900003f
 
 The purpose of this document is to have a look at the time series data used in the Compositional Lotka Volterra paper.
 
-```{r packages}
+```{r packages, message=FALSE}
 library("conflicted")
-library(dplyr)
+library(tidyverse)
 library(data.table)
-library(ggplot2)
 ```
+
 
 ```{r directories}
 # create or *empty* the target directory, used to write this file's data: 
@@ -34,36 +34,65 @@ path_source <- projthis::proj_path_source(params$name)
 
 ### Bucci
 
-#### Read the data
+#### Read data
 
 ```{r}
 #### read the file
 dt_bucci_raw <- 
   fread("data/clv/bucci/data_cdiff/counts.txt", header = T)
 
+knitr::kable(head(dt_bucci_raw))
+
+# change format of count data
 dt_bucci_long <-
   melt(dt_bucci_raw,
-       id.vars = "Species", value.name = "Abundance", variable.name = "Time")
+       id.vars = "Species", value.name = "Count", variable.name = "sampleID") %>% 
+  .[, sampleID := as.numeric(as.character(sampleID))]
+
+# read metadata file
+dt_bucci_meta <-
+  fread("data/clv/bucci/data_cdiff/metadata.txt", header = T)
+
+# merge metadata to count data
+dt_bucci_long <-
+  merge(dt_bucci_long, dt_bucci_meta, by = "sampleID")
+
+# show first rows of table
+knitr::kable(head(dt_bucci_long))
+
 ```
 
-#### Plot the data
+
+Info about time points: When was the data collected?
+
+Fecal pellets were collected at days 0.75, 1, 2, 3, 4, 6, 8, 10, 14, 17, 21, 24, and 28 of the initial colonization 
+and at days 0.75, 1, 2, 3, 4, 6, 8, 10, 14, 17, 21, 24, and 28 post-infection with C. difficile.
+
+
+#### Plot data
 
 ```{r}
-ggplot(dt_bucci_long) +
-  geom_line(aes(as.numeric(Time), Abundance, col = Species)) +
-  theme(legend.position = "none") +
-  scale_y_log10()
+ggplot(dt_bucci_long[subjectID == 1], aes(measurementid, Count)) +
+    geom_bar(aes(fill = Species), stat = "identity") +
+    theme(legend.position = "none") +
+    labs(x = "Time",
+         title = paste("Subject", 1))
 
-ggplot(dt_bucci_long) +
-  geom_bar(aes(as.numeric(Time), Abundance, fill = Species), stat = "identity") +
-  theme(legend.position = "none") +
-  labs(x = "Time")
+for(i in 1:5){
+  pl <- ggplot(dt_bucci_long[subjectID == i], aes(as.factor(measurementid), Count)) +
+    geom_bar(aes(fill = Species), stat = "identity", position = "fill") +
+    theme(legend.position = "none") +
+    labs(x = "Time",
+         title = paste("Subject", i))
+  
+  print(pl)
+}
 
 ```
 
 ### Stein
 
-#### Read the data
+#### Read data
 
 ```{r}
 #### read the file
@@ -96,24 +125,23 @@ dt_stein_long$Genus %>% unique()
 ```
 
 
-#### Plot the data
+#### Plot data
 
 ```{r}
 
 for (i in 1:9) {
   plot_tmp <-
     ggplot(dt_stein_long[ID == i]) +
-      geom_line(aes(`time (in d)`, value, col = Genus)) +
+      # geom_line(aes(`time (in d)`, value, col = Genus)) +
+      geom_bar(aes(`time (in d)`, value, fill = Genus), 
+               stat = "identity", position = "fill") +
       theme(legend.position = "bottom") +
-      ylim(0, 6.2) +
+      # ylim(0, 6.2) +
+      xlim(0,25) +
     labs(title = paste("ID =", i))
   
   print(plot_tmp)
 }
-
-ggplot(dt_stein_long) +
-  geom_bar(aes(`time (in d)`, value, fill = Genus), stat = "identity") +
-  theme(legend.position = "none")
 
 ```
 
