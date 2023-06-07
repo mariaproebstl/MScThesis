@@ -1,6 +1,6 @@
 ---
 title: "Time series (BioTIME)"
-date: "Compiled at `r format(Sys.time(), '%Y-%m-%d %H:%M:%S', tz = 'UTC')` UTC"
+Time: "Compiled at `r format(Sys.time(), '%Y-%m-%d %H:%M:%S', tz = 'UTC')` UTC"
 output: github_document
 number_sections: true
 params:
@@ -20,6 +20,7 @@ library("conflicted")
 library(dplyr)
 library(data.table)
 library(ggplot2)
+library(viridis) # for color palettes
 ```
 
 ```{r directories}
@@ -57,413 +58,605 @@ dt_biotimeMeta <-
  * the intervals between the time steps should be equal (e.g. one year)
 
 ```{r}
-# Example
-dt_biotimeMeta[DATA_POINTS > 35 & NUMBER_LAT_LONG == 1 & AB_BIO %in% c("A", "AB")] %>% 
-  .[order(DATA_POINTS)]
+# show available studies
+dt_biotimeMeta[DATA_POINTS > 35 & NUMBER_LAT_LONG == 1] %>%
+# dt_biotimeMeta[DATA_POINTS > 35 & NUMBER_LAT_LONG == 1 & AB_BIO %in% c("AB", "A")] %>%
+  .[, YEARS := paste0(START_YEAR, "-", END_YEAR)] %>% 
+  .[, c("TITLE", "AB_BIO", "REALM", "CLIMATE", "START_YEAR", "END_YEAR") := NULL]%>% 
+  .[order(-DATA_POINTS)] %>% 
+  knitr::kable()
 ```
 
 
 
 ```{r, include=FALSE}
-# function to extract one study out of the full query with adjusted Date column
+# function to extract one study out of the full query with adjusted Time column
 extract_study <- function(data, ID) {
   
   tmp <- data[STUDY_ID == ID]
   
-  # check if whole dates are given or only years
+  # check if whole Times are given or only years
   if(tmp[!is.na(DAY) | !is.na(MONTH), .N] != 0) {
-    tmp[, Date := as.Date(paste0(YEAR, "-", MONTH, "-", DAY), format = "%Y-%m-%d")]
+    tmp[, Time := as.Date(paste0(YEAR, "-", MONTH, "-", DAY), format = "%Y-%m-%d")]
   } else {
-    tmp[, Date := YEAR]
+    tmp[, Time := YEAR]
   }
   
-  tmp[, .(Date, Abundance = sum.allrawdata.ABUNDANCE,
-          Species = SPECIES, Genus = GENUS, GENUS_SPECIES = GENUS_SPECIES)]
+  tmp[, .(Time, Abundance = sum.allrawdata.ABUNDANCE,
+          Species = GENUS_SPECIES, Genus = GENUS)]
 }
 ```
 
 
-<!-- ## Bad Example -->
 
-<!-- with gaps in time and multiple samples on consecutive days -->
-
-<!-- ```{r} -->
-<!-- study_id = 152 -->
-
-<!-- # extract data of the specific study -->
-<!-- dt_study <- -->
-<!--   extract_study(dt_fullquery, ID = study_id) -->
-
-<!-- # summarize over multiple entries in the same year -->
-<!-- dt_study_grouped <- -->
-<!--   dt_study[, .(Abundance_sum = sum(Abundance)), -->
-<!--     by = c("Date", "Genus")] -->
-
-
-<!-- # plot timeseries -->
-<!-- ggplot(dt_study, aes(Date, Abundance)) + -->
-<!--   geom_line(aes(col = GENUS_SPECIES))  + -->
-<!--   theme(legend.position = "none") -->
-
-<!-- # plot Abundance summed up for same Date -->
-<!-- ggplot(dt_study_grouped, aes(Date, Abundance_sum)) + -->
-<!--   geom_line(aes(col = Genus))  + -->
-<!--   theme(legend.position = "none") -->
-
-<!-- # plot only first part -->
-<!-- ggplot(dt_study_grouped[Date < "1990-01-01"], aes(Date, Abundance_sum)) + -->
-<!--   geom_line(aes(col = Genus))  -->
-
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- knitr::kable(dt_study_grouped[Genus == "Fritillaria" & Date > "1982-01-01"] %>% .[order(Date)] %>% head(n=10)) -->
-
-<!-- # multiple values on consecutive days (e.g. 1982-06-XY) -->
-<!-- ``` -->
-
-
-
-<!-- ## 2nd Example -->
-
-<!-- Example with multiple locations. -->
-
-<!-- ```{r} -->
-<!-- study_id = 163 -->
-<!-- ``` -->
-
-<!-- #### Information on the study -->
-
-<!-- ```{r, results = "asis", echo = FALSE} -->
-<!-- study_Meta <- -->
-<!--   dt_biotimeMeta[STUDY_ID == study_id] -->
-
-<!-- table_Meta <- -->
-<!--   data.table(Column = colnames(study_Meta), -->
-<!--              Info = as.character(study_Meta[1,])) -->
-
-<!-- knitr::kable(table_Meta) -->
-
-<!-- ``` -->
-
-<!-- ### time series plots -->
-
-<!-- ```{r} -->
-
-<!-- # extract data of the specific study -->
-<!-- dt_study <- -->
-<!--   extract_study(dt_fullquery, ID = study_id) -->
-
-<!-- # summarize over multiple entries in the same year -->
-<!-- dt_study_grouped <- -->
-<!--   dt_study[, .(Abundance_mean = mean(Abundance)), -->
-<!--     by = c("Date", "Genus")] -->
-
-
-<!-- # plot timeseries -->
-<!-- ggplot(dt_study, aes(Date, Abundance)) + -->
-<!--   geom_line(aes(col = GENUS_SPECIES))  + -->
-<!--   theme(legend.position = "none") -->
-
-<!-- # plot Abundance summed up for same Date -->
-<!-- ggplot(dt_study_grouped, aes(Date, Abundance_mean)) + -->
-<!--   geom_line(aes(col = Genus))  + -->
-<!--   theme(legend.position = "none") -->
-
-<!-- # same plot with y log-scaled -->
-<!-- ggplot(dt_study_grouped, aes(Date, Abundance_mean)) + -->
-<!--   geom_line(aes(col = Genus))  + -->
-<!--   theme(legend.position = "none") + -->
-<!--   scale_y_log10() -->
-
-<!-- ``` -->
-
-
-
-<!-- ## 3rd Example -->
-
-<!-- ```{r} -->
-<!-- study_id = 57 -->
-<!-- ``` -->
-
-<!-- #### Information on the study -->
-
-<!-- ```{r, results = "asis", echo = FALSE} -->
-<!-- study_Meta <- -->
-<!--   dt_biotimeMeta[STUDY_ID == study_id] -->
-
-<!-- table_Meta <- -->
-<!--   data.table(Column = colnames(study_Meta), -->
-<!--              Info = as.character(study_Meta[1,])) -->
-
-<!-- knitr::kable(table_Meta) -->
-
-<!-- ``` -->
-
-<!-- ### time series plots -->
-
-<!-- ```{r} -->
-
-<!-- # extract data of the specific study -->
-<!-- dt_study <- -->
-<!--   extract_study(dt_fullquery, ID = study_id) -->
-
-<!-- # summarize over multiple entries in the same year -->
-<!-- dt_study_grouped <- -->
-<!--   dt_study[, .(Abundance_mean = mean(Abundance)), -->
-<!--     by = c("Date", "Genus")] -->
-
-<!-- # number of entries per Date and Genus -->
-<!-- dt_study[, .N, by= c("Date", "Genus")] -->
-
-<!-- # number of entries per Date and Species -->
-<!-- dt_study[, .N, by= c("Date", "Species")] -->
-
-
-<!-- # plot timeseries -->
-<!-- ggplot(dt_study, aes(Date, Abundance)) + -->
-<!--   geom_line(aes(col = GENUS_SPECIES))  + -->
-<!--   theme(legend.position = "none") -->
-
-<!-- # plot Abundance summed up for same Date -->
-<!-- ggplot(dt_study_grouped, aes(Date, Abundance_mean)) + -->
-<!--   geom_line(aes(col = Genus))  + -->
-<!--   theme(legend.position = "none") -->
-
-<!-- # same plot with y log-scaled -->
-<!-- ggplot(dt_study_grouped, aes(Date, Abundance_mean)) + -->
-<!--   geom_line(aes(col = Genus))  + -->
-<!--   theme(legend.position = "bottom") + -->
-<!--   scale_y_log10() -->
-
-<!-- ``` -->
 
 We need Time Series with at least 50 time steps.
 
-Further Criteria for usefull time series:
+Further Criteria for useful time series:
 
  * >50 time points
  * time steps should be at equal intervals
- * 
+ * location of sampling should be only one
+ 
+## Data Preprocessing
 
-# Next examples
+Function to preprocess data given a study ID and plot abundances afterwards.
+
+```{r}
+
+study_processing_bioTIME <-
+  function(study_id, th_species = 0.05, th_genus = 0.05) {
+    
+    # Metadata (Information about this study)
+    study_Meta <-
+      dt_biotimeMeta[STUDY_ID == study_id]
+    
+    table_Meta <-
+      data.table(Column = colnames(study_Meta),
+                 Info = as.character(study_Meta[1,]))
+    
+    knitr::kable(table_Meta)
+    
+    
+    # 1)  extract data of the specific study
+    dt_study <-
+      extract_study(dt_fullquery, ID = study_id)
+    
+    ## add zeros for missing values
+    
+    ### generate data.table with all combinations of Species/Genus and Time
+    all_combinations <-
+      as.data.table(tidyr::crossing(unique(dt_study$Time), unique(dt_study$Species)))
+    colnames(all_combinations) <- c("Time", "Species")
+    all_combinations[, Abundance := 0] %>% 
+      .[, c("Genus", "tmp") := tstrsplit(Species, " ")] %>% 
+      .[, tmp := NULL]
+    
+    ### merge combinations and zero values to dt_study
+    dt_study <- 
+      merge(dt_study, all_combinations,
+            by = c("Time", "Species", "Genus"),
+            all = T) %>% 
+      .[, Abundance := Abundance.x] %>% 
+      .[is.na(Abundance.x), Abundance := Abundance.y] %>% 
+      .[, c("Abundance.x", "Abundance.y") := NULL]
+    
+    
+    # 2)  summarize over multiple entries in the same year
+    dt_study_genus <-
+      dt_study[, .(Abundance_sum = sum(Abundance)),
+        by = c("Time", "Genus")]
+    
+    
+    # 3)  add relative abundance
+    
+    ## Species
+    dt_study[, Abundance_rel := Abundance/ sum(Abundance), 
+             by = c("Time")]
+    
+    ## Genus
+    dt_study_genus[, Abundance_rel := Abundance_sum / sum(Abundance_sum), 
+             by = c("Time")]
+    
+    
+    # 3)  Group Species/Genus with relative abundance below a certain threshold as "other"
+    
+    ## add Species "other" for max. rel. abundance < threshold
+    Species_other <-
+      dt_study[, .(max_Abundance = max(Abundance_rel)),
+             by = c("Species")] %>% 
+      .[max_Abundance < th_species, .(Species)]
+    
+    dt_study_species <-
+      dt_study[, Species_grouped := Species] %>% 
+      .[Species %in% Species_other$Species, Species_grouped := "other"]
+    
+    ## add Genus "other" for max. rel. abundance < threshold
+    Genus_other <-
+      dt_study_genus[, .(max_Abundance = max(Abundance_rel)),
+             by = c("Genus")] %>% 
+      .[max_Abundance < th_genus, .(Genus)]
+    
+    dt_study_genus[, Genus_grouped := Genus] %>% 
+      .[Genus %in% Genus_other$Genus, Genus_grouped := "other"]
+    
+    
+    # 5)  sum up abundances for group "other"
+    
+    ## Species
+    dt_study_species <-
+      dt_study_species[, .(Abundance_rel = sum(Abundance_rel)),
+        by = c("Time", "Species_grouped")]
+    ## Genus
+    dt_study_genus <-
+      dt_study_genus[, .(Abundance_sum = sum(Abundance_sum),
+                         Abundance_rel = sum(Abundance_rel)),
+        by = c("Time", "Genus_grouped")]
+    
+    
+    ### plot timeseries
+    
+    # by Species, total
+    pl_species_total <-
+      ggplot(dt_study, aes(Time, Abundance)) +
+      geom_line(aes(col = Species))  +
+      labs(title = "by Species, total Abundances") +
+      theme(legend.position = "right")
+    
+    # by Species, relative
+    pl_species_rel <-
+      ggplot(dt_study_species, aes(Time, Abundance_rel)) +
+      geom_bar(aes(fill = Species_grouped), stat = "identity") +
+      labs(title = "by Species, relative Abundances") +
+      theme(legend.position = "right") +
+      scale_fill_viridis(discrete = TRUE, option = "turbo") 
+    
+    # by Genus, total (Abundance summed up)
+    pl_genus_total <-
+      ggplot(dt_study_genus, aes(Time, Abundance_sum)) +
+      geom_line(aes(col = Genus_grouped))  +
+      labs(title = "by Genus, total Abundances") +
+      theme(legend.position = "right") +
+      scale_color_viridis(discrete = TRUE, option = "turbo") 
+    
+    # by Genus, relative (Abundance summed up)
+    pl_genus_rel <-
+      ggplot(dt_study_genus, aes(Time, Abundance_rel)) +
+      geom_bar(aes(fill = Genus_grouped), stat = "identity")  +
+      labs(title = "by Genus, relative Abundances") +
+      theme(legend.position = "right") +
+      scale_fill_viridis(discrete = TRUE, option = "turbo") 
+    
+    print(pl_species_total)
+    print(pl_species_rel)
+    print(pl_genus_total)
+    print(pl_genus_rel)
+  }
+
+```
+
+
+# Examples
 
 ## (1)
 
 ```{r}
 study_id = 339
+
+study_processing_bioTIME(study_id)
 ```
 
-#### Information on the study
+<!-- #### Information on the study -->
 
-```{r, results = "asis", echo = FALSE}
-study_Meta <-
-  dt_biotimeMeta[STUDY_ID == study_id]
+<!-- ```{r, results = "asis", echo = FALSE} -->
+<!-- study_Meta <- -->
+<!--   dt_biotimeMeta[STUDY_ID == study_id] -->
 
-table_Meta <-
-  data.table(Column = colnames(study_Meta),
-             Info = as.character(study_Meta[1,]))
+<!-- table_Meta <- -->
+<!--   data.table(Column = colnames(study_Meta), -->
+<!--              Info = as.character(study_Meta[1,])) -->
 
-knitr::kable(table_Meta)
+<!-- knitr::kable(table_Meta) -->
 
-```
-
-### time series plots
-
-```{r}
-
-# extract data of the specific study
-dt_study <-
-  extract_study(dt_fullquery, ID = study_id)
-
-# summarize over multiple entries in the same year
-dt_study_grouped <-
-  dt_study[, .(Abundance_sum = sum(Abundance)),
-    by = c("Date", "Genus")]
-
-# number of entries per Date and Genus
-dt_study[, .N, by= c("Date", "Genus")]
-
-# number of entries per Date and Species
-dt_study[, .N, by= c("Date", "Species")]
+<!-- ``` -->
 
 
-# plot timeseries
-ggplot(dt_study, aes(Date, Abundance)) +
-  geom_line(aes(col = GENUS_SPECIES))  +
-  theme(legend.position = "none")
+<!-- ### extraction and preparation of the time series -->
 
-# plot Abundance summed up for same Date
-ggplot(dt_study_grouped, aes(Date, Abundance_sum)) +
-  geom_line(aes(col = Genus))  +
-  theme(legend.position = "bottom")
+<!-- Preprocessing steps of the sample data for each study: -->
 
-
-dt_study_ts <-
-  dcast(dt_study, GENUS_SPECIES ~ Date, value.var = "Abundance")
-dt_study_ts[, num_na := rowSums(is.na(dt_study_ts))]
-GEN_SPEC_relevant <- dt_study_ts[num_na < 20]$GENUS_SPECIES
-
-dt_study_ts
-
-dt_study_ts$num_na %>% hist()
-
-dt_study_ts[is.na(dt_study_ts),] <- 0
-
-dt_study_0 <-
-  dt_study_ts[, num_na := NULL] %>% 
-  melt(., id.vars = "GENUS_SPECIES", 
-       value.name = "Abundance", variable.name = "Date")
+<!-- 1. extracting the study ID from the whole dataset -->
+<!-- 2. for Genus add Abundances at the same Date / same Genus -->
+<!-- 3. calculating relative abundance by -->
+<!--     a) Species -->
+<!--     b) Genus (sum of abundance over the samples) -->
+<!-- 4. Check how many Species/Genus have relative abundance below certain threshold -->
+<!--    -> group them as "other" -->
+<!-- 5. sum up abundances for group "other" -->
 
 
-# plot timeseries
-ggplot(dt_study_0,
-       aes(as.numeric(Date) + 1952, Abundance)) +
-  geom_line(aes(col = GENUS_SPECIES))  +
-  theme(legend.position = "none")
+<!-- ```{r} -->
+<!-- # 1)  extract data of the specific study -->
+<!-- dt_study <- -->
+<!--   extract_study(dt_fullquery, ID = study_id) -->
 
-# plot timeseries
-ggplot(dt_study_0[GENUS_SPECIES %in% GEN_SPEC_relevant],
-       aes(as.numeric(Date) + 1952, Abundance)) +
-  geom_line(aes(col = GENUS_SPECIES))  +
-  theme(legend.position = "none")
+<!-- ## add zeros for missing values -->
 
-```
+<!-- ### generate data.table with all combinations of Species/Genus and Time -->
+<!-- all_combinations <- -->
+<!--   as.data.table(tidyr::crossing(unique(dt_study$Time), unique(dt_study$Species))) -->
+<!-- colnames(all_combinations) <- c("Time", "Species") -->
+<!-- all_combinations[, Abundance := 0] %>%  -->
+<!--   .[, c("Genus", "tmp") := tstrsplit(Species, " ")] %>%  -->
+<!--   .[, tmp := NULL] -->
+
+<!-- ### merge combinations and zero values to dt_study -->
+<!-- dt_study <-  -->
+<!--   merge(dt_study, all_combinations, -->
+<!--         by = c("Time", "Species", "Genus"), -->
+<!--         all = T) %>%  -->
+<!--   .[, Abundance := Abundance.x] %>%  -->
+<!--   .[is.na(Abundance.x), Abundance := Abundance.y] %>%  -->
+<!--   .[, c("Abundance.x", "Abundance.y") := NULL] -->
+
+
+<!-- # 2)  summarize over multiple entries in the same year -->
+<!-- dt_study_genus <- -->
+<!--   dt_study[, .(Abundance_sum = sum(Abundance)), -->
+<!--     by = c("Time", "Genus")] -->
+
+
+<!-- # 3)  add relative abundance -->
+
+<!-- ## Species -->
+<!-- dt_study[, Abundance_rel := Abundance/ sum(Abundance),  -->
+<!--          by = c("Time")] -->
+
+<!-- ## Genus -->
+<!-- dt_study_genus[, Abundance_rel := Abundance_sum / sum(Abundance_sum),  -->
+<!--          by = c("Time")] -->
+
+
+<!-- # 3)  Group Species/Genus with relative abundance below a certain threshold as "other" -->
+
+<!-- ## specify threshold for group "other" -->
+<!-- threshold = 0.05 -->
+
+<!-- ## add Species "other" for max. rel. abundance < threshold -->
+<!-- Species_other <- -->
+<!--   dt_study[, .(max_Abundance = max(Abundance_rel)), -->
+<!--          by = c("Species")] %>%  -->
+<!--   .[max_Abundance < threshold, .(Species)] -->
+
+<!-- dt_study_species <- -->
+<!--   dt_study[, Species_grouped := Species] %>%  -->
+<!--   .[Species %in% Species_other$Species, Species_grouped := "other"] -->
+
+<!-- ## add Genus "other" for max. rel. abundance < threshold -->
+<!-- Genus_other <- -->
+<!--   dt_study_genus[, .(max_Abundance = max(Abundance_rel)), -->
+<!--          by = c("Genus")] %>%  -->
+<!--   .[max_Abundance < threshold, .(Genus)] -->
+
+<!-- dt_study_genus[, Genus_grouped := Genus] %>%  -->
+<!--   .[Genus %in% Genus_other$Genus, Genus_grouped := "other"] -->
+
+
+<!-- # 5)  sum up abundances for group "other" -->
+
+<!-- ## Species -->
+<!-- dt_study_species <- -->
+<!--   dt_study_species[, .(Abundance_rel = sum(Abundance_rel)), -->
+<!--     by = c("Time", "Species_grouped")] -->
+<!-- ## Genus -->
+<!-- dt_study_genus <- -->
+<!--   dt_study_genus[, .(Abundance_sum = sum(Abundance_sum), -->
+<!--                      Abundance_rel = sum(Abundance_rel)), -->
+<!--     by = c("Time", "Genus_grouped")] -->
+<!-- ``` -->
+
+
+
+<!-- ### time series plots -->
+
+
+
+<!-- ```{r} -->
+<!-- ### plot timeseries -->
+
+<!-- # by Species, total -->
+<!-- ggplot(dt_study, aes(Time, Abundance)) + -->
+<!--   geom_line(aes(col = Species))  + -->
+<!--   labs(title = "by Species, total Abundances") + -->
+<!--   theme(legend.position = "right") -->
+
+<!-- # by Species, relative -->
+<!-- ggplot(dt_study_species, aes(Time, Abundance_rel)) + -->
+<!--   geom_bar(aes(fill = Species_grouped), stat = "identity") + -->
+<!--   labs(title = "by Species, relative Abundances") + -->
+<!--   theme(legend.position = "right") + -->
+<!--   scale_fill_viridis(discrete = TRUE, option = "turbo")  -->
+
+<!-- # by Genus, total (Abundance summed up) -->
+<!-- ggplot(dt_study_genus, aes(Time, Abundance_sum)) + -->
+<!--   geom_line(aes(col = Genus_grouped))  + -->
+<!--   labs(title = "by Genus, total Abundances") + -->
+<!--   theme(legend.position = "right") + -->
+<!--   scale_color_viridis(discrete = TRUE, option = "turbo")  -->
+
+<!-- # by Genus, relative (Abundance summed up) -->
+<!-- ggplot(dt_study_genus, aes(Time, Abundance_rel)) + -->
+<!--   geom_bar(aes(fill = Genus_grouped), stat = "identity")  + -->
+<!--   labs(title = "by Genus, relative Abundances") + -->
+<!--   theme(legend.position = "right") + -->
+<!--   scale_fill_viridis(discrete = TRUE, option = "turbo")  -->
+
+
+<!-- # ### rewrite data.table as time series -->
+<!-- # dt_study_ts <- -->
+<!-- #   dcast(dt_study, Species ~ Time, value.var = "Abundance") -->
+<!-- # dt_study_ts[, num_na := rowSums(is.na(dt_study_ts))] -->
+<!-- # GEN_SPEC_relevant <- dt_study_ts[num_na < 20]$Species -->
+<!-- #  -->
+<!-- # dt_study_ts -->
+<!-- #  -->
+<!-- # dt_study_ts$num_na %>% hist() -->
+<!-- #  -->
+<!-- # dt_study_ts[is.na(dt_study_ts),] <- 0 -->
+<!-- #  -->
+<!-- # dt_study_0 <- -->
+<!-- #   dt_study_ts[, num_na := NULL] %>%  -->
+<!-- #   melt(., id.vars = "Species",  -->
+<!-- #        value.name = "Abundance", variable.name = "Time") -->
+<!-- #  -->
+<!-- #  -->
+<!-- # # plot timeseries -->
+<!-- # ggplot(dt_study_0, -->
+<!-- #        aes(as.numeric(Time) + 1952, Abundance)) + -->
+<!-- #   geom_line(aes(col = Species))  + -->
+<!-- #   theme(legend.position = "none") -->
+<!-- #  -->
+<!-- # # plot timeseries -->
+<!-- # ggplot(dt_study_0[Species %in% GEN_SPEC_relevant], -->
+<!-- #        aes(as.numeric(Time) + 1952, Abundance)) + -->
+<!-- #   geom_line(aes(col = Species))  + -->
+<!-- #   theme(legend.position = "none") -->
+
+<!-- ``` -->
 
 <br>
-
 ## (2)
 
 ```{r}
-study_id = 478
+study_id = 414
+
+study_processing_bioTIME(study_id)
 ```
 
-#### Information on the study
+<!-- #### Information on the study -->
 
-```{r, results = "asis", echo = FALSE}
-study_Meta <-
-  dt_biotimeMeta[STUDY_ID == study_id]
+<!-- ```{r, results = "asis", echo = FALSE} -->
+<!-- study_Meta <- -->
+<!--   dt_biotimeMeta[STUDY_ID == study_id] -->
 
-table_Meta <-
-  data.table(Column = colnames(study_Meta),
-             Info = as.character(study_Meta[1,]))
+<!-- table_Meta <- -->
+<!--   data.table(Column = colnames(study_Meta), -->
+<!--              Info = as.character(study_Meta[1,])) -->
 
-knitr::kable(table_Meta)
+<!-- knitr::kable(table_Meta) -->
 
-```
+<!-- ``` -->
 
-### time series plots
+<!-- ### time series plots -->
 
-```{r}
+<!-- ```{r} -->
 
-# extract data of the specific study
-dt_study <-
-  extract_study(dt_fullquery, ID = study_id)
+<!-- # extract data of the specific study -->
+<!-- dt_study <- -->
+<!--   extract_study(dt_fullquery, ID = study_id) -->
 
-# summarize over multiple entries in the same year
-dt_study_grouped <-
-  dt_study[, .(Abundance_sum = sum(Abundance)),
-    by = c("Date", "Genus")]
+<!-- # summarize over multiple entries in the same year -->
+<!-- dt_study_genus <- -->
+<!--   dt_study[, .(Abundance_sum = sum(Abundance)), -->
+<!--     by = c("Time", "Genus")] -->
 
-# number of entries per Date and Genus
-dt_study[, .N, by= c("Date", "Genus")]
+<!-- # number of entries per Time and Genus -->
+<!-- dt_study[, .N, by= c("Time", "Genus")] -->
 
-# number of entries per Date and Species
-dt_study[, .N, by= c("Date", "Species")]
+<!-- # number of entries per Time and Species -->
+<!-- dt_study[, .N, by= c("Time", "Species")] -->
 
 
-# plot timeseries
-ggplot(dt_study, aes(Date, Abundance)) +
-  geom_line(aes(col = GENUS_SPECIES))  +
-  theme(legend.position = "none")
+<!-- # plot timeseries -->
+<!-- ggplot(dt_study, aes(Time, Abundance)) + -->
+<!--   geom_line(aes(col = GENUS_SPECIES))  + -->
+<!--   theme(legend.position = "none") -->
 
-# ggplot(dt_study[GENUS_SPECIES %in% GEN_SPEC_relevant], aes(Date, Abundance)) +
-#   geom_line(aes(col = GENUS_SPECIES))  +
-#   theme(legend.position = "none") +
-#   scale_y_log10()
+<!-- # plot Abundance summed up for same Time -->
+<!-- ggplot(dt_study_genus, aes(Time, Abundance_sum)) + -->
+<!--   geom_line(aes(col = Genus))  + -->
+<!--   theme(legend.position = "bottom") -->
 
-# plot Abundance summed up for same Date
-ggplot(dt_study_grouped, aes(Date, Abundance_sum)) +
-  geom_line(aes(col = Genus))  +
-  theme(legend.position = "none")
 
-# same plot with y log-scaled
-ggplot(dt_study_grouped, aes(Date, Abundance_sum)) +
-  geom_line(aes(col = Genus))  +
-  theme(legend.position = "bottom") +
-  scale_y_log10()
+<!-- dt_study_ts <- -->
+<!--   dcast(dt_study, GENUS_SPECIES ~ Time, value.var = "Abundance") -->
+<!-- dt_study_ts[, num_na := rowSums(is.na(dt_study_ts))] -->
+<!-- GEN_SPEC_relevant <- dt_study_ts[num_na < 20]$GENUS_SPECIES -->
 
-dt_study_ts <-
-  dcast(dt_study, GENUS_SPECIES ~ Date, value.var = "Abundance")
-dt_study_ts[, num_na := rowSums(is.na(dt_study_ts))]
-GEN_SPEC_relevant <- dt_study_ts[num_na < 10]$GENUS_SPECIES
+<!-- dt_study_ts -->
 
-dt_study_ts$num_na %>% hist()
+<!-- dt_study_ts$num_na %>% hist() -->
 
-```
+<!-- dt_study_ts[is.na(dt_study_ts),] <- 0 -->
+
+<!-- dt_study_0 <- -->
+<!--   dt_study_ts[, num_na := NULL] %>%  -->
+<!--   melt(., id.vars = "GENUS_SPECIES",  -->
+<!--        value.name = "Abundance", variable.name = "Time") -->
+
+
+<!-- # plot timeseries -->
+<!-- ggplot(dt_study_0, -->
+<!--        aes(as.numeric(Time) + 1952, Abundance)) + -->
+<!--   geom_line(aes(col = GENUS_SPECIES))  + -->
+<!--   theme(legend.position = "none") -->
+
+<!-- # plot timeseries -->
+<!-- ggplot(dt_study_0[GENUS_SPECIES %in% GEN_SPEC_relevant], -->
+<!--        aes(as.numeric(Time) + 1952, Abundance)) + -->
+<!--   geom_line(aes(col = GENUS_SPECIES))  + -->
+<!--   theme(legend.position = "none") -->
+
+<!-- # barplot -->
+<!-- ggplot(dt_study, aes(Time, Abundance)) + -->
+<!--   geom_bar(aes(fill = Species), stat = "identity", position = "fill") + -->
+<!--   theme(legend.position = "none") + -->
+<!--   labs(x = "Time") -->
+
+
+
+<!-- ``` -->
+
+<br>
 
 ## (3)
 
 ```{r}
-study_id = 363
-```
+study_id = 478
 
-
-#### Information on the study
-
-```{r, results = "asis", echo = FALSE}
-study_Meta <-
-  dt_biotimeMeta[STUDY_ID == study_id]
-
-table_Meta <-
-  data.table(Column = colnames(study_Meta),
-             Info = as.character(study_Meta[1,]))
-
-knitr::kable(table_Meta)
+study_processing_bioTIME(study_id)
 
 ```
 
-### time series plots
+<!-- #### Information on the study -->
+
+<!-- ```{r, results = "asis", echo = FALSE} -->
+<!-- study_Meta <- -->
+<!--   dt_biotimeMeta[STUDY_ID == study_id] -->
+
+<!-- table_Meta <- -->
+<!--   data.table(Column = colnames(study_Meta), -->
+<!--              Info = as.character(study_Meta[1,])) -->
+
+<!-- knitr::kable(table_Meta) -->
+
+<!-- ``` -->
+
+<!-- ### time series plots -->
+
+<!-- ```{r} -->
+
+<!-- # extract data of the specific study -->
+<!-- dt_study <- -->
+<!--   extract_study(dt_fullquery, ID = study_id) -->
+
+<!-- # summarize over multiple entries in the same year -->
+<!-- dt_study_genus <- -->
+<!--   dt_study[, .(Abundance_sum = sum(Abundance)), -->
+<!--     by = c("Time", "Genus")] -->
+
+<!-- # number of entries per Time and Genus -->
+<!-- dt_study[, .N, by= c("Time", "Genus")] -->
+
+<!-- # number of entries per Time and Species -->
+<!-- dt_study[, .N, by= c("Time", "Species")] -->
+
+
+<!-- # plot timeseries -->
+<!-- ggplot(dt_study, aes(Time, Abundance)) + -->
+<!--   geom_line(aes(col = GENUS_SPECIES))  + -->
+<!--   theme(legend.position = "none") -->
+
+<!-- # ggplot(dt_study[GENUS_SPECIES %in% GEN_SPEC_relevant], aes(Time, Abundance)) + -->
+<!-- #   geom_line(aes(col = GENUS_SPECIES))  + -->
+<!-- #   theme(legend.position = "none") + -->
+<!-- #   scale_y_log10() -->
+
+<!-- # plot Abundance summed up for same Time -->
+<!-- ggplot(dt_study_genus, aes(Time, Abundance_sum)) + -->
+<!--   geom_line(aes(col = Genus))  + -->
+<!--   theme(legend.position = "none") -->
+
+<!-- # same plot with y log-scaled -->
+<!-- ggplot(dt_study_genus, aes(Time, Abundance_sum)) + -->
+<!--   geom_line(aes(col = Genus))  + -->
+<!--   theme(legend.position = "bottom") + -->
+<!--   scale_y_log10() -->
+
+<!-- dt_study_ts <- -->
+<!--   dcast(dt_study, GENUS_SPECIES ~ Time, value.var = "Abundance") -->
+<!-- dt_study_ts[, num_na := rowSums(is.na(dt_study_ts))] -->
+<!-- GEN_SPEC_relevant <- dt_study_ts[num_na < 10]$GENUS_SPECIES -->
+
+<!-- dt_study_ts$num_na %>% hist() -->
+
+<!-- ``` -->
+
+## (4)
 
 ```{r}
+study_id = 363
 
-# extract data of the specific study
-dt_study <-
-  extract_study(dt_fullquery, ID = study_id)
-
-# summarize over multiple entries in the same year
-dt_study_grouped <-
-  dt_study[, .(Abundance_sum = sum(Abundance)),
-    by = c("Date", "Genus")]
-
-# number of entries per Date and Genus
-dt_study[, .N, by= c("Date", "Genus")]
-
-# number of entries per Date and Species
-dt_study[, .N, by= c("Date", "Species")]
-
-
-# plot timeseries
-ggplot(dt_study, aes(Date, Abundance)) +
-  geom_line(aes(col = GENUS_SPECIES))  +
-  theme(legend.position = "none")
-
-# plot timeseries
-ggplot(dt_study, aes(Date, Abundance)) +
-  geom_line(aes(col = GENUS_SPECIES))  +
-  theme(legend.position = "bottom")
-
-# plot sum by Genus
-ggplot(dt_study_grouped, aes(Date, Abundance_sum)) +
-  geom_line(aes(col = Genus))  +
-  theme(legend.position = "bottom")
-
-
-dt_study_ts <-
-  dcast(dt_study_grouped, Genus ~ Date, value.var = "Abundance_sum")
-dt_study_ts
+study_processing_bioTIME(study_id)
 
 ```
+
+
+<!-- #### Information on the study -->
+
+<!-- ```{r, results = "asis", echo = FALSE} -->
+<!-- study_Meta <- -->
+<!--   dt_biotimeMeta[STUDY_ID == study_id] -->
+
+<!-- table_Meta <- -->
+<!--   data.table(Column = colnames(study_Meta), -->
+<!--              Info = as.character(study_Meta[1,])) -->
+
+<!-- knitr::kable(table_Meta) -->
+
+<!-- ``` -->
+
+<!-- ### time series plots -->
+
+<!-- ```{r} -->
+
+<!-- # extract data of the specific study -->
+<!-- dt_study <- -->
+<!--   extract_study(dt_fullquery, ID = study_id) -->
+
+<!-- # summarize over multiple entries in the same year -->
+<!-- dt_study_genus <- -->
+<!--   dt_study[, .(Abundance_sum = sum(Abundance)), -->
+<!--     by = c("Time", "Genus")] -->
+
+<!-- # number of entries per Time and Genus -->
+<!-- dt_study[, .N, by= c("Time", "Genus")] -->
+
+<!-- # number of entries per Time and Species -->
+<!-- dt_study[, .N, by= c("Time", "Species")] -->
+
+
+<!-- # plot timeseries -->
+<!-- ggplot(dt_study, aes(Time, Abundance)) + -->
+<!--   geom_line(aes(col = GENUS_SPECIES))  + -->
+<!--   theme(legend.position = "none") -->
+
+<!-- # plot timeseries -->
+<!-- ggplot(dt_study, aes(Time, Abundance)) + -->
+<!--   geom_line(aes(col = GENUS_SPECIES))  + -->
+<!--   theme(legend.position = "bottom") -->
+
+<!-- # plot sum by Genus -->
+<!-- ggplot(dt_study_genus, aes(Time, Abundance_sum)) + -->
+<!--   geom_line(aes(col = Genus))  + -->
+<!--   theme(legend.position = "bottom") -->
+
+
+<!-- dt_study_ts <- -->
+<!--   dcast(dt_study_genus, Genus ~ Time, value.var = "Abundance_sum") -->
+<!-- dt_study_ts -->
+
+<!-- ``` -->
 
 
 ## Files written
