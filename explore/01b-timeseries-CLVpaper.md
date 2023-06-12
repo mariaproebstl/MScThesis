@@ -1,6 +1,6 @@
 Time series (Compositional Lotka Volterra)
 ================
-Compiled at 2023-05-25 07:32:38 UTC
+Compiled at 2023-06-12 14:51:25 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "fbad9ade-134a-4a83-a801-9900003f3395")
@@ -9,10 +9,13 @@ here::i_am(paste0(params$name, ".Rmd"), uuid = "fbad9ade-134a-4a83-a801-9900003f
 The purpose of this document is to have a look at the time series data
 used in the Compositional Lotka Volterra paper.
 
+## Packages
+
 ``` r
 library("conflicted")
 library(tidyverse)
 library(data.table)
+library(viridis) # for color palettes
 ```
 
 ``` r
@@ -26,11 +29,11 @@ path_target <- projthis::proj_path_target(params$name)
 path_source <- projthis::proj_path_source(params$name)
 ```
 
-## Main
+# Main
 
-### Bucci
+## Bucci
 
-#### Read data
+### Read data
 
 ``` r
 #### read the file
@@ -83,25 +86,31 @@ Fecal pellets were collected at days 0.75, 1, 2, 3, 4, 6, 8, 10, 14, 17,
 21, 24, and 28 of the initial colonization and at days 0.75, 1, 2, 3, 4,
 6, 8, 10, 14, 17, 21, 24, and 28 post-infection with C. difficile.
 
-#### Plot data
+### Plot data
+
+#### by Species
 
 ``` r
+# plot time series in correct time intervals
 ggplot(dt_bucci_long[subjectID == 1], aes(measurementid, Count)) +
     geom_bar(aes(fill = Species), stat = "identity") +
     theme(legend.position = "none") +
     labs(x = "Time",
-         title = paste("Subject", 1))
+         title = paste("Subject", 1)) +
+    scale_fill_viridis(discrete = TRUE, option = "turbo")
 ```
 
 ![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
 
 ``` r
+# plot time series with no distance between time intervals
 for(i in 1:5){
   pl <- ggplot(dt_bucci_long[subjectID == i], aes(as.factor(measurementid), Count)) +
     geom_bar(aes(fill = Species), stat = "identity", position = "fill") +
-    theme(legend.position = "none") +
+    theme(legend.position = "right") +
     labs(x = "Time",
-         title = paste("Subject", i))
+         title = paste("Subject", i)) +
+    scale_fill_viridis(discrete = TRUE, option = "turbo")
   
   print(pl)
 }
@@ -109,104 +118,127 @@ for(i in 1:5){
 
 ![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-2-3.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-2-4.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-2-5.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-2-6.png)<!-- -->
 
-### Stein
-
-#### Read data
-
 ``` r
-#### read the file
-
-# # preparation of the data
-# dt_stein_raw <-
-#   fread("data/clv/stein/raw_data.csv") %>%
-#   t() %>%
-#   .[, lapply(.SD, as.numeric)]
-# 
-# write.table(dt_stein_raw,
-#           "data/clv/stein/raw_data_transposed.csv",
-#           row.names = FALSE)
-
-dt_stein_raw <- 
-  fread("data/clv/stein/raw_data_transposed.csv")
-
-dt_stein_long <-
-  melt(dt_stein_raw,
-       id.vars = c("Population", "Replicate", "ID", "time (in d)", "Clindamycin signal"), 
-       variable.name = "Genus")
+# plot mean count over all mice
+ggplot(dt_bucci_long, 
+               aes(as.factor(measurementid), Count)) +
+    geom_bar(aes(fill = Species), stat = "identity", position = "fill") +
+    theme(legend.position = "right") +
+    labs(x = "Time",
+         title = paste("All Subjects")) +
+    scale_fill_viridis(discrete = TRUE, option = "turbo")
 ```
 
-#### List of Genus
+![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-2-7.png)<!-- -->
 
 ``` r
-dt_stein_long$Genus %>% unique()
+# * add category "other" for Species with small count
+th_species <- 0.05
+
+dt_species_other <-
+  dt_bucci_long[, rel_count_species := Count/sum(Count),
+              by = c("subjectID", "measurementid", "sampleID")] %>% 
+  .[, .(max_count = max(rel_count_species)),
+             by = c("Species")] %>% 
+      .[max_count < th_species, .(Species)]
+
+dt_bucci_long[, Species_grouped := Species] %>% 
+  .[Species %in% dt_species_other$Species, Species_grouped := "other"]
+
+
+# plot count over all mice for grouped species
+ggplot(dt_bucci_long, 
+               aes(as.factor(measurementid), Count)) +
+    geom_bar(aes(fill = Species_grouped), stat = "identity", position = "fill") +
+    theme(legend.position = "right") +
+    labs(x = "Time",
+         title = paste("All Subjects")) +
+    scale_fill_viridis(discrete = TRUE, option = "turbo")
 ```
 
-    ##  [1] undefined_genus_of_Enterobacteriaceae     
-    ##  [2] Blautia                                   
-    ##  [3] Barnesiella                               
-    ##  [4] undefined_genus_of_unclassified_Mollicutes
-    ##  [5] undefined_genus_of_Lachnospiraceae        
-    ##  [6] Akkermansia                               
-    ##  [7] Clostridium_difficile                     
-    ##  [8] unclassified_Lachnospiraceae              
-    ##  [9] Coprobacillus                             
-    ## [10] Enterococcus                              
-    ## [11] Other                                     
-    ## 11 Levels: undefined_genus_of_Enterobacteriaceae Blautia ... Other
+![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
-#### Plot data
+#### by Genus
 
 ``` r
-for (i in 1:9) {
-  plot_tmp <-
-    ggplot(dt_stein_long[ID == i]) +
-      # geom_line(aes(`time (in d)`, value, col = Genus)) +
-      geom_bar(aes(`time (in d)`, value, fill = Genus), 
-               stat = "identity", position = "fill") +
-      theme(legend.position = "bottom") +
-      # ylim(0, 6.2) +
-      xlim(0,25) +
-    labs(title = paste("ID =", i))
+# add Genus column
+dt_bucci_long[, Genus := tstrsplit(Species, "-")[1]]
+
+
+# plot time series by genus
+
+ggplot(dt_bucci_long[subjectID == 1], aes(measurementid, Count)) +
+    geom_bar(aes(fill = Genus), stat = "identity") +
+    theme(legend.position = "right") +
+    labs(x = "Time",
+         title = paste("Subject", 1)) +
+    scale_fill_viridis(discrete = TRUE, option = "turbo")
+```
+
+![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+``` r
+for(i in 1:5){
+  pl <- ggplot(dt_bucci_long[subjectID == i], 
+               aes(as.factor(measurementid), Count)) +
+    geom_bar(aes(fill = Genus), stat = "identity", position = "fill") +
+    theme(legend.position = "right") +
+    labs(x = "Time",
+         title = paste("Subject", i)) +
+    scale_fill_viridis(discrete = TRUE, option = "turbo")
   
-  print(plot_tmp)
+  print(pl)
 }
 ```
 
-    ## Warning: Removed 11 rows containing missing values (`geom_bar()`).
+![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-4-3.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-4-4.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-4-5.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-4-6.png)<!-- -->
+
+``` r
+ggplot(dt_bucci_long, 
+               aes(as.factor(measurementid), Count)) +
+    geom_bar(aes(fill = Genus), stat = "identity", position = "fill") +
+    theme(legend.position = "right") +
+    labs(x = "Time",
+         title = paste("All Subjects")) +
+    scale_fill_viridis(discrete = TRUE, option = "turbo")
+```
+
+![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-4-7.png)<!-- -->
+
+``` r
+# add category "other" for Genus with small count
+th_genus <- 0.05
+
+dt_genus_other <-
+  dt_bucci_long[, rel_count_genus := Count/sum(Count),
+              by = c("subjectID", "measurementid", "sampleID")] %>% 
+  .[, .(max_count = max(rel_count_genus)),
+             by = c("Genus")] %>% 
+      .[max_count < th_genus, .(Genus)]
+
+dt_bucci_long[, Genus_grouped := Genus] %>% 
+  .[Genus %in% dt_genus_other$Genus, Genus_grouped := "other"]
+
+
+# plot count over all mice for grouped genus
+ggplot(dt_bucci_long, 
+               aes(as.factor(measurementid), Count)) +
+    geom_bar(aes(fill = Genus_grouped), stat = "identity", position = "fill") +
+    theme(legend.position = "right") +
+    labs(x = "Time",
+         title = paste("All Subjects")) +
+    scale_fill_viridis(discrete = TRUE, option = "turbo")
+```
 
 ![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
-    ## Warning: Removed 11 rows containing missing values (`geom_bar()`).
-
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->
-
-    ## Warning: Removed 11 rows containing missing values (`geom_bar()`).
-
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-5-3.png)<!-- -->
-
-    ## Warning: Removed 11 rows containing missing values (`geom_bar()`).
-
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-5-4.png)<!-- -->
-
-    ## Warning: Removed 11 rows containing missing values (`geom_bar()`).
-
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-5-5.png)<!-- -->
-
-    ## Warning: Removed 11 rows containing missing values (`geom_bar()`).
-
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-5-6.png)<!-- -->
-
-    ## Warning: Removed 11 rows containing missing values (`geom_bar()`).
-
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-5-7.png)<!-- -->
-
-    ## Warning: Removed 11 rows containing missing values (`geom_bar()`).
-
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-5-8.png)<!-- -->
-
-    ## Warning: Removed 11 rows containing missing values (`geom_bar()`).
-
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-5-9.png)<!-- -->
+<!-- ```{r} -->
+<!-- # add mean count and sum count of all mice -->
+<!-- dt_bucci_long[, Count_mean := mean(Count), -->
+<!--               by = c("measurementid", "Species")] %>%  -->
+<!--   .[, Count_sum := sum(Count), -->
+<!--               by = c("measurementid", "Species")] -->
+<!-- ``` -->
 
 ## Files written
 
