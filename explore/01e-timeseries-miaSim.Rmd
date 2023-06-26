@@ -1,0 +1,213 @@
+---
+title: "Simulation of synthetic time series with second order interactions (miaSim)"
+date: "Compiled at `r format(Sys.time(), '%Y-%m-%d %H:%M:%S', tz = 'UTC')` UTC"
+output: github_document
+params:
+  name: "01e-timeseries-miaSim" # change if you rename file
+---
+
+```{r here, message=FALSE}
+here::i_am(paste0(params$name, ".Rmd"), uuid = "097d888c-3dd7-4302-ad02-3bed36ed3cfe")
+```
+
+The purpose of this document is to simulate some synthetic time series datasets with different numbers of species and some 2nd order interactions (using the miaSim package).
+These can then be used for testing the DeePyMoD algorithm.
+
+```{r packages, message=FALSE}
+library("conflicted")
+library(tidyverse)
+library(data.table)
+
+# BiocManager::install("miaSim")
+library(miaSim)
+library(miaViz)
+
+library(deSolve)
+library(R.matlab)
+```
+
+
+```{r directories}
+# create or *empty* the target directory, used to write this file's data: 
+projthis::proj_create_dir_target(params$name, clean = TRUE)
+
+# function to get path to target directory: path_target("sample.csv")
+path_target <- projthis::proj_path_target(params$name)
+
+# function to get path to previous data: path_source("00-import", "sample.csv")
+path_source <- projthis::proj_path_source(params$name)
+```
+
+
+# miaSim Simulation
+
+## Simple Example for simulating GLV with 2 Species
+
+```{r}
+# Generate random interaction matrix for GLV (2 Species)
+set.seed(12)
+# A_matrix <- randomA(n_species = 2)
+A_matrix <- matrix(c(-0.5, 0.25, -0.33, -0.5), nrow = 2)
+A_matrix
+
+# simulate GLV
+ts_glv_2 <-
+  simulateGLV(
+    n_species = 2,
+    A = A_matrix,
+    t_start = 0,
+    t_store = 500
+  )
+
+# write .mat file for python
+ts_glv_2_mat <- data.matrix(cbind(1:500, t(ts_glv_2)))
+writeMat("miaSim_GLV_2species.mat", ts_glv = ts_glv_2_mat)
+
+# reshape time series matrix to long data.table
+rownames(ts_glv_2) <- paste0("row", 1:nrow(ts_glv_2))
+colnames(ts_glv_2) <- paste0(1:ncol(ts_glv_2))
+
+dt_ts_glv <-
+  as.data.table(as.table(ts_glv_2)) %>% 
+  melt %>% 
+  .[, ID := V1] %>% 
+  .[, time := as.numeric(V2)] %>% 
+  .[, count := value] %>% 
+  .[, c("variable", "value", "V1", "V2") := NULL]
+
+# plot time series
+ggplot(dt_ts_glv[time < 50], aes(time, count)) +
+  geom_line(aes(col = ID))
+
+```
+
+
+## Example for simulating GLV with 3 Species
+
+```{r}
+# Generate random interaction matrix for GLV (3 Species)
+set.seed(321)
+A_matrix <- randomA(n_species = 3)
+A_matrix
+
+# simulate GLV
+ts_glv_3 <-
+  simulateGLV(
+    n_species = 3,
+    A = A_matrix,
+    t_start = 0,
+    t_store = 500
+  )
+
+# write .mat file for python
+ts_glv_3_mat <- data.matrix(cbind(1:500, t(ts_glv_3)))
+writeMat("miaSim_GLV_3species.mat", ts_glv = ts_glv_3_mat)
+
+# reshape time series matrix to long data.table
+rownames(ts_glv_3) <- paste0("row", 1:nrow(ts_glv_3))
+colnames(ts_glv_3) <- paste0(1:ncol(ts_glv_3))
+
+dt_ts_glv <-
+  as.data.table(as.table(ts_glv_3)) %>% 
+  melt %>% 
+  .[, ID := V1] %>% 
+  .[, time := as.numeric(V2)] %>% 
+  .[, count := value] %>% 
+  .[, c("variable", "value", "V1", "V2") := NULL]
+
+# plot time series
+ggplot(dt_ts_glv[time < 50], aes(time, count)) +
+  geom_line(aes(col = ID))
+
+```
+
+
+## Example with 4 species
+
+```{r}
+# Interaction matrix with Power-Law network adjacency matrix (from tutorial)
+set.seed(321)
+A_normal <- powerlawA(n_species = 4, alpha = 3)
+
+# simulate GLV
+set.seed(123)
+ts_glv <- simulateGLV(n_species = 4,
+                      A = A_normal,
+                      t_start = 0, 
+                      t_store = 1000)
+
+# save glv as csv
+write_csv(x = as.data.frame(t(ts_glv)),
+          file = "miaSim_GLV_test.csv")
+
+# save glv as .mat file
+ts_glv = data.matrix(read.csv('miaSim_GLV_test.csv'))
+writeMat("miaSim_GLV_test.mat", ts_glv = ts_glv)
+
+# transform matrix to python array
+reticulate::r_to_py(t(ts_glv))
+
+
+# reshape time series matrix to long data.table
+rownames(ts_glv) <- paste0(1:nrow(ts_glv))
+colnames(ts_glv) <- paste0(1:ncol(ts_glv))
+
+dt_ts_glv <-
+  as.data.table(as.table(t(ts_glv))) %>% 
+  melt %>% 
+  .[, ID := V1] %>% 
+  .[, time := as.numeric(V2)] %>% 
+  .[, count := value] %>% 
+  .[, c("variable", "value", "V1", "V2") := NULL]
+
+# plot time series
+ggplot(dt_ts_glv[time < 100], aes(time, count)) +
+  geom_line(aes(col = ID))
+
+```
+
+
+## Large Example for simulating GLV with 50 Species
+
+```{r}
+# Generate random interaction matrix for GLV (2 Species)
+set.seed(12)
+A_matrix <- randomA(n_species = 30)
+A_matrix
+
+# simulate GLV
+ts_glv_30 <-
+  simulateGLV(
+    n_species = 30,
+    A = A_matrix,
+    t_start = 0,
+    t_store = 500
+  )
+
+# reshape time series matrix to long data.table
+rownames(ts_glv_30) <- paste0("row", 1:nrow(ts_glv_30))
+colnames(ts_glv_30) <- paste0(1:ncol(ts_glv_30))
+
+dt_ts_glv <-
+  as.data.table(as.table(ts_glv_30)) %>% 
+  melt %>% 
+  .[, ID := V1] %>% 
+  .[, time := as.numeric(V2)] %>% 
+  .[, count := value] %>% 
+  .[, c("variable", "value", "V1", "V2") := NULL]
+
+# plot time series
+ggplot(dt_ts_glv[time < 50], aes(time, count)) +
+  geom_line(aes(col = ID))
+
+```
+
+
+
+## Files written
+
+These files have been written to the target directory, ```r paste0("data/", params$name)```:
+
+```{r list-files-target}
+projthis::proj_dir_info(path_target())
+```
