@@ -1,7 +1,7 @@
 Simulation of synthetic time series with second order interactions
 (miaSim)
 ================
-Compiled at 2023-06-26 14:26:56 UTC
+Compiled at 2023-07-10 15:00:49 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "097d888c-3dd7-4302-ad02-3bed36ed3cfe")
@@ -11,6 +11,8 @@ The purpose of this document is to simulate some synthetic time series
 datasets with different numbers of species and some 2nd order
 interactions (using the miaSim package). These can then be used for
 testing the DeePyMoD algorithm.
+
+# Packages
 
 ``` r
 library("conflicted")
@@ -23,6 +25,8 @@ library(miaViz)
 
 library(deSolve)
 library(R.matlab)
+
+library(ggfortify) # to autoplot time series
 ```
 
 ``` r
@@ -36,181 +40,344 @@ path_target <- projthis::proj_path_target(params$name)
 path_source <- projthis::proj_path_source(params$name)
 ```
 
-# miaSim Simulation
+# miaSim Shiny App
 
-## Simple Example for simulating GLV with 2 Species
+``` r
+# library(miaSimShiny)
+# ## run the shiny app for miaSim
+# miaSimShiny::run_app()
+```
+
+# miaSim manual Simulation
+
+## Function to simulate, save and plot GLV
+
+``` r
+# simulates generalized Lotka Volterra with miaSim (dx/dt = x(b + Ax))
+# for t = 1,...,500
+# saves the glv time series as .mat file
+# plots the glv time series
+# sim_name: give the simulation a name, e.g. "_oscillating"
+
+save_and_plot_glv <-
+  function(n_species, A_matrix, growth_rates = NULL, x0 = NULL, sim_name = "") {
+    if(is.null(growth_rates)){
+      growth_rates <- runif(n_species)
+    }
+    if(is.null(x0)){
+      x0 <- runif(n_species)
+    }
+      
+    # simulate GLV
+    glv_tmp <-
+      simulateGLV(
+        n_species = n_species,
+        A = A_matrix,
+        x = x0,
+        b = growth_rates,
+        t_start = 0,
+        t_store = 500
+      )
+    
+    # write .mat file for python
+    glv_tmp_mat <- data.matrix(cbind(1:500, t(glv_tmp)))
+    writeMat(paste0(path_target(),"/miaSim_GLV_", n_species, "species",
+                    sim_name, ".mat"),
+             ts_glv = glv_tmp_mat)
+    
+    autoplot(ts(glv_tmp_mat[, 1:n_species+1]), facets = F)
+  }
+```
+
+## Simple Examples for simulating GLV with 2 Species
+
+### a)
 
 ``` r
 # Generate random interaction matrix for GLV (2 Species)
-set.seed(12)
 # A_matrix <- randomA(n_species = 2)
-A_matrix <- matrix(c(-0.5, 0.25, -0.33, -0.5), nrow = 2)
+A_matrix <- matrix(c(-1, 4/3, 1, -1), nrow = 2)
 A_matrix
 ```
 
-    ##       [,1]  [,2]
-    ## [1,] -0.50 -0.33
-    ## [2,]  0.25 -0.50
+    ##           [,1] [,2]
+    ## [1,] -1.000000    1
+    ## [2,]  1.333333   -1
 
 ``` r
-# simulate GLV
-ts_glv_2 <-
-  simulateGLV(
-    n_species = 2,
-    A = A_matrix,
-    t_start = 0,
-    t_store = 500
-  )
+growth_rates <- c(2/3, 1)
 
-# write .mat file for python
-ts_glv_2_mat <- data.matrix(cbind(1:500, t(ts_glv_2)))
-writeMat("miaSim_GLV_2species.mat", ts_glv = ts_glv_2_mat)
+A_matrix <- matrix(c(-0.5, 0, 0.1, -0.5), nrow = 2)
+# A_matrix
+# growth_rates <- c(0.5, 0.3)
 
-# reshape time series matrix to long data.table
-rownames(ts_glv_2) <- paste0("row", 1:nrow(ts_glv_2))
-colnames(ts_glv_2) <- paste0(1:ncol(ts_glv_2))
-
-dt_ts_glv <-
-  as.data.table(as.table(ts_glv_2)) %>% 
-  melt %>% 
-  .[, ID := V1] %>% 
-  .[, time := as.numeric(V2)] %>% 
-  .[, count := value] %>% 
-  .[, c("variable", "value", "V1", "V2") := NULL]
-```
-
-    ## Warning in melt.data.table(.): id.vars and measure.vars are internally guessed
-    ## when both are 'NULL'. All non-numeric/integer/logical type columns are
-    ## considered id.vars, which in this case are columns [V1, V2]. Consider providing
-    ## at least one of 'id' or 'measure' vars in future.
-
-``` r
-# plot time series
-ggplot(dt_ts_glv[time < 50], aes(time, count)) +
-  geom_line(aes(col = ID))
-```
-
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
-
-## Example for simulating GLV with 3 Species
-
-``` r
-# Generate random interaction matrix for GLV (3 Species)
-set.seed(321)
-A_matrix <- randomA(n_species = 3)
-A_matrix
-```
-
-    ##      [,1] [,2]       [,3]
-    ## [1,] -0.5  0.0  0.0000000
-    ## [2,]  0.0 -0.5 -0.2100672
-    ## [3,]  0.0  0.0 -0.5000000
-
-``` r
-# simulate GLV
-ts_glv_3 <-
-  simulateGLV(
-    n_species = 3,
-    A = A_matrix,
-    t_start = 0,
-    t_store = 500
-  )
-
-# write .mat file for python
-ts_glv_3_mat <- data.matrix(cbind(1:500, t(ts_glv_3)))
-writeMat("miaSim_GLV_3species.mat", ts_glv = ts_glv_3_mat)
-
-# reshape time series matrix to long data.table
-rownames(ts_glv_3) <- paste0("row", 1:nrow(ts_glv_3))
-colnames(ts_glv_3) <- paste0(1:ncol(ts_glv_3))
-
-dt_ts_glv <-
-  as.data.table(as.table(ts_glv_3)) %>% 
-  melt %>% 
-  .[, ID := V1] %>% 
-  .[, time := as.numeric(V2)] %>% 
-  .[, count := value] %>% 
-  .[, c("variable", "value", "V1", "V2") := NULL]
-```
-
-    ## Warning in melt.data.table(.): id.vars and measure.vars are internally guessed
-    ## when both are 'NULL'. All non-numeric/integer/logical type columns are
-    ## considered id.vars, which in this case are columns [V1, V2]. Consider providing
-    ## at least one of 'id' or 'measure' vars in future.
-
-``` r
-# plot time series
-ggplot(dt_ts_glv[time < 50], aes(time, count)) +
-  geom_line(aes(col = ID))
-```
-
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
-
-## Example with 4 species
-
-``` r
-# Interaction matrix with Power-Law network adjacency matrix (from tutorial)
-set.seed(321)
-A_normal <- powerlawA(n_species = 4, alpha = 3)
-
-# simulate GLV
-set.seed(123)
-ts_glv <- simulateGLV(n_species = 4,
-                      A = A_normal,
-                      t_start = 0, 
-                      t_store = 1000)
-
-# save glv as csv
-write_csv(x = as.data.frame(t(ts_glv)),
-          file = "miaSim_GLV_test.csv")
-
-# save glv as .mat file
-ts_glv = data.matrix(read.csv('miaSim_GLV_test.csv'))
-writeMat("miaSim_GLV_test.mat", ts_glv = ts_glv)
-
-# transform matrix to python array
-reticulate::r_to_py(t(ts_glv))
-```
-
-    ## array([[2.87577520e-01, 4.99245952e-01, 7.01972469e-01, ...,
-    ##         9.52018249e-01, 9.52018265e-01, 9.52018281e-01],
-    ##        [7.88305135e-01, 4.49919137e-01, 3.14561412e-01, ...,
-    ##         8.84386138e-04, 8.83387106e-04, 8.82390083e-04],
-    ##        [4.08976922e-01, 4.50687879e-01, 4.79529043e-01, ...,
-    ##         5.28105488e-01, 5.28105488e-01, 5.28105488e-01],
-    ##        [8.83017404e-01, 9.14375487e-01, 9.29363105e-01, ...,
-    ##         9.45229593e-01, 9.45229593e-01, 9.45229593e-01]])
-
-``` r
-# reshape time series matrix to long data.table
-rownames(ts_glv) <- paste0(1:nrow(ts_glv))
-colnames(ts_glv) <- paste0(1:ncol(ts_glv))
-
-dt_ts_glv <-
-  as.data.table(as.table(t(ts_glv))) %>% 
-  melt %>% 
-  .[, ID := V1] %>% 
-  .[, time := as.numeric(V2)] %>% 
-  .[, count := value] %>% 
-  .[, c("variable", "value", "V1", "V2") := NULL]
-```
-
-    ## Warning in melt.data.table(.): id.vars and measure.vars are internally guessed
-    ## when both are 'NULL'. All non-numeric/integer/logical type columns are
-    ## considered id.vars, which in this case are columns [V1, V2]. Consider providing
-    ## at least one of 'id' or 'measure' vars in future.
-
-``` r
-# plot time series
-ggplot(dt_ts_glv[time < 100], aes(time, count)) +
-  geom_line(aes(col = ID))
+save_and_plot_glv(A_matrix, growth_rates, 
+                  n_species = 2, sim_name = "_V1")
 ```
 
 ![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
-## Large Example for simulating GLV with 50 Species
+### b)
 
 ``` r
+# Generate random interaction matrix for GLV (2 Species)
+A_matrix <- matrix(c(-0.5, 2, 0, -0.5), nrow = 2)
+A_matrix
+```
+
+    ##      [,1] [,2]
+    ## [1,] -0.5  0.0
+    ## [2,]  2.0 -0.5
+
+``` r
+growth_rates = c(1, 2)
+
+set.seed(321)
+
+
+save_and_plot_glv(n_species = 2, A_matrix, growth_rates, 
+                  sim_name = "_V3")
+```
+
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+## General gLV for arbitrary number n of species
+
+### a) 5 Species
+
+``` r
+n = 5
+
+# Generate random interaction matrix for GLV (3 Species)
+set.seed(246)
+A_matrix <- randomA(n_species = n)
+A_matrix <- matrix(c(-0.5, 20, 0, 0, 0,
+                     -28, -0.5, -3, 0, 0,
+                     0, 10, -0.5, 0, 0,
+                     -3, 0, 0, -0.5, 7.5,
+                     5, 0, 0, -4.4, -0.5), nrow = n)
+A_matrix
+```
+
+    ##      [,1]  [,2] [,3] [,4] [,5]
+    ## [1,] -0.5 -28.0  0.0 -3.0  5.0
+    ## [2,] 20.0  -0.5 10.0  0.0  0.0
+    ## [3,]  0.0  -3.0 -0.5  0.0  0.0
+    ## [4,]  0.0   0.0  0.0 -0.5 -4.4
+    ## [5,]  0.0   0.0  0.0  7.5 -0.5
+
+``` r
+# specify growth rates or use rep(1, n) by default
+growth_rates = c(10, -1, 1, 1, -1)
+growth_rates
+```
+
+    ## [1] 10 -1  1  1 -1
+
+``` r
+save_and_plot_glv(n_species = n, A_matrix, growth_rates, 
+                  sim_name = "_V1")
+```
+
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+### b) 2 species
+
+``` r
+n = 2
+
+# Generate random interaction matrix for GLV (3 Species)
+set.seed(246)
+A_matrix <- randomA(n_species = n)
+A_matrix <- matrix(c(-0.5, 15,
+                     -30, -0.5), nrow = n)
+A_matrix
+```
+
+    ##      [,1]  [,2]
+    ## [1,] -0.5 -30.0
+    ## [2,] 15.0  -0.5
+
+``` r
+# specify growth rates or use rep(1, n) by default
+growth_rates = c(2/3, -1)
+
+save_and_plot_glv(n_species = n, A_matrix, growth_rates, 
+                  sim_name = "_oscillating")
+```
+
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+
+### c) 3 Species
+
+``` r
+n = 3
+
+# Generate random interaction matrix for GLV (3 Species)
+set.seed(246)
+A_matrix <- randomA(n_species = n)
+A_matrix <- matrix(c(-0.5, 5, 2,
+                     -3, -0.5, 3,
+                     0, 0, -0.5), nrow = n)
+A_matrix
+```
+
+    ##      [,1] [,2] [,3]
+    ## [1,] -0.5 -3.0  0.0
+    ## [2,]  5.0 -0.5  0.0
+    ## [3,]  2.0  3.0 -0.5
+
+``` r
+# specify growth rates or use rep(1, n) by default
+growth_rates = c(2/3, -1, -0.7)
+
+
+save_and_plot_glv(n_species = n, A_matrix, growth_rates, 
+                  sim_name = "_oscillating")
+```
+
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
+### c.1) 4 Species
+
+``` r
+n = 4
+
+# Generate random interaction matrix for GLV
+A_matrix <- matrix(c(-0.5, 80, 0, 0,
+                     -50, -0.5, 3, 0,
+                     0, 0, -0.5, 20,
+                     0, 0, -10, -0.5), nrow = n)
+A_matrix
+```
+
+    ##      [,1]  [,2] [,3]  [,4]
+    ## [1,] -0.5 -50.0  0.0   0.0
+    ## [2,] 80.0  -0.5  0.0   0.0
+    ## [3,]  0.0   3.0 -0.5 -10.0
+    ## [4,]  0.0   0.0 20.0  -0.5
+
+``` r
+# specify growth rates or use rep(1, n) by default
+growth_rates = c(5, -10, 7, -2)
+
+
+save_and_plot_glv(n_species = n, A_matrix, growth_rates, 
+                  sim_name = "_oscillating_three")
+```
+
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+
+### c.2) 4 Species
+
+``` r
+n = 4
+
+# Generate random interaction matrix for GLV
+A_matrix <- matrix(c(-0.5, 80, 0, 0,
+                     -50, -0.5, 0, 0,
+                     0, 0, -0.5, 20,
+                     0, 0, -10, -0.5), nrow = n)
+A_matrix
+```
+
+    ##      [,1]  [,2] [,3]  [,4]
+    ## [1,] -0.5 -50.0  0.0   0.0
+    ## [2,] 80.0  -0.5  0.0   0.0
+    ## [3,]  0.0   0.0 -0.5 -10.0
+    ## [4,]  0.0   0.0 20.0  -0.5
+
+``` r
+# specify growth rates or use rep(1, n) by default
+growth_rates = c(5, -10, 7, -2)
+
+
+save_and_plot_glv(n_species = n, A_matrix, growth_rates, 
+                  sim_name = "_oscillating_zero")
+```
+
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+
+### d) 4 Species
+
+``` r
+n = 4
+
+# Generate random interaction matrix for GLV
+A_matrix <- matrix(c(-0.5, 30, 0, 0,
+                     0, -0.5, -15, 0,
+                     0, 0, -0.5, 20,
+                     -10, 0, 0, -0.5), nrow = n)
+A_matrix
+```
+
+    ##      [,1]  [,2] [,3]  [,4]
+    ## [1,] -0.5   0.0  0.0 -10.0
+    ## [2,] 30.0  -0.5  0.0   0.0
+    ## [3,]  0.0 -15.0 -0.5   0.0
+    ## [4,]  0.0   0.0 20.0  -0.5
+
+``` r
+# specify growth rates or use rep(1, n) by default
+growth_rates = c(5, -10, 7, 0.5)
+
+x0 = c(5,5,5,5)
+
+save_and_plot_glv(n_species = n, A_matrix, growth_rates, x0, 
+                  sim_name = "_Vd")
+```
+
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+## Example with 4 species
+
+``` r
+n = 4
+
+# Interaction matrix with Power-Law network adjacency matrix (from tutorial)
+set.seed(321)
+A_normal <- powerlawA(n_species = n, alpha = 3)
+A_normal
+```
+
+    ##             1           2    3           4
+    ## 1 -1.00000000 -0.01610725  0.0  0.01223536
+    ## 2 -0.04811147 -1.00000000  0.0  0.00000000
+    ## 3  0.00000000  0.00000000 -1.0  0.00000000
+    ## 4  0.00000000  0.00000000  0.1 -1.00000000
+
+``` r
+# simulate GLV
+set.seed(123)
+save_and_plot_glv(n_species = n, A_matrix = A_normal)
+```
+
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+``` r
+A <- miaSim::powerlawA(4, alpha = 1.01)
+A
+```
+
+    ##    1           2           3          4
+    ## 1 -1  0.00000000  0.00000000  0.0000000
+    ## 2  0 -1.00000000  0.06302926  0.0000000
+    ## 3  0  0.00000000 -1.00000000 -0.2455873
+    ## 4  0 -0.07523968  0.00000000 -1.0000000
+
+``` r
+save_and_plot_glv(n_species = 4, A_matrix = A)
+```
+
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
+## Large Example for simulating GLV
+
+### a) with 30 Species
+
+``` r
+n = 30
+
 # Generate random interaction matrix for GLV (2 Species)
 set.seed(12)
 A_matrix <- randomA(n_species = 30)
@@ -344,39 +511,57 @@ A_matrix
 
 ``` r
 # simulate GLV
-ts_glv_30 <-
-  simulateGLV(
-    n_species = 30,
-    A = A_matrix,
-    t_start = 0,
-    t_store = 500
-  )
-
-# reshape time series matrix to long data.table
-rownames(ts_glv_30) <- paste0("row", 1:nrow(ts_glv_30))
-colnames(ts_glv_30) <- paste0(1:ncol(ts_glv_30))
-
-dt_ts_glv <-
-  as.data.table(as.table(ts_glv_30)) %>% 
-  melt %>% 
-  .[, ID := V1] %>% 
-  .[, time := as.numeric(V2)] %>% 
-  .[, count := value] %>% 
-  .[, c("variable", "value", "V1", "V2") := NULL]
+save_and_plot_glv(n_species = n, A_matrix)
 ```
 
-    ## Warning in melt.data.table(.): id.vars and measure.vars are internally guessed
-    ## when both are 'NULL'. All non-numeric/integer/logical type columns are
-    ## considered id.vars, which in this case are columns [V1, V2]. Consider providing
-    ## at least one of 'id' or 'measure' vars in future.
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+### b) with 10 Species
 
 ``` r
-# plot time series
-ggplot(dt_ts_glv[time < 50], aes(time, count)) +
-  geom_line(aes(col = ID))
+n = 10
+
+# Generate random interaction matrix for GLV (2 Species)
+# set.seed(2)
+# A_matrix <- randomA(n_species = n)
+A_matrix <- matrix(c(-0.5, 30, 0, 0, 0, 0, 0, 0, 0, 0,
+                     0, -0.5, 0, 0, 0, 0, 0, 0, 0, 0,
+                     0, 0, -0.5, 0, 0, 0, 0, 0, 0, 0,
+                     0, 0, 0, -0.5, 0, 0, 12, 0, 0, 0,
+                     0, 0, 0, 0, -0.5, 0, 0, 0, 0, 0,
+                     0, 0, 0, 0, 0, -0.5, 0, 0, 0, 0,
+                     0, 0, -15, 0, 0, 0, -0.5, 0, 0, 0,
+                     0, 0, 0, 0, 0, 0, 0, -0.5, 0, 0,
+                     0, 0, 0, 0, 0, 0, 0, 0, -0.5, 0,
+                     0, 0, 0, 0, 0, 0, 0, 0, 2, -0.5),
+                   nrow = n)
+A_matrix
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+    ##       [,1] [,2] [,3] [,4] [,5] [,6]  [,7] [,8] [,9] [,10]
+    ##  [1,] -0.5  0.0  0.0  0.0  0.0  0.0   0.0  0.0  0.0   0.0
+    ##  [2,] 30.0 -0.5  0.0  0.0  0.0  0.0   0.0  0.0  0.0   0.0
+    ##  [3,]  0.0  0.0 -0.5  0.0  0.0  0.0 -15.0  0.0  0.0   0.0
+    ##  [4,]  0.0  0.0  0.0 -0.5  0.0  0.0   0.0  0.0  0.0   0.0
+    ##  [5,]  0.0  0.0  0.0  0.0 -0.5  0.0   0.0  0.0  0.0   0.0
+    ##  [6,]  0.0  0.0  0.0  0.0  0.0 -0.5   0.0  0.0  0.0   0.0
+    ##  [7,]  0.0  0.0  0.0 12.0  0.0  0.0  -0.5  0.0  0.0   0.0
+    ##  [8,]  0.0  0.0  0.0  0.0  0.0  0.0   0.0 -0.5  0.0   0.0
+    ##  [9,]  0.0  0.0  0.0  0.0  0.0  0.0   0.0  0.0 -0.5   2.0
+    ## [10,]  0.0  0.0  0.0  0.0  0.0  0.0   0.0  0.0  0.0  -0.5
+
+``` r
+growth_rates = rep(1, n)
+growth_rates
+```
+
+    ##  [1] 1 1 1 1 1 1 1 1 1 1
+
+``` r
+save_and_plot_glv(n_species = n, A_matrix, growth_rates)
+```
+
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 ## Files written
 
@@ -387,6 +572,17 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 0 × 4
-    ## # ℹ 4 variables: path <fs::path>, type <fct>, size <fs::bytes>,
-    ## #   modification_time <dttm>
+    ## # A tibble: 11 × 4
+    ##    path                                      type       size modification_time  
+    ##    <fs::path>                                <fct> <fs::byt> <dttm>             
+    ##  1 miaSim_GLV_10species.mat                  file      43.2K 2023-07-10 15:01:21
+    ##  2 miaSim_GLV_2species_oscillating.mat       file      11.9K 2023-07-10 15:01:06
+    ##  3 miaSim_GLV_2species_V1.mat                file      11.9K 2023-07-10 15:01:02
+    ##  4 miaSim_GLV_2species_V3.mat                file      11.9K 2023-07-10 15:01:04
+    ##  5 miaSim_GLV_30species.mat                  file     121.3K 2023-07-10 15:01:18
+    ##  6 miaSim_GLV_3species_oscillating.mat       file      15.8K 2023-07-10 15:01:07
+    ##  7 miaSim_GLV_4species.mat                   file      19.7K 2023-07-10 15:01:16
+    ##  8 miaSim_GLV_4species_oscillating_three.mat file      19.7K 2023-07-10 15:01:08
+    ##  9 miaSim_GLV_4species_oscillating_zero.mat  file      19.7K 2023-07-10 15:01:10
+    ## 10 miaSim_GLV_4species_Vd.mat                file      19.7K 2023-07-10 15:01:14
+    ## 11 miaSim_GLV_5species_V1.mat                file      23.6K 2023-07-10 15:01:05
