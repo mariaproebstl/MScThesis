@@ -1,5 +1,5 @@
 ---
-title: "Time series (miaTIME)"
+title: "Time series (miaTime)"
 date: "Compiled at `r format(Sys.time(), '%Y-%m-%d %H:%M:%S', tz = 'UTC')` UTC"
 output: github_document
 params:
@@ -10,12 +10,14 @@ params:
 here::i_am(paste0(params$name, ".Rmd"), uuid = "87d828ae-2f1b-40a8-b559-3784df62c78d")
 ```
 
-The purpose of this document is ...
+
+# Packages
 
 ```{r packages, warning=FALSE, message=FALSE}
 library("conflicted")
 library(data.table)
 library(tidyverse)
+library(viridis) # for color palettes   
 
 # # install the miaTIME package from github
 # library(devtools)
@@ -26,6 +28,10 @@ library(miaTime)
 library(lubridate)
 library(TreeSummarizedExperiment)
 # library(tidySummarizedExperiment)
+
+library(miaViz)
+library(phyloseq)
+library(ggtree)
 ```
 
 ```{r directories}
@@ -40,7 +46,7 @@ path_source <- projthis::proj_path_source(params$name)
 ```
 
 
-## SilvermanAGutData
+# SilvermanAGutData
 
 ```{r}
 # load a dataset from miaTIME
@@ -56,8 +62,220 @@ data(SilvermanAGutData)
 # metadata(SilvermanAGutData) #empty
 # 
 # referenceSeq(SilvermanAGutData)
+```
 
 
+## Playground TSE
+
+```{r}
+
+plotAbundance(SilvermanAGutData, rank = "Order")
+plotAbundance(SilvermanAGutData, rank = "Order", use_relative = F, layout = "point")
+
+# # get relative abundances
+# counts(relAbundanceCounts(SilvermanAGutData))
+
+# ggtree(rowTree(SilvermanAGutData)) +
+#     geom_text2(aes(label = node), color = "darkblue", size = 1) +
+#     geom_text2(aes(label = label), color = "darkorange", size = 2) 
+```
+
+
+```{r}
+colData(SilvermanAGutData) %>% head()
+SilvermanAGutData$SampleType %>% table()
+SilvermanAGutData$Vessel %>% table()
+
+tse_ps_Silverman_daily_V1 <- 
+  SilvermanAGutData[ , SilvermanAGutData$SampleType == "Daily" & SilvermanAGutData$Vessel == 1]
+
+plotAbundance(tse_ps_Silverman_daily_V1, rank = "Family", add_legend = FALSE)
+
+tse_Silverman_all_V4 <- 
+  SilvermanAGutData[ , SilvermanAGutData$Vessel == 4]
+
+plotAbundance(tse_Silverman_all_V4, rank = "Family", add_legend = FALSE,
+           order_sample_by = "DAY_ORDER")
+
+```
+
+
+## Make Phyloseq
+
+```{r}
+ps_Silverman <- makePhyloseqFromTreeSE(SilvermanAGutData)
+```
+
+
+```{r}
+ntaxa(ps_Silverman)
+
+nsamples(ps_Silverman)
+
+sample_names(ps_Silverman)[1:5]
+
+rank_names(ps_Silverman)
+
+sample_variables(ps_Silverman)
+
+otu_table(ps_Silverman)[1:5, 1:5]
+
+sample_data(ps_Silverman) %>% head()
+
+```
+
+
+### Add date to sample info in phyloseq
+
+```{r}
+# extract time info from sample names
+
+# create columns for day/hour info
+sample_names <- sample_names(ps_Silverman)
+sample_cols <- 
+  data.table(names = sample_names,
+             day = tstrsplit(sample_names, "\\.")[[3]],
+             hours = str_extract(sample_names, "[0-9][0-9]h")) %>% 
+  # format days and hours as numeric
+  .[, day := as.numeric(str_remove(day, "d"))] %>% 
+  .[, hours := as.numeric(str_remove(hours, "h"))] %>% 
+  # set time to decimal value in days
+  .[, time := day + hours/24] %>% 
+  .[is.na(hours), time := day]
+
+```
+
+
+```{r}
+# Create dataframe including Time (in days) info out of rownames
+sam.new <- data.frame(Time = sample_cols$time)
+# Mix up the sample names (just for demonstration purposes)
+rownames(sam.new) <- sample_cols$names
+
+# Turn into `sample_data` 
+sam.new <- sample_data(sam.new)
+
+ps_Silverman <- merge_phyloseq(ps_Silverman, sam.new)
+head(sample_data(ps_Silverman))
+```
+
+
+### Subsets
+
+```{r}
+# transform counts to relative abundance
+ps_Silverman_rel <-
+  transform_sample_counts(ps_Silverman, function(x) x / sum(x) )
+
+# filter for taxa with abundance mean greater than 1e-3
+ps_Silverman_mostAbundant = 
+  filter_taxa(ps_Silverman, function(x) mean(x) > 1e-5, TRUE)
+
+# devide into daily and hourly samples
+
+ps_Silverman_daily <- 
+  subset_samples(ps_Silverman, SampleType=="Daily")
+
+ps_Silverman_hourly <- 
+  subset_samples(ps_Silverman, SampleType=="Hourly")
+
+
+# devide by Vessels
+
+ps_Silverman_daily_V1 <- 
+  subset_samples(ps_Silverman_daily, Vessel==1)
+ps_Silverman_hourly_V1 <- 
+  subset_samples(ps_Silverman_hourly, Vessel==1 & Time < 28)
+  # subset_samples(ps_Silverman_hourly, Vessel==1)
+
+ps_Silverman_daily_V2 <- 
+  subset_samples(ps_Silverman_daily, Vessel==2)
+ps_Silverman_hourly_V2 <- 
+  subset_samples(ps_Silverman_hourly, Vessel==2 & Time < 28)
+
+ps_Silverman_daily_V3 <- 
+  subset_samples(ps_Silverman_daily, Vessel==3)
+ps_Silverman_hourly_V3 <- 
+  subset_samples(ps_Silverman_hourly, Vessel==3 & Time < 28)
+
+ps_Silverman_daily_V4 <- 
+  subset_samples(ps_Silverman_daily, Vessel==4)
+ps_Silverman_hourly_V4 <- 
+  subset_samples(ps_Silverman_hourly, Vessel==4 & Time < 28)
+```
+
+
+There are still some duplicated samples regarding time. These are listed below:
+
+```{r}
+# duplicates in Time:
+
+get_duplicates <- function(data_phylo){
+  data <- sample_data(data_phylo)
+  duplicated_times <-
+    data[data$Time %>% duplicated()]$Time
+  res <- data[data$Time %in% duplicated_times]
+  setorder(res, Time)
+  # return(res)
+  return(res[, c("DAY_ORDER", "Vessel", "SampleType", "Description", "Time")])
+}
+
+#   "SampleID",
+#   "BarcodeSequence",
+#   "LinkerPrimerSequence",
+#   "PrimerID",
+#   "Project",
+#   "DAY_ORDER",
+#   "Vessel",
+#   "SampleType",
+#   "Pre_Post_Challenge",
+#   "Normal_Noise_Sample",
+#   "Description",
+#   "Time"
+
+get_duplicates(ps_Silverman_hourly_V1)
+get_duplicates(ps_Silverman_hourly_V2)
+get_duplicates(ps_Silverman_hourly_V3)
+get_duplicates(ps_Silverman_hourly_V4)
+
+get_duplicates(ps_Silverman_daily_V2)
+
+```
+
+
+### Plots
+
+```{r}
+# whole dataset
+plot_bar(ps_Silverman)
+plot_bar(ps_Silverman_rel, fill = "Phylum") +
+  geom_bar(aes(color=Phylum, fill=Phylum), stat="identity", position="stack")
+# plot_bar(ps_Silverman, x = "DAY_ORDER", fill = "Order", facet_grid=~SampleType)
+```
+
+
+```{r}
+# daily and hourly data
+plot_bar(ps_Silverman_daily, x = "DAY_ORDER", fill = "Order", 
+         facet_grid =  ~ Vessel, title = "Daily samples grouped by Vessel")
+plot_bar(ps_Silverman_hourly, x = "DAY_ORDER", fill = "Order", 
+         facet_grid =  ~ Vessel, title = "Hourly samples grouped by Vessel")
+```
+
+
+```{r}
+# daily/hourly data for vessel 1
+plot_bar(ps_Silverman_daily_V1, x = "Time", fill = "Family",
+         title = "Daily samples of Vessel 1")
+plot_bar(ps_Silverman_hourly_V1, x = "Time", fill = "Order",
+         title = "Hourly samples of Vessel 1")
+```
+
+
+
+## Manual Analysis
+
+```{r}
 # extract taxa information
 dt_taxonomic_tree <-
   setDT(as.data.frame(rowData(SilvermanAGutData)), keep.rownames = TRUE)
@@ -82,13 +300,13 @@ dt_SilvermanAGut_count <-
 
 get time info out of count table names
 
-```{r}
+```{r extract time info}
 # extract sample names from count table
 sample_names <- 
   ma_SilvermanAGut_count %>% colnames()
 
-# show all names
-sort(sample_names)
+# # show all names
+# sort(sample_names)
 
 # create columns for day/hour info and vessel number
 # extract the infos from sample names
@@ -103,6 +321,7 @@ sample_cols <-
   .[day == 28, vessel := str_extract(names, "V[0-9]\\.[0-9][0-9]")] %>% 
   .[day == 28 & is.na(vessel),
     vessel := str_extract(names, "V[0-9]\\.[0-9]")] %>% 
+  .[, c("vessel", "number") := tstrsplit(vessel, "\\.")] %>% 
   # format days and hours as numeric
   .[, day := as.numeric(str_remove(day, "d"))] %>% 
   .[, hours := as.numeric(str_remove(hours, "h"))] %>% 
@@ -119,6 +338,8 @@ sample_cols[duplicated(sample_cols[, .(day, hours, vessel)])]
 # duplicates examples
 sample_cols[day == 8] %>% .[order(vessel)]
 sample_cols[day == 22 & hours == 16] %>% .[order(vessel)]
+
+## TODO: remove duplicates 
 
 ```
 
@@ -138,15 +359,15 @@ dt_SilvermanAGut_count <-
 # function to create bar plot for data
 barplot_Silverman <- 
   function(data, v = "V1", time_type = "day", level = "seq", legend = "none"){
-  data <- data[vessel == v]
+  
+    if(v != "all"){
+      data <- data[vessel == v]
+    }
+    
   if(time_type == "day"){
     data <- data[time %% 1 == 0]
-    time_name <- "time (days)"
   } else if(time_type == "hour"){
     data <- data[time > 19 & time < 25]
-    time_name = "time (hours)"
-  } else if(time_type == "all"){
-    time_name = "time"
   }
   
   pl <-
@@ -155,7 +376,9 @@ barplot_Silverman <-
     theme(legend.position = legend) +
     labs(title = "SilvermanAGut Data",
          subtitle = paste("Vessel", str_remove(v, "V")),
-         x = time_name)
+         x = "time (days)",
+         fill = level) +
+    scale_fill_viridis(discrete = TRUE, option = "turbo")
   
   print(pl)
 }
@@ -165,7 +388,7 @@ barplot_Silverman <-
 
 ```{r}
 # plots
-barplot_Silverman(dt_SilvermanAGut_count, "V1", "all")
+barplot_Silverman(dt_SilvermanAGut_count, "V2", "all")
 barplot_Silverman(dt_SilvermanAGut_count, "V1", "day")
 barplot_Silverman(dt_SilvermanAGut_count, "V2", "day")
 barplot_Silverman(dt_SilvermanAGut_count, "V3", "day")
@@ -175,136 +398,144 @@ barplot_Silverman(dt_SilvermanAGut_count, "V1", "hour")
 ```
 
 
-### Analysis by genus
+### Group by Species
 
 ```{r}
-# sum counts over genus
-dt_SilvermanAGut_count_genus <-
-  dt_SilvermanAGut_count[is.na(Genus), Genus := "unknown"] %>% 
-    .[, .(count = sum(count)),
-      by = c("desc", "Genus", "vessel", "time")]
+# add category "other" for Species with small count
+th_species <- 0.1
+
+dt_species_other <-
+  dt_SilvermanAGut_count[, rel_count_species := count/sum(count),
+              by = c("time", "vessel")] %>% 
+  .[, .(max_count = max(rel_count_species)),
+             by = c("Species")] %>% 
+      .[max_count < th_species, .(Species)]
+
+dt_SilvermanAGut_count[, Species_grouped := Species] %>% 
+  .[Species %in% dt_species_other$Species, Species_grouped := "other"]
+
+
+# plot for grouped species
+barplot_Silverman(dt_SilvermanAGut_count, 
+                  "V1", "day", level = "Species_grouped", legend = "right")
+
+```
+
+
+### by Genus
+
+```{r}
+# rename NAs as unknown
+dt_SilvermanAGut_count[is.na(Genus), Genus := "unknown"]
+
+# add threshold for category "other"
+th_genus <- 0.1
+
+# find genus with small count/abundances
+dt_genus_other <-
+  dt_SilvermanAGut_count[, .(rel_count_genus = sum(rel_count_species)),
+                         by = c("desc", "Genus", "vessel", "time")] %>%
+  .[, .(max_count = max(rel_count_genus, na.rm = T)),
+             by = c("Genus")] %>% 
+  .[max_count < th_genus, .(Genus)]
+
+# add category other to grouped genus
+dt_SilvermanAGut_count[, Genus_grouped := Genus] %>% 
+  .[Genus %in% dt_genus_other$Genus, Genus_grouped := "other"]
 
 ```
 
 ```{r}
 # plot results
-barplot_Silverman(dt_SilvermanAGut_count_genus, "V1", "day", "Genus")
+barplot_Silverman(dt_SilvermanAGut_count, 
+                  "V1", "day", "Genus_grouped", legend = "right")
+
+# plot results
+barplot_Silverman(dt_SilvermanAGut_count, 
+                  "V2", "hour", "Genus_grouped", legend = "right")
 
 # list of all genus
-dt_SilvermanAGut_count_genus$Genus %>% unique()
+dt_SilvermanAGut_count$Genus_grouped %>% unique()
 ```
 
 
-### Analysis by family
+### by Family
 
 ```{r}
-# sum counts over Family
-dt_SilvermanAGut_count_Family <-
-  dt_SilvermanAGut_count[is.na(Family), Family := "unknown"] %>% 
-    .[, .(count = sum(count)),
-      by = c("desc", "Family", "vessel", "time")]
+# # sum counts over Family
+# dt_SilvermanAGut_count_Family <-
+#   dt_SilvermanAGut_count[is.na(Family), Family := "unknown"] %>% 
+#     .[, .(count = sum(count)),
+#       by = c("desc", "Family", "vessel", "time")]
+
+# rename NAs as unknown
+dt_SilvermanAGut_count[is.na(Family), Family := "unknown"]
+
+# add threshold for category "other"
+th_family <- 0.05
+
+# find family with small count/abundances
+dt_family_other <-
+  dt_SilvermanAGut_count[, .(rel_count_family = sum(rel_count_species)),
+                         by = c("desc", "Family", "vessel", "time")] %>%
+  .[, .(max_count = max(rel_count_family, na.rm = T)),
+             by = c("Family")] %>% 
+  .[max_count < th_family, .(Family)]
+
+# add category other to grouped family
+dt_SilvermanAGut_count[, Family_grouped := Family] %>% 
+  .[Family %in% dt_family_other$Family, Family_grouped := "other"]
 
 ```
+
 
 ```{r}
 # plot results
-barplot_Silverman(dt_SilvermanAGut_count_Family, "V1", "day", "Family")
-barplot_Silverman(dt_SilvermanAGut_count_Family, "V1", "day", "Family", legend = "bottom")
+barplot_Silverman(dt_SilvermanAGut_count, "V1", "day", "Family")
+barplot_Silverman(dt_SilvermanAGut_count, 
+                  "V1", "day", "Family_grouped", legend = "right")
 ```
 
 
-## hitchip1006 Data
 
-### miaTIME tutorial
+## Analyse over all vessels
 
-https://microbiome.github.io/miaTime/articles/manipulation.html
-
-<!-- ```{r} -->
-<!-- data("hitchip1006") -->
-<!-- tse <- hitchip1006 -->
-<!-- tse2 <- tse %>% tidySingleCellExperiment::arrange(subject, time) -->
-<!-- ``` -->
+group vessels (take mean)
 
 ```{r}
+### test
+dt_SilvermanAGut_count[duplicated(dt_SilvermanAGut_count[, .(vessel, time, seq)]) |
+                         duplicated(dt_SilvermanAGut_count[, .(vessel, time, seq)], fromLast = TRUE), .N]
+### test
 
-# Load demo data
-data(hitchip1006)
-tse <- hitchip1006
+dt_SilvermanAGut_count_mean <-
+  dt_SilvermanAGut_count[, .(count = mean(count)),
+                         by = c("vessel", "seq", "time")] %>% 
+  .[, .(count = mean(count)),  by = c("seq", "time")] %>% 
+  merge(., dt_taxonomic_tree,
+        by.x = "seq", by.y = "rn")
 
-# Time is given in days in the demo data.
-# Convert days to seconds
-time_in_seconds <- 60*60*24*colData(tse)[,"time"]
-# Convert the time data to period class
-Seconds <- as.period(time_in_seconds, unit="sec")
-# Check the output
-Seconds[1140:1151]
-```
+# remove NAs for species/genus/family
+dt_SilvermanAGut_count_mean[is.na(Species), Species := "unknown"] %>% 
+  .[is.na(Genus), Genus := "unknown"] %>% 
+  .[is.na(Family), Family := "unknown"]
 
-```{r}
-Hours <- as.period(Seconds, unit = "hour")
-Hours[1140:1151]
-```
+# add category other to grouped genus
+dt_SilvermanAGut_count_mean[, Genus_grouped := Genus] %>% 
+  .[Genus %in% dt_genus_other$Genus, Genus_grouped := "other"]
 
-```{r}
-colData(tse)$timeSec <- Seconds
-colData(tse)
-```
+# plot
+barplot_Silverman(dt_SilvermanAGut_count_mean, v = "all", level = "Genus_grouped")
+# ggsave("01c-timeseries-miaTIME_files/figure-gfm/plot_genus_days.jpg",
+#        width = 6,
+#        height = 5)
 
-```{r}
-Duration <- as.duration(Seconds)
-Duration[1140:1151]
-```
-
-```{r}
-Timediff <- diff(Duration)
-Timediff <- c(NA, Timediff)
-Timediff[1140:1151]
-```
-
-```{r}
-base <- Hours - Hours[1] #distance from starting point
-base[1140:1151]
-```
-
-```{r}
-base_1140 <- Seconds - Seconds[1140]
-base_1140[1140:1151]
-```
-
-```{r}
-colData(tse)$rank <- rank(colData(tse)$time)
-colData(tse)
-```
-
-```{r}
-colData(tse) <- colData(tse) %>%
-   as.data.frame() %>%
-   group_by(subject) %>%
-   mutate(rank = rank(time, ties.method="average")) %>%
-   DataFrame()
-```
-
-<!-- ```{r} -->
-<!-- # Pick samples with time point 0 -->
-<!-- tse <- hitchip1006 |> filter(time == 0) -->
-<!-- # Or: tse <- tse[, tse$time==0] -->
-
-<!-- # Sample with the smallest time point within each subject -->
-<!-- colData(tse) <- colData(tse) %>% -->
-<!--    as.data.frame() %>% -->
-<!--    group_by(subject) %>% -->
-<!--    mutate(rank = rank(time, ties.method="average")) %>% -->
-<!--    DataFrame -->
-
-<!-- # Pick the subset including first time point per subject -->
-<!-- tse1 <- tse[, tse$rank == 1] -->
-<!-- ``` -->
-
-
-### further analysis
-
-```{r}
-dt_tse <- as.data.table(colData(tse))
+barplot_Silverman(dt_SilvermanAGut_count_mean, 
+                  v = "all", time_type = "hour", level = "Genus_grouped")
+# ggsave("01c-timeseries-miaTIME_files/figure-gfm/plot_genus_hours.jpg",
+#        width = 6,
+#        height = 5)
+  
 ```
 
 

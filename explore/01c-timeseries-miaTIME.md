@@ -1,17 +1,18 @@
-Time series (miaTIME)
+Time series (miaTime)
 ================
-Compiled at 2023-05-24 14:40:07 UTC
+Compiled at 2023-07-11 13:43:53 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "87d828ae-2f1b-40a8-b559-3784df62c78d")
 ```
 
-The purpose of this document is …
+# Packages
 
 ``` r
 library("conflicted")
 library(data.table)
 library(tidyverse)
+library(viridis) # for color palettes   
 
 # # install the miaTIME package from github
 # library(devtools)
@@ -22,6 +23,10 @@ library(miaTime)
 library(lubridate)
 library(TreeSummarizedExperiment)
 # library(tidySummarizedExperiment)
+
+library(miaViz)
+library(phyloseq)
+library(ggtree)
 ```
 
 ``` r
@@ -35,7 +40,7 @@ path_target <- projthis::proj_path_target(params$name)
 path_source <- projthis::proj_path_source(params$name)
 ```
 
-## SilvermanAGutData
+# SilvermanAGutData
 
 ``` r
 # load a dataset from miaTIME
@@ -51,8 +56,564 @@ data(SilvermanAGutData)
 # metadata(SilvermanAGutData) #empty
 # 
 # referenceSeq(SilvermanAGutData)
+```
+
+## Playground TSE
+
+``` r
+plotAbundance(SilvermanAGutData, rank = "Order")
+```
+
+    ## Warning: useNames = NA is deprecated. Instead, specify either useNames = TRUE
+    ## or useNames = TRUE.
+
+    ## Warning: Removed 130 rows containing missing values (`position_stack()`).
+
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+``` r
+plotAbundance(SilvermanAGutData, rank = "Order", use_relative = F, layout = "point")
+```
+
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->
+
+``` r
+# # get relative abundances
+# counts(relAbundanceCounts(SilvermanAGutData))
+
+# ggtree(rowTree(SilvermanAGutData)) +
+#     geom_text2(aes(label = node), color = "darkblue", size = 1) +
+#     geom_text2(aes(label = label), color = "darkorange", size = 2) 
+```
+
+``` r
+colData(SilvermanAGutData) %>% head()
+```
+
+    ## DataFrame with 6 rows and 11 columns
+    ##                                                     SampleID BarcodeSequence
+    ##                                                  <character>     <character>
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12    T..0.V.2.Rep.1..set...    TACGAGCCCTAA
+    ## T..0.V.3.Rep.1.                              T..0.V.3.Rep.1.    CGATTAGGAATC
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10     T..0.V.4.Rep.1..Set...    AACGTAGGCTCT
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7 T..1.Days.V.1.Rep.1...    GCACTTCATTTC
+    ## T..1.Days.V.2.Rep.1.                    T..1.Days.V.2.Rep.1.    TCTCGCACTGGA
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9 T..1.Days.V.3.Rep.1...    TTAACCTTCCTG
+    ##                                         LinkerPrimerSequence    PrimerID
+    ##                                                  <character> <character>
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12    CAAGCAGAAGACGGCATACG..   806rcbc35
+    ## T..0.V.3.Rep.1.                       CAAGCAGAAGACGGCATACG..  806rcbc983
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10     CAAGCAGAAGACGGCATACG..  806rcbc173
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7 CAAGCAGAAGACGGCATACG..  806rcbc930
+    ## T..1.Days.V.2.Rep.1.                  CAAGCAGAAGACGGCATACG.. 806rcbc1011
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9 CAAGCAGAAGACGGCATACG..  806rcbc164
+    ##                                           Project DAY_ORDER    Vessel
+    ##                                       <character> <integer> <integer>
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12          30BR2         0         2
+    ## T..0.V.3.Rep.1.                             30BR2         0         3
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10           30BR2         0         4
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7       30BR2         1         1
+    ## T..1.Days.V.2.Rep.1.                        30BR2         1         2
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9       30BR2         1         3
+    ##                                        SampleType Pre_Post_Challenge
+    ##                                       <character>        <character>
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12          Daily      Pre_Challenge
+    ## T..0.V.3.Rep.1.                             Daily      Pre_Challenge
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10           Daily      Pre_Challenge
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7       Daily      Pre_Challenge
+    ## T..1.Days.V.2.Rep.1.                        Daily      Pre_Challenge
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9       Daily      Pre_Challenge
+    ##                                       Normal_Noise_Sample
+    ##                                               <character>
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12                 Normal
+    ## T..0.V.3.Rep.1.                                    Normal
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10                  Normal
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7              Normal
+    ## T..1.Days.V.2.Rep.1.                               Normal
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9              Normal
+    ##                                                  Description
+    ##                                                  <character>
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12    T_0 V.2 Rep 1  set 3..
+    ## T..0.V.3.Rep.1.                               T_0 V.3 Rep 1 
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10     T_0 V.4 Rep 1  Set 4..
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7 Wrong Tube T_7 Days ..
+    ## T..1.Days.V.2.Rep.1.                  Wrong Tube T_7 Days ..
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9 Wrong Tube T_7 Days ..
+
+``` r
+SilvermanAGutData$SampleType %>% table()
+```
+
+    ## .
+    ##  Daily Hourly 
+    ##     69    570
+
+``` r
+SilvermanAGutData$Vessel %>% table()
+```
+
+    ## .
+    ##   1   2   3   4 
+    ## 160 160 159 160
+
+``` r
+tse_ps_Silverman_daily_V1 <- 
+  SilvermanAGutData[ , SilvermanAGutData$SampleType == "Daily" & SilvermanAGutData$Vessel == 1]
+
+plotAbundance(tse_ps_Silverman_daily_V1, rank = "Family", add_legend = FALSE)
+```
+
+    ## Warning: useNames = NA is deprecated. Instead, specify either useNames = TRUE
+    ## or useNames = TRUE.
+
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+
+``` r
+tse_Silverman_all_V4 <- 
+  SilvermanAGutData[ , SilvermanAGutData$Vessel == 4]
+
+plotAbundance(tse_Silverman_all_V4, rank = "Family", add_legend = FALSE,
+           order_sample_by = "DAY_ORDER")
+```
+
+    ## Warning: useNames = NA is deprecated. Instead, specify either useNames = TRUE
+    ## or useNames = TRUE.
+
+    ## Warning: Removed 41 rows containing missing values (`position_stack()`).
+
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->
+
+## Make Phyloseq
+
+``` r
+ps_Silverman <- makePhyloseqFromTreeSE(SilvermanAGutData)
+```
+
+``` r
+ntaxa(ps_Silverman)
+```
+
+    ## [1] 413
+
+``` r
+nsamples(ps_Silverman)
+```
+
+    ## [1] 639
+
+``` r
+sample_names(ps_Silverman)[1:5]
+```
+
+    ## [1] "T..0.V.2.Rep.1..set.3.91..Well.C12"   
+    ## [2] "T..0.V.3.Rep.1."                      
+    ## [3] "T..0.V.4.Rep.1..Set.4.77..WellE10"    
+    ## [4] "T..1.Days.V.1.Rep.1..Set.1.54.Well.F7"
+    ## [5] "T..1.Days.V.2.Rep.1."
+
+``` r
+rank_names(ps_Silverman)
+```
+
+    ## [1] "Kingdom" "Phylum"  "Class"   "Order"   "Family"  "Genus"   "Species"
+
+``` r
+sample_variables(ps_Silverman)
+```
+
+    ##  [1] "SampleID"             "BarcodeSequence"      "LinkerPrimerSequence"
+    ##  [4] "PrimerID"             "Project"              "DAY_ORDER"           
+    ##  [7] "Vessel"               "SampleType"           "Pre_Post_Challenge"  
+    ## [10] "Normal_Noise_Sample"  "Description"
+
+``` r
+otu_table(ps_Silverman)[1:5, 1:5]
+```
+
+    ## OTU Table:          [5 taxa and 5 samples]
+    ##                      taxa are rows
+    ##         T..0.V.2.Rep.1..set.3.91..Well.C12 T..0.V.3.Rep.1.
+    ## seq_230                                  0               0
+    ## seq_138                                  0               0
+    ## seq_69                                   0               0
+    ## seq_239                                  0               0
+    ## seq_122                                  0               0
+    ##         T..0.V.4.Rep.1..Set.4.77..WellE10 T..1.Days.V.1.Rep.1..Set.1.54.Well.F7
+    ## seq_230                                 0                                     0
+    ## seq_138                                 0                                     0
+    ## seq_69                                  0                                     0
+    ## seq_239                                 0                                     0
+    ## seq_122                                 0                                     0
+    ##         T..1.Days.V.2.Rep.1.
+    ## seq_230                    0
+    ## seq_138                    0
+    ## seq_69                     0
+    ## seq_239                    0
+    ## seq_122                    0
+
+``` r
+sample_data(ps_Silverman) %>% head()
+```
+
+    ##                                                                    SampleID
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12       T..0.V.2.Rep.1..set.3.91..Well.C12
+    ## T..0.V.3.Rep.1.                                             T..0.V.3.Rep.1.
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10         T..0.V.4.Rep.1..Set.4.77..WellE10
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7 T..1.Days.V.1.Rep.1..Set.1.54.Well.F7
+    ## T..1.Days.V.2.Rep.1.                                   T..1.Days.V.2.Rep.1.
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9 T..1.Days.V.3.Rep.1..Set.4.68..WellD9
+    ##                                       BarcodeSequence     LinkerPrimerSequence
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12       TACGAGCCCTAA CAAGCAGAAGACGGCATACGAGAT
+    ## T..0.V.3.Rep.1.                          CGATTAGGAATC CAAGCAGAAGACGGCATACGAGAT
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10        AACGTAGGCTCT CAAGCAGAAGACGGCATACGAGAT
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7    GCACTTCATTTC CAAGCAGAAGACGGCATACGAGAT
+    ## T..1.Days.V.2.Rep.1.                     TCTCGCACTGGA CAAGCAGAAGACGGCATACGAGAT
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9    TTAACCTTCCTG CAAGCAGAAGACGGCATACGAGAT
+    ##                                          PrimerID Project DAY_ORDER Vessel
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12      806rcbc35   30BR2         0      2
+    ## T..0.V.3.Rep.1.                        806rcbc983   30BR2         0      3
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10      806rcbc173   30BR2         0      4
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7  806rcbc930   30BR2         1      1
+    ## T..1.Days.V.2.Rep.1.                  806rcbc1011   30BR2         1      2
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9  806rcbc164   30BR2         1      3
+    ##                                       SampleType Pre_Post_Challenge
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12         Daily      Pre_Challenge
+    ## T..0.V.3.Rep.1.                            Daily      Pre_Challenge
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10          Daily      Pre_Challenge
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7      Daily      Pre_Challenge
+    ## T..1.Days.V.2.Rep.1.                       Daily      Pre_Challenge
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9      Daily      Pre_Challenge
+    ##                                       Normal_Noise_Sample
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12                 Normal
+    ## T..0.V.3.Rep.1.                                    Normal
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10                  Normal
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7              Normal
+    ## T..1.Days.V.2.Rep.1.                               Normal
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9              Normal
+    ##                                                                            Description
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12                   T_0 V.2 Rep 1  set 3 -91 Well C12
+    ## T..0.V.3.Rep.1.                                                         T_0 V.3 Rep 1 
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10                    T_0 V.4 Rep 1  Set 4 -77 Well-E10
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7 Wrong Tube T_7 Days V.1 Rep 1  Set 1 -54Well -F7
+    ## T..1.Days.V.2.Rep.1.                                    Wrong Tube T_7 Days V.2 Rep 1 
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9 Wrong Tube T_7 Days V.3 Rep 1  Set 4 -68 Well-D9
+
+### Add date to sample info in phyloseq
+
+``` r
+# extract time info from sample names
+
+# create columns for day/hour info
+sample_names <- sample_names(ps_Silverman)
+sample_cols <- 
+  data.table(names = sample_names,
+             day = tstrsplit(sample_names, "\\.")[[3]],
+             hours = str_extract(sample_names, "[0-9][0-9]h")) %>% 
+  # format days and hours as numeric
+  .[, day := as.numeric(str_remove(day, "d"))] %>% 
+  .[, hours := as.numeric(str_remove(hours, "h"))] %>% 
+  # set time to decimal value in days
+  .[, time := day + hours/24] %>% 
+  .[is.na(hours), time := day]
+```
+
+``` r
+# Create dataframe including Time (in days) info out of rownames
+sam.new <- data.frame(Time = sample_cols$time)
+# Mix up the sample names (just for demonstration purposes)
+rownames(sam.new) <- sample_cols$names
+
+# Turn into `sample_data` 
+sam.new <- sample_data(sam.new)
+
+ps_Silverman <- merge_phyloseq(ps_Silverman, sam.new)
+head(sample_data(ps_Silverman))
+```
+
+    ##                                                                    SampleID
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12       T..0.V.2.Rep.1..set.3.91..Well.C12
+    ## T..0.V.3.Rep.1.                                             T..0.V.3.Rep.1.
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10         T..0.V.4.Rep.1..Set.4.77..WellE10
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7 T..1.Days.V.1.Rep.1..Set.1.54.Well.F7
+    ## T..1.Days.V.2.Rep.1.                                   T..1.Days.V.2.Rep.1.
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9 T..1.Days.V.3.Rep.1..Set.4.68..WellD9
+    ##                                       BarcodeSequence     LinkerPrimerSequence
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12       TACGAGCCCTAA CAAGCAGAAGACGGCATACGAGAT
+    ## T..0.V.3.Rep.1.                          CGATTAGGAATC CAAGCAGAAGACGGCATACGAGAT
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10        AACGTAGGCTCT CAAGCAGAAGACGGCATACGAGAT
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7    GCACTTCATTTC CAAGCAGAAGACGGCATACGAGAT
+    ## T..1.Days.V.2.Rep.1.                     TCTCGCACTGGA CAAGCAGAAGACGGCATACGAGAT
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9    TTAACCTTCCTG CAAGCAGAAGACGGCATACGAGAT
+    ##                                          PrimerID Project DAY_ORDER Vessel
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12      806rcbc35   30BR2         0      2
+    ## T..0.V.3.Rep.1.                        806rcbc983   30BR2         0      3
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10      806rcbc173   30BR2         0      4
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7  806rcbc930   30BR2         1      1
+    ## T..1.Days.V.2.Rep.1.                  806rcbc1011   30BR2         1      2
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9  806rcbc164   30BR2         1      3
+    ##                                       SampleType Pre_Post_Challenge
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12         Daily      Pre_Challenge
+    ## T..0.V.3.Rep.1.                            Daily      Pre_Challenge
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10          Daily      Pre_Challenge
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7      Daily      Pre_Challenge
+    ## T..1.Days.V.2.Rep.1.                       Daily      Pre_Challenge
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9      Daily      Pre_Challenge
+    ##                                       Normal_Noise_Sample
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12                 Normal
+    ## T..0.V.3.Rep.1.                                    Normal
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10                  Normal
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7              Normal
+    ## T..1.Days.V.2.Rep.1.                               Normal
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9              Normal
+    ##                                                                            Description
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12                   T_0 V.2 Rep 1  set 3 -91 Well C12
+    ## T..0.V.3.Rep.1.                                                         T_0 V.3 Rep 1 
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10                    T_0 V.4 Rep 1  Set 4 -77 Well-E10
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7 Wrong Tube T_7 Days V.1 Rep 1  Set 1 -54Well -F7
+    ## T..1.Days.V.2.Rep.1.                                    Wrong Tube T_7 Days V.2 Rep 1 
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9 Wrong Tube T_7 Days V.3 Rep 1  Set 4 -68 Well-D9
+    ##                                       Time
+    ## T..0.V.2.Rep.1..set.3.91..Well.C12       0
+    ## T..0.V.3.Rep.1.                          0
+    ## T..0.V.4.Rep.1..Set.4.77..WellE10        0
+    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7    1
+    ## T..1.Days.V.2.Rep.1.                     1
+    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9    1
+
+### Subsets
+
+``` r
+# transform counts to relative abundance
+ps_Silverman_rel <-
+  transform_sample_counts(ps_Silverman, function(x) x / sum(x) )
+
+# filter for taxa with abundance mean greater than 1e-3
+ps_Silverman_mostAbundant = 
+  filter_taxa(ps_Silverman, function(x) mean(x) > 1e-5, TRUE)
+
+# devide into daily and hourly samples
+
+ps_Silverman_daily <- 
+  subset_samples(ps_Silverman, SampleType=="Daily")
+
+ps_Silverman_hourly <- 
+  subset_samples(ps_Silverman, SampleType=="Hourly")
 
 
+# devide by Vessels
+
+ps_Silverman_daily_V1 <- 
+  subset_samples(ps_Silverman_daily, Vessel==1)
+ps_Silverman_hourly_V1 <- 
+  subset_samples(ps_Silverman_hourly, Vessel==1 & Time < 28)
+  # subset_samples(ps_Silverman_hourly, Vessel==1)
+
+ps_Silverman_daily_V2 <- 
+  subset_samples(ps_Silverman_daily, Vessel==2)
+ps_Silverman_hourly_V2 <- 
+  subset_samples(ps_Silverman_hourly, Vessel==2 & Time < 28)
+
+ps_Silverman_daily_V3 <- 
+  subset_samples(ps_Silverman_daily, Vessel==3)
+ps_Silverman_hourly_V3 <- 
+  subset_samples(ps_Silverman_hourly, Vessel==3 & Time < 28)
+
+ps_Silverman_daily_V4 <- 
+  subset_samples(ps_Silverman_daily, Vessel==4)
+ps_Silverman_hourly_V4 <- 
+  subset_samples(ps_Silverman_hourly, Vessel==4 & Time < 28)
+```
+
+There are still some duplicated samples regarding time. These are listed
+below:
+
+``` r
+# duplicates in Time:
+
+get_duplicates <- function(data_phylo){
+  data <- sample_data(data_phylo)
+  duplicated_times <-
+    data[data$Time %>% duplicated()]$Time
+  res <- data[data$Time %in% duplicated_times]
+  setorder(res, Time)
+  # return(res)
+  return(res[, c("DAY_ORDER", "Vessel", "SampleType", "Description", "Time")])
+}
+
+#   "SampleID",
+#   "BarcodeSequence",
+#   "LinkerPrimerSequence",
+#   "PrimerID",
+#   "Project",
+#   "DAY_ORDER",
+#   "Vessel",
+#   "SampleType",
+#   "Pre_Post_Challenge",
+#   "Normal_Noise_Sample",
+#   "Description",
+#   "Time"
+
+get_duplicates(ps_Silverman_hourly_V1)
+```
+
+    ##                                                   DAY_ORDER Vessel SampleType
+    ## T..20d.23h.00m.V1.Rep1.Set.1.14.Well.F2                  16      1     Hourly
+    ## T..20d.23h.00m.V1.Rep1.set.1.74.wellH8                   30      1     Hourly
+    ## T..22d.16h.00m.V1.Rep1                                   33      1     Hourly
+    ## T..22d.16h.00m.V1.Rep1.PostInnoc.Set.1.15.Well.G2        34      1     Hourly
+    ## T..22d.16h.00m.V1.Rep1.PostInnoc.set.1.59.wellC8         55      1     Hourly
+    ##                                                                                         Description
+    ## T..20d.23h.00m.V1.Rep1.Set.1.14.Well.F2                     T_20d:23h:00m.V1.Rep1 Set 1 -14Well -F2
+    ## T..20d.23h.00m.V1.Rep1.set.1.74.wellH8                       T..20d.23h.00m.V1.Rep1.set.1.74.wellH8
+    ## T..22d.16h.00m.V1.Rep1                                                        T_22d:16h:00m.V1.Rep1
+    ## T..22d.16h.00m.V1.Rep1.PostInnoc.Set.1.15.Well.G2 T_22d:16h:00m.V1.Rep1.PostInnoc Set 1 -15Well -G2
+    ## T..22d.16h.00m.V1.Rep1.PostInnoc.set.1.59.wellC8   T..22d.16h.00m.V1.Rep1.PostInnoc.set.1.59.wellC8
+    ##                                                       Time
+    ## T..20d.23h.00m.V1.Rep1.Set.1.14.Well.F2           20.95833
+    ## T..20d.23h.00m.V1.Rep1.set.1.74.wellH8            20.95833
+    ## T..22d.16h.00m.V1.Rep1                            22.66667
+    ## T..22d.16h.00m.V1.Rep1.PostInnoc.Set.1.15.Well.G2 22.66667
+    ## T..22d.16h.00m.V1.Rep1.PostInnoc.set.1.59.wellC8  22.66667
+
+``` r
+get_duplicates(ps_Silverman_hourly_V2)
+```
+
+    ##                                         DAY_ORDER Vessel SampleType
+    ## T..22d.16h.00m.V2.Rep1.PostInnoc               51      2     Hourly
+    ## T..22d.16h.00m.V2.Rep1.set.7.42.wellB6         37      2     Hourly
+    ## T..22d.18h.00m.V2.Rep1.Set.1.16.Well.H2        53      2     Hourly
+    ## T..22d.18h.00m.V2.Rep1.set.1.67.wellF8         38      2     Hourly
+    ##                                                                     Description
+    ## T..22d.16h.00m.V2.Rep1.PostInnoc                T_22d:16h:00m.V2.Rep1.PostInnoc
+    ## T..22d.16h.00m.V2.Rep1.set.7.42.wellB6   T..22d.16h.00m.V2.Rep1.set.7.42.wellB6
+    ## T..22d.18h.00m.V2.Rep1.Set.1.16.Well.H2 T_22d:18h:00m.V2.Rep1 Set 1 -16Well -H2
+    ## T..22d.18h.00m.V2.Rep1.set.1.67.wellF8   T..22d.18h.00m.V2.Rep1.set.1.67.wellF8
+    ##                                             Time
+    ## T..22d.16h.00m.V2.Rep1.PostInnoc        22.66667
+    ## T..22d.16h.00m.V2.Rep1.set.7.42.wellB6  22.66667
+    ## T..22d.18h.00m.V2.Rep1.Set.1.16.Well.H2 22.75000
+    ## T..22d.18h.00m.V2.Rep1.set.1.67.wellF8  22.75000
+
+``` r
+get_duplicates(ps_Silverman_hourly_V3)
+```
+
+    ##                                                   DAY_ORDER Vessel SampleType
+    ## T..22d.16h.00m.V3.Rep1.PostInnoc.Set.1.38.Well.F5        47      3     Hourly
+    ## T..22d.16h.00m.V3.Rep1.Set.4.1..WellA1                   48      3     Hourly
+    ## T..23d.14h.00m.V3.Rep1.Set.1.10.Well.B2                  62      3     Hourly
+    ## T..23d.14h.00m.V3.Rep1.set.1.73.wellG8                   47      3     Hourly
+    ## T..24d.00h.00m.V3.Rep1.Set.1.12.Well.D2                  67      3     Hourly
+    ## T..24d.00h.00m.V3.Rep1.set.1.58.wellB8                   53      3     Hourly
+    ##                                                                                         Description
+    ## T..22d.16h.00m.V3.Rep1.PostInnoc.Set.1.38.Well.F5 T_22d:16h:00m.V3.Rep1.PostInnoc Set 1 -38Well -F5
+    ## T..22d.16h.00m.V3.Rep1.Set.4.1..WellA1                       T_22d:16h:00m.V3.Rep1 Set 4 -1 Well-A1
+    ## T..23d.14h.00m.V3.Rep1.Set.1.10.Well.B2                     T_23d:14h:00m.V3.Rep1 Set 1 -10Well -B2
+    ## T..23d.14h.00m.V3.Rep1.set.1.73.wellG8                       T..23d.14h.00m.V3.Rep1.set.1.73.wellG8
+    ## T..24d.00h.00m.V3.Rep1.Set.1.12.Well.D2                     T_24d:00h:00m.V3.Rep1 Set 1 -12Well -D2
+    ## T..24d.00h.00m.V3.Rep1.set.1.58.wellB8                       T..24d.00h.00m.V3.Rep1.set.1.58.wellB8
+    ##                                                       Time
+    ## T..22d.16h.00m.V3.Rep1.PostInnoc.Set.1.38.Well.F5 22.66667
+    ## T..22d.16h.00m.V3.Rep1.Set.4.1..WellA1            22.66667
+    ## T..23d.14h.00m.V3.Rep1.Set.1.10.Well.B2           23.58333
+    ## T..23d.14h.00m.V3.Rep1.set.1.73.wellG8            23.58333
+    ## T..24d.00h.00m.V3.Rep1.Set.1.12.Well.D2           24.00000
+    ## T..24d.00h.00m.V3.Rep1.set.1.58.wellB8            24.00000
+
+``` r
+get_duplicates(ps_Silverman_hourly_V4)
+```
+
+    ##                                                  DAY_ORDER Vessel SampleType
+    ## T..20d.21h.00m.V4.Rep1.Set.1.13.Well.E2                 23      4     Hourly
+    ## T..20d.21h.00m.V4.Rep1.set.1.66.wellE8                  20      4     Hourly
+    ## T..21d.10h.00m.V4.Rep1.Set.1.9.Well.A2                  30      4     Hourly
+    ## T..21d.10h.00m.V4.Rep1.set.1.65.wellD8                  27      4     Hourly
+    ## T..22d.16h.00m.V4.Rep1.PostInnoc.Set.6.37.wellE5        41      4     Hourly
+    ## T..22d.16h.00m.V4.Rep1.set.3.73.Well.A10                40      4     Hourly
+    ##                                                                                       Description
+    ## T..20d.21h.00m.V4.Rep1.Set.1.13.Well.E2                   T_20d:21h:00m.V4.Rep1 Set 1 -13Well -E2
+    ## T..20d.21h.00m.V4.Rep1.set.1.66.wellE8                     T..20d.21h.00m.V4.Rep1.set.1.66.wellE8
+    ## T..21d.10h.00m.V4.Rep1.Set.1.9.Well.A2                     T_21d:10h:00m.V4.Rep1 Set 1 -9Well -A2
+    ## T..21d.10h.00m.V4.Rep1.set.1.65.wellD8                     T..21d.10h.00m.V4.Rep1.set.1.65.wellD8
+    ## T..22d.16h.00m.V4.Rep1.PostInnoc.Set.6.37.wellE5 T..22d.16h.00m.V4.Rep1.PostInnoc.Set.6.37.wellE5
+    ## T..22d.16h.00m.V4.Rep1.set.3.73.Well.A10                 T..22d.16h.00m.V4.Rep1.set.3.73.Well.A10
+    ##                                                      Time
+    ## T..20d.21h.00m.V4.Rep1.Set.1.13.Well.E2          20.87500
+    ## T..20d.21h.00m.V4.Rep1.set.1.66.wellE8           20.87500
+    ## T..21d.10h.00m.V4.Rep1.Set.1.9.Well.A2           21.41667
+    ## T..21d.10h.00m.V4.Rep1.set.1.65.wellD8           21.41667
+    ## T..22d.16h.00m.V4.Rep1.PostInnoc.Set.6.37.wellE5 22.66667
+    ## T..22d.16h.00m.V4.Rep1.set.3.73.Well.A10         22.66667
+
+``` r
+get_duplicates(ps_Silverman_daily_V2)
+```
+
+    ##                                      DAY_ORDER Vessel SampleType
+    ## T..8.Days.V.2.Rep.1.                         4      2      Daily
+    ## T..8.Days.V.2.Rep.1..set.2.57.wellA8         3      2      Daily
+    ##                                                               Description Time
+    ## T..8.Days.V.2.Rep.1.                                  T_8 Days V.2 Rep 1     8
+    ## T..8.Days.V.2.Rep.1..set.2.57.wellA8 T..8.Days.V.2.Rep.1..set.2.57.wellA8    8
+
+### Plots
+
+``` r
+# whole dataset
+plot_bar(ps_Silverman)
+```
+
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+``` r
+plot_bar(ps_Silverman_rel, fill = "Phylum") +
+  geom_bar(aes(color=Phylum, fill=Phylum), stat="identity", position="stack")
+```
+
+    ## Warning: Removed 2065 rows containing missing values (`position_stack()`).
+    ## Removed 2065 rows containing missing values (`position_stack()`).
+
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-10-2.png)<!-- -->
+
+``` r
+# plot_bar(ps_Silverman, x = "DAY_ORDER", fill = "Order", facet_grid=~SampleType)
+```
+
+``` r
+# daily and hourly data
+plot_bar(ps_Silverman_daily, x = "DAY_ORDER", fill = "Order", 
+         facet_grid =  ~ Vessel, title = "Daily samples grouped by Vessel")
+```
+
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+``` r
+plot_bar(ps_Silverman_hourly, x = "DAY_ORDER", fill = "Order", 
+         facet_grid =  ~ Vessel, title = "Hourly samples grouped by Vessel")
+```
+
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-11-2.png)<!-- -->
+
+``` r
+# daily/hourly data for vessel 1
+plot_bar(ps_Silverman_daily_V1, x = "Time", fill = "Family",
+         title = "Daily samples of Vessel 1")
+```
+
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
+``` r
+plot_bar(ps_Silverman_hourly_V1, x = "Time", fill = "Order",
+         title = "Hourly samples of Vessel 1")
+```
+
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-12-2.png)<!-- -->
+
+## Manual Analysis
+
+``` r
 # extract taxa information
 dt_taxonomic_tree <-
   setDT(as.data.frame(rowData(SilvermanAGutData)), keep.rownames = TRUE)
@@ -81,651 +642,9 @@ get time info out of count table names
 sample_names <- 
   ma_SilvermanAGut_count %>% colnames()
 
-# show all names
-sort(sample_names)
-```
+# # show all names
+# sort(sample_names)
 
-    ##   [1] "T..0.V.1.Rep.1..set.7.44.wellD6"                  
-    ##   [2] "T..0.V.2.Rep.1..set.3.91..Well.C12"               
-    ##   [3] "T..0.V.3.Rep.1."                                  
-    ##   [4] "T..0.V.4.Rep.1..Set.4.77..WellE10"                
-    ##   [5] "T..1.Days.V.1.Rep.1..Set.1.54.Well.F7"            
-    ##   [6] "T..1.Days.V.2.Rep.1."                             
-    ##   [7] "T..1.Days.V.3.Rep.1..Set.4.68..WellD9"            
-    ##   [8] "T..1.Days.V.4.Rep.1..Set.1.7.Well.G1"             
-    ##   [9] "T..10.Days.V.1.Rep.1..Set.4.55..WellG7"           
-    ##  [10] "T..10.Days.V.2.Rep.1..set.7.26.wellB4"            
-    ##  [11] "T..10.Days.V.3.Rep.1."                            
-    ##  [12] "T..10.Days.V.4.Rep.1..set.3.14..Well.F2"          
-    ##  [13] "T..11.Days.V.1.Rep.1..Set.6.80.wellH10"           
-    ##  [14] "T..11.Days.V.2.Rep.1."                            
-    ##  [15] "T..11.Days.V.3.Rep.1..Set.4.92..WellD12"          
-    ##  [16] "T..11.Days.V.4.Rep.1."                            
-    ##  [17] "T..13.Days.V.1.Rep.1."                            
-    ##  [18] "T..13.Days.V.2.Rep.1."                            
-    ##  [19] "T..13.Days.V.3.Rep.1..set.3.64.Well.H8"           
-    ##  [20] "T..13.Days.V.4.Rep.1..set.3.38..Well.F5"          
-    ##  [21] "T..14.Days.V.1.Rep.1..set.3.58.Well.B8"           
-    ##  [22] "T..14.Days.V.2.Rep.1..Set.4.67..WellC9"           
-    ##  [23] "T..14.Days.V.3.Rep.1..Set.1.44.Well.D6"           
-    ##  [24] "T..14.Days.V.4.Rep.1..Set.6.76.wellD10"           
-    ##  [25] "T..15.Days.V.1.Rep.1."                            
-    ##  [26] "T..15.Days.V.2.Rep.1."                            
-    ##  [27] "T..15.Days.V.3.Rep.1..set.3.62.Well.F8"           
-    ##  [28] "T..15.Days.V.4.Rep.1..Set.4.71..WellG9"           
-    ##  [29] "T..16.Days.V.1.Rep.1..Set.4.2..WellB1"            
-    ##  [30] "T..16.Days.V.2.Rep.1."                            
-    ##  [31] "T..16.Days.V.3.Rep.1..set.3.15..Well.G2"          
-    ##  [32] "T..16.Days.V.4.Rep.1..set.3.70.Well.F9"           
-    ##  [33] "T..17.Days.V.1.Rep.1..set.3.56.Well.H7"           
-    ##  [34] "T..17.Days.V.2.Rep.1..Set.1.58.Well.B8"           
-    ##  [35] "T..17.Days.V.3.Rep.1..set.7.20.wellD3"            
-    ##  [36] "T..17.Days.V.4.Rep.1..Set.5.4.WellD1"             
-    ##  [37] "T..18.Days.V.1.Rep.1..Set.1.42.Well.B6"           
-    ##  [38] "T..18.Days.V.2.Rep.1..Set.4.87..WellG11"          
-    ##  [39] "T..18.Days.V.3.Rep.1..Set.6.64.wellH8"            
-    ##  [40] "T..18.Days.V.4.Rep.1..Set.4.73..WellA10"          
-    ##  [41] "T..19.Days.V.1.Rep.1..Set.6.90.wellB12"           
-    ##  [42] "T..19.Days.V.2.Rep.1..set.3.85.Well.E11"          
-    ##  [43] "T..19.Days.V.3.Rep.1..set.3.7..Well.G1"           
-    ##  [44] "T..19.Days.V.4.Rep.1..set.3.92..Well.D12"         
-    ##  [45] "T..19d.20h.00m.V1.Rep1.Set.6.88.wellH11"          
-    ##  [46] "T..19d.20h.00m.V2.Rep1.Set.6.14.wellF2"           
-    ##  [47] "T..19d.20h.00m.V3.Rep1.Set.1.53.Well.E7"          
-    ##  [48] "T..19d.20h.00m.V4.Rep1.Set.4.52..WellD7"          
-    ##  [49] "T..19d.21h.00m.V1.Rep1.set.7.32.wellH4"           
-    ##  [50] "T..19d.21h.00m.V2.Rep1.set.3.10..Well.B2"         
-    ##  [51] "T..19d.21h.00m.V3.Rep1"                           
-    ##  [52] "T..19d.21h.00m.V4.Rep1"                           
-    ##  [53] "T..19d.22h.00m.V1.Rep1.Set.6.7.wellG1"            
-    ##  [54] "T..19d.22h.00m.V2.Rep1.Set.6.11.wellC2"           
-    ##  [55] "T..19d.22h.00m.V3.Rep1.Set.5.81.WellA11"          
-    ##  [56] "T..19d.22h.00m.V4.Rep1.Set.4.49..WellA7"          
-    ##  [57] "T..19d.23h.00m.V1.Rep1.Set.5.48.WellH6"           
-    ##  [58] "T..19d.23h.00m.V2.Rep1"                           
-    ##  [59] "T..19d.23h.00m.V3.Rep1"                           
-    ##  [60] "T..19d.23h.00m.V4.Rep1.Set.6.94.wellF12"          
-    ##  [61] "T..2.Day.V.1.Rep.1..set.3.26..Well.B4"            
-    ##  [62] "T..2.Day.V.2.Rep.1..Set.1.59.Well.C8"             
-    ##  [63] "T..2.Day.V.3.Rep.1..Set.5.7.WellG1"               
-    ##  [64] "T..2.Day.V.4.Rep.1..Set.4.14..WellF2"             
-    ##  [65] "T..20d.00h.00m.V1.Rep1.Set.1.78.Well.F10"         
-    ##  [66] "T..20d.00h.00m.V2.Rep1"                           
-    ##  [67] "T..20d.00h.00m.V3.Rep1.Set.4.23..WellG3"          
-    ##  [68] "T..20d.00h.00m.V4.Rep1.Set.6.77.wellE10"          
-    ##  [69] "T..20d.01h.00m.V1.Rep1.Set.5.85.WellE11"          
-    ##  [70] "T..20d.01h.00m.V2.Rep1.set.7.9.wellA2"            
-    ##  [71] "T..20d.01h.00m.V3.Rep1.Set.1.77.Well.E10"         
-    ##  [72] "T..20d.01h.00m.V4.Rep1.Set.5.22.WellF3"           
-    ##  [73] "T..20d.02h.00m.V1.Rep1.Set.5.88.WellH11"          
-    ##  [74] "T..20d.02h.00m.V2.Rep1.Set.1.84.Well.D11"         
-    ##  [75] "T..20d.02h.00m.V3.Rep1.Set.6.81.wellA11"          
-    ##  [76] "T..20d.02h.00m.V4.Rep1.Set.6.38.wellF5"           
-    ##  [77] "T..20d.03h.00m.V1.Rep1.Set.5.16.WellH2"           
-    ##  [78] "T..20d.03h.00m.V2.Rep1"                           
-    ##  [79] "T..20d.03h.00m.V3.Rep1.Set.6.2.wellB1"            
-    ##  [80] "T..20d.03h.00m.V4.Rep1"                           
-    ##  [81] "T..20d.04h.00m.V1.Rep1.Set.6.95.wellG12"          
-    ##  [82] "T..20d.04h.00m.V2.Rep1"                           
-    ##  [83] "T..20d.04h.00m.V3.Rep1.set.3.19..Well.C3"         
-    ##  [84] "T..20d.04h.00m.V4.Rep1"                           
-    ##  [85] "T..20d.05h.00m.V1.Rep1.Set.5.59.WellC8"           
-    ##  [86] "T..20d.05h.00m.V2.Rep1.Set.1.18.Well.B3"          
-    ##  [87] "T..20d.05h.00m.V3.Rep1.set.3.44.Well.D6"          
-    ##  [88] "T..20d.05h.00m.V4.Rep1.Set.6.71.wellG9"           
-    ##  [89] "T..20d.06h.00m.V1.Rep1.set.3.69.Well.E9"          
-    ##  [90] "T..20d.06h.00m.V2.Rep1.set.7.39.wellG5"           
-    ##  [91] "T..20d.06h.00m.V3.Rep1.Set.4.79..WellG10"         
-    ##  [92] "T..20d.06h.00m.V4.Rep1"                           
-    ##  [93] "T..20d.07h.00m.V1.Rep1.Set.6.92.wellD12"          
-    ##  [94] "T..20d.07h.00m.V2.Rep1.Set.4.72..WellH9"          
-    ##  [95] "T..20d.07h.00m.V3.Rep1.Set.6.36.wellD5"           
-    ##  [96] "T..20d.07h.00m.V4.Rep1.set.3.2..Well.B1"          
-    ##  [97] "T..20d.08h.00m.V1.Rep1.Set.5.8.WellH1"            
-    ##  [98] "T..20d.08h.00m.V2.Rep1.Set.4.58..WellB8"          
-    ##  [99] "T..20d.08h.00m.V3.Rep1.Set.1.21.Well.E3"          
-    ## [100] "T..20d.08h.00m.V4.Rep1.Set.5.53.WellE7"           
-    ## [101] "T..20d.09h.00m.V1.Rep1"                           
-    ## [102] "T..20d.09h.00m.V2.Rep1"                           
-    ## [103] "T..20d.09h.00m.V3.Rep1.Set.5.43.WellC6"           
-    ## [104] "T..20d.09h.00m.V4.Rep1.Set.6.39.wellG5"           
-    ## [105] "T..20d.10h.00m.V1.Rep1"                           
-    ## [106] "T..20d.10h.00m.V2.Rep1.Set.4.35..WellC5"          
-    ## [107] "T..20d.10h.00m.V3.Rep1.Set.6.9.wellA2"            
-    ## [108] "T..20d.10h.00m.V4.Rep1.set.3.13..Well.E2"         
-    ## [109] "T..20d.11h.00m.V1.Rep1.Set.5.77.WellE10"          
-    ## [110] "T..20d.11h.00m.V2.Rep1.set.3.90..Well.B12"        
-    ## [111] "T..20d.11h.00m.V3.Rep1.Set.4.85..WellE11"         
-    ## [112] "T..20d.11h.00m.V4.Rep1"                           
-    ## [113] "T..20d.12h.00m.V1.Rep1.Set.6.79.wellG10"          
-    ## [114] "T..20d.12h.00m.V2.Rep1.Set.6.4.wellD1"            
-    ## [115] "T..20d.12h.00m.V3.Rep1.Set.5.73.WellA10"          
-    ## [116] "T..20d.12h.00m.V4.Rep1.Set.5.21.WellE3"           
-    ## [117] "T..20d.13h.00m.V1.Rep1.Set.6.68.wellD9"           
-    ## [118] "T..20d.13h.00m.V2.Rep1.Set.1.26.Well.B4"          
-    ## [119] "T..20d.13h.00m.V3.Rep1.Set.1.8.Well.H1"           
-    ## [120] "T..20d.13h.00m.V4.Rep1"                           
-    ## [121] "T..20d.14h.00m.V1.Rep1.Set.5.63.WellG8"           
-    ## [122] "T..20d.14h.00m.V2.Rep1.Set.6.73.wellA10"          
-    ## [123] "T..20d.14h.00m.V3.Rep1.Set.5.82.WellB11"          
-    ## [124] "T..20d.14h.00m.V4.Rep1.set.7.8.wellH1"            
-    ## [125] "T..20d.15h.00m.V1.Rep1.Set.6.57.wellA8"           
-    ## [126] "T..20d.15h.00m.V2.Rep1.Set.4.45..WellE6"          
-    ## [127] "T..20d.15h.00m.V3.Rep1.Set.1.52.Well.D7"          
-    ## [128] "T..20d.15h.00m.V4.Rep1.Set.5.33.WellA5"           
-    ## [129] "T..20d.16h.00m.V1.Rep1.Set.6.16.wellH2"           
-    ## [130] "T..20d.16h.00m.V2.Rep1"                           
-    ## [131] "T..20d.16h.00m.V3.Rep1"                           
-    ## [132] "T..20d.16h.00m.V4.Rep1.Set.1.20.Well.D3"          
-    ## [133] "T..20d.17h.00m.V1.Rep1.Set.6.74.wellB10"          
-    ## [134] "T..20d.17h.00m.V2.Rep1.Set.4.86..WellF11"         
-    ## [135] "T..20d.17h.00m.V3.Rep1"                           
-    ## [136] "T..20d.17h.00m.V4.Rep1.set.3.81.Well.A11"         
-    ## [137] "T..20d.18h.00m.V1.Rep1.Set.1.87.Well.G11"         
-    ## [138] "T..20d.18h.00m.V2.Rep1.set.3.24..Well.H3"         
-    ## [139] "T..20d.18h.00m.V3.Rep1"                           
-    ## [140] "T..20d.18h.00m.V4.Rep1.Set.1.46.Well.F6"          
-    ## [141] "T..20d.19h.00m.V1.Rep1"                           
-    ## [142] "T..20d.19h.00m.V2.Rep1.Set.1.49.Well.A7"          
-    ## [143] "T..20d.19h.00m.V3.Rep1.Set.5.40.WellH5"           
-    ## [144] "T..20d.19h.00m.V4.Rep1.Set.4.26..WellB4"          
-    ## [145] "T..20d.20h.00m.V1.Rep1.Set.4.39..WellG5"          
-    ## [146] "T..20d.20h.00m.V2.Rep1.Set.5.27.WellC4"           
-    ## [147] "T..20d.20h.00m.V3.Rep1.Set.1.75.Well.C10"         
-    ## [148] "T..20d.20h.00m.V4.Rep1.set.7.29.wellE4"           
-    ## [149] "T..20d.21h.00m.V1.Rep1.Set.5.56.WellH7"           
-    ## [150] "T..20d.21h.00m.V2.Rep1.Set.5.20.WellD3"           
-    ## [151] "T..20d.21h.00m.V3.Rep1.Set.6.31.wellG4"           
-    ## [152] "T..20d.21h.00m.V4.Rep1.Set.1.13.Well.E2"          
-    ## [153] "T..20d.21h.00m.V4.Rep1.set.1.66.wellE8"           
-    ## [154] "T..20d.22h.00m.V1.Rep1"                           
-    ## [155] "T..20d.22h.00m.V2.Rep1.set.7.46.wellF6"           
-    ## [156] "T..20d.22h.00m.V3.Rep1.set.3.42.Well.B6"          
-    ## [157] "T..20d.22h.00m.V4.Rep1.Set.4.90..WellB12"         
-    ## [158] "T..20d.23h.00m.V1.Rep1.Set.1.14.Well.F2"          
-    ## [159] "T..20d.23h.00m.V1.Rep1.set.1.74.wellH8"           
-    ## [160] "T..20d.23h.00m.V2.Rep1.Set.5.13.WellE2"           
-    ## [161] "T..20d.23h.00m.V3.Rep1.Set.1.92.Well.D12"         
-    ## [162] "T..20d.23h.00m.V4.Rep1.set.7.47.wellG6"           
-    ## [163] "T..21d.00h.00m.V1.Rep1.Set.6.6.wellF1"            
-    ## [164] "T..21d.00h.00m.V2.Rep1.Set.5.83.WellC11"          
-    ## [165] "T..21d.00h.00m.V3.Rep1.set.3.80.Well.H10"         
-    ## [166] "T..21d.00h.00m.V4.Rep1.Set.5.69.WellE9"           
-    ## [167] "T..21d.01h.00m.V1.Rep1.Set.6.24.wellH3"           
-    ## [168] "T..21d.01h.00m.V2.Rep1"                           
-    ## [169] "T..21d.01h.00m.V3.Rep1"                           
-    ## [170] "T..21d.01h.00m.V4.Rep1.Set.6.62.wellF8"           
-    ## [171] "T..21d.02h.00m.V1.Rep1"                           
-    ## [172] "T..21d.02h.00m.V2.Rep1.Set.1.27.Well.C4"          
-    ## [173] "T..21d.02h.00m.V3.Rep1.Set.4.44..WellD6"          
-    ## [174] "T..21d.02h.00m.V4.Rep1"                           
-    ## [175] "T..21d.03h.00m.V1.Rep1.Set.4.66..WellB9"          
-    ## [176] "T..21d.03h.00m.V2.Rep1.set.3.75.Well.C10"         
-    ## [177] "T..21d.03h.00m.V3.Rep1.set.3.40..Well.H5"         
-    ## [178] "T..21d.03h.00m.V4.Rep1.Set.6.25.wellA4"           
-    ## [179] "T..21d.04h.00m.V1.Rep1.set.3.39..Well.G5"         
-    ## [180] "T..21d.04h.00m.V2.Rep1.Set.6.19.wellC3"           
-    ## [181] "T..21d.04h.00m.V3.Rep1.set.3.41.Well.A6"          
-    ## [182] "T..21d.04h.00m.V4.Rep1.set.7.6.wellF1"            
-    ## [183] "T..21d.05h.00m.V1.Rep1.Set.1.25.Well.A4"          
-    ## [184] "T..21d.05h.00m.V2.Rep1.Set.1.24.Well.H3"          
-    ## [185] "T..21d.05h.00m.V3.Rep1.set.3.36..Well.D5"         
-    ## [186] "T..21d.05h.00m.V4.Rep1.set.7.14.wellF2"           
-    ## [187] "T..21d.06h.00m.V1.Rep1.set.3.61.Well.E8"          
-    ## [188] "T..21d.06h.00m.V2.Rep1.Set.4.54..WellF7"          
-    ## [189] "T..21d.06h.00m.V3.Rep1.set.3.31..Well.G4"         
-    ## [190] "T..21d.06h.00m.V4.Rep1.Set.4.6..WellF1"           
-    ## [191] "T..21d.07h.00m.V1.Rep1.set.3.49.Well.A7"          
-    ## [192] "T..21d.07h.00m.V2.Rep1.Set.1.66.Well.B9"          
-    ## [193] "T..21d.07h.00m.V3.Rep1.set.3.34..Well.B5"         
-    ## [194] "T..21d.07h.00m.V4.Rep1.set.3.96..Well.H12"        
-    ## [195] "T..21d.08h.00m.V1.Rep1.Set.6.22.wellF3"           
-    ## [196] "T..21d.08h.00m.V2.Rep1.set.3.50.Well.B7"          
-    ## [197] "T..21d.08h.00m.V3.Rep1.set.3.54.Well.F7"          
-    ## [198] "T..21d.08h.00m.V4.Rep1.Set.1.17.Well.A3"          
-    ## [199] "T..21d.09h.00m.V1.Rep1.Set.5.52.WellD7"           
-    ## [200] "T..21d.09h.00m.V2.Rep1"                           
-    ## [201] "T..21d.09h.00m.V3.Rep1.set.7.50.wellB7"           
-    ## [202] "T..21d.09h.00m.V4.Rep1"                           
-    ## [203] "T..21d.10h.00m.V1.Rep1.Set.5.47.WellG6"           
-    ## [204] "T..21d.10h.00m.V2.Rep1.Set.5.24.WellH3"           
-    ## [205] "T..21d.10h.00m.V3.Rep1.Set.5.29.WellE4"           
-    ## [206] "T..21d.10h.00m.V4.Rep1.set.1.65.wellD8"           
-    ## [207] "T..21d.10h.00m.V4.Rep1.Set.1.9.Well.A2"           
-    ## [208] "T..21d.11h.00m.V1.Rep1.Set.5.86.WellF11"          
-    ## [209] "T..21d.11h.00m.V2.Rep1.Set.5.38.WellF5"           
-    ## [210] "T..21d.11h.00m.V3.Rep1.Set.1.36.Well.D5"          
-    ## [211] "T..21d.11h.00m.V4.Rep1.Set.5.80.WellH10"          
-    ## [212] "T..21d.12h.00m.V1.Rep1.Set.4.61..WellE8"          
-    ## [213] "T..21d.12h.00m.V2.Rep1.Set.5.41.WellA6"           
-    ## [214] "T..21d.12h.00m.V3.Rep1.Set.1.83.Well.C11"         
-    ## [215] "T..21d.12h.00m.V4.Rep1.Set.5.6.WellF1"            
-    ## [216] "T..21d.13h.00m.V1.Rep1.Set.5.1.WellA1"            
-    ## [217] "T..21d.13h.00m.V2.Rep1.set.3.71.Well.G9"          
-    ## [218] "T..21d.13h.00m.V3.Rep1.Set.6.67.wellC9"           
-    ## [219] "T..21d.13h.00m.V4.Rep1.set.3.35..Well.C5"         
-    ## [220] "T..21d.14h.00m.V1.Rep1"                           
-    ## [221] "T..21d.14h.00m.V2.Rep1.set.3.67.Well.C9"          
-    ## [222] "T..21d.14h.00m.V3.Rep1.Set.1.88.Well.H11"         
-    ## [223] "T..21d.14h.00m.V4.Rep1.Set.6.75.wellC10"          
-    ## [224] "T..21d.15h.00m.V1.Rep1.Set.6.84.wellD11"          
-    ## [225] "T..21d.15h.00m.V2.Rep1.Set.5.91.WellC12"          
-    ## [226] "T..21d.15h.00m.V3.Rep1.set.3.94..Well.F12"        
-    ## [227] "T..21d.15h.00m.V4.Rep1.set.3.37..Well.E5"         
-    ## [228] "T..21d.16h.00m.V1.Rep1.Set.6.61.wellE8"           
-    ## [229] "T..21d.16h.00m.V2.Rep1.set.3.28..Well.D4"         
-    ## [230] "T..21d.16h.00m.V3.Rep1.Set.5.32.WellH4"           
-    ## [231] "T..21d.16h.00m.V4.Rep1.set.7.10.wellB2"           
-    ## [232] "T..21d.17h.00m.V1.Rep1.Set.4.65..WellA9"          
-    ## [233] "T..21d.17h.00m.V2.Rep1.Set.5.65.WellA9"           
-    ## [234] "T..21d.17h.00m.V3.Rep1.set.3.5..Well.E1"          
-    ## [235] "T..21d.17h.00m.V4.Rep1"                           
-    ## [236] "T..21d.18h.00m.V1.Rep1.set.7.3.wellC1"            
-    ## [237] "T..21d.18h.00m.V2.Rep1.set.3.47.Well.G6"          
-    ## [238] "T..21d.18h.00m.V3.Rep1.Set.1.71.Well.G9"          
-    ## [239] "T..21d.18h.00m.V4.Rep1.Set.1.39.Well.G5"          
-    ## [240] "T..21d.19h.00m.V1.Rep1.Set.6.3.wellC1"            
-    ## [241] "T..21d.19h.00m.V2.Rep1.Set.1.69.Well.E9"          
-    ## [242] "T..21d.19h.00m.V3.Rep1.Set.5.68.WellD9"           
-    ## [243] "T..21d.19h.00m.V4.Rep1.Set.5.87.WellG11"          
-    ## [244] "T..21d.20h.00m.V1.Rep1.Set.4.64..WellH8"          
-    ## [245] "T..21d.20h.00m.V2.Rep1.set.7.52.wellD7"           
-    ## [246] "T..21d.20h.00m.V3.Rep1.Set.4.19..WellC3"          
-    ## [247] "T..21d.20h.00m.V4.Rep1.Set.1.86.Well.F11"         
-    ## [248] "T..21d.21h.00m.V1.Rep1.set.7.5.wellE1"            
-    ## [249] "T..21d.21h.00m.V2.Rep1.Set.1.48.Well.H6"          
-    ## [250] "T..21d.21h.00m.V3.Rep1.Set.6.15.wellG2"           
-    ## [251] "T..21d.21h.00m.V4.Rep1.Set.5.51.WellC7"           
-    ## [252] "T..21d.22h.00m.V1.Rep1.Set.4.31..WellG4"          
-    ## [253] "T..21d.22h.00m.V2.Rep1.Set.1.90.Well.B12"         
-    ## [254] "T..21d.22h.00m.V3.Rep1.Set.6.18.wellB3"           
-    ## [255] "T..21d.22h.00m.V4.Rep1.Set.1.57.Well.A8"          
-    ## [256] "T..21d.23h.00m.V1.Rep1"                           
-    ## [257] "T..21d.23h.00m.V2.Rep1.Set.5.2.WellB1"            
-    ## [258] "T..21d.23h.00m.V3.Rep1.Set.6.82.wellB11"          
-    ## [259] "T..21d.23h.00m.V4.Rep1.set.7.33.wellA5"           
-    ## [260] "T..22d.00h.00m.V1.Rep1.Set.4.38..WellF5"          
-    ## [261] "T..22d.00h.00m.V2.Rep1"                           
-    ## [262] "T..22d.00h.00m.V3.Rep1.set.3.27..Well.C4"         
-    ## [263] "T..22d.00h.00m.V4.Rep1.Set.1.68.Well.D9"          
-    ## [264] "T..22d.01h.00m.V1.Rep1.set.3.68.Well.D9"          
-    ## [265] "T..22d.01h.00m.V2.Rep1.set.7.12.wellD2"           
-    ## [266] "T..22d.01h.00m.V3.Rep1.set.3.79.Well.G10"         
-    ## [267] "T..22d.01h.00m.V4.Rep1.Set.5.17.WellA3"           
-    ## [268] "T..22d.02h.00m.V1.Rep1.Set.5.36.WellD5"           
-    ## [269] "T..22d.02h.00m.V2.Rep1.Set.5.11.WellC2"           
-    ## [270] "T..22d.02h.00m.V3.Rep1"                           
-    ## [271] "T..22d.02h.00m.V4.Rep1.Set.5.62.WellF8"           
-    ## [272] "T..22d.03h.00m.V1.Rep1.set.7.40.wellH5"           
-    ## [273] "T..22d.03h.00m.V2.Rep1.set.7.48.wellH6"           
-    ## [274] "T..22d.03h.00m.V3.Rep1.Set.5.19.WellC3"           
-    ## [275] "T..22d.03h.00m.V4.Rep1.Set.5.44.WellD6"           
-    ## [276] "T..22d.04h.00m.V1.Rep1.Set.1.93.Well.E12"         
-    ## [277] "T..22d.04h.00m.V2.Rep1.set.7.38.wellF5"           
-    ## [278] "T..22d.04h.00m.V3.Rep1.Set.5.5.WellE1"            
-    ## [279] "T..22d.04h.00m.V4.Rep1.Set.4.82..WellB11"         
-    ## [280] "T..22d.05h.00m.V1.Rep1.set.7.4.wellD1"            
-    ## [281] "T..22d.05h.00m.V2.Rep1.Set.6.85.wellE11"          
-    ## [282] "T..22d.05h.00m.V3.Rep1.Set.5.67.WellC9"           
-    ## [283] "T..22d.05h.00m.V4.Rep1.Set.1.62.Well.F8"          
-    ## [284] "T..22d.06h.00m.V1.Rep1.Set.1.67.Well.C9"          
-    ## [285] "T..22d.06h.00m.V2.Rep1.Set.1.61.Well.E8"          
-    ## [286] "T..22d.06h.00m.V3.Rep1.Set.1.19.Well.C3"          
-    ## [287] "T..22d.06h.00m.V4.Rep1.set.7.1.wellA1"            
-    ## [288] "T..22d.07h.00m.V1.Rep1.set.3.21..Well.E3"         
-    ## [289] "T..22d.07h.00m.V2.Rep1.Set.4.89..WellA12"         
-    ## [290] "T..22d.07h.00m.V3.Rep1"                           
-    ## [291] "T..22d.07h.00m.V4.Rep1.set.3.52.Well.D7"          
-    ## [292] "T..22d.08h.00m.V1.Rep1.Set.6.58.wellB8"           
-    ## [293] "T..22d.08h.00m.V2.Rep1.set.3.20..Well.D3"         
-    ## [294] "T..22d.08h.00m.V3.Rep1.Set.1.41.Well.A6"          
-    ## [295] "T..22d.08h.00m.V4.Rep1.Set.4.84..WellD11"         
-    ## [296] "T..22d.09h.00m.V1.Rep1.Set.6.43.wellC6"           
-    ## [297] "T..22d.09h.00m.V2.Rep1.Set.1.6.Well.F1"           
-    ## [298] "T..22d.09h.00m.V3.Rep1.set.3.77.Well.E10"         
-    ## [299] "T..22d.09h.00m.V4.Rep1.set.3.18..Well.B3"         
-    ## [300] "T..22d.10h.00m.V1.Rep1.Set.4.60..WellD8"          
-    ## [301] "T..22d.10h.00m.V2.Rep1.Set.4.18..WellB3"          
-    ## [302] "T..22d.10h.00m.V3.Rep1.Set.4.22..WellF3"          
-    ## [303] "T..22d.10h.00m.V4.Rep1"                           
-    ## [304] "T..22d.11h.00m.V1.Rep1.Set.4.76..WellD10"         
-    ## [305] "T..22d.11h.00m.V2.Rep1"                           
-    ## [306] "T..22d.11h.00m.V3.Rep1"                           
-    ## [307] "T..22d.11h.00m.V4.Rep1"                           
-    ## [308] "T..22d.12h.00m.V1.Rep1.Set.5.61.WellE8"           
-    ## [309] "T..22d.12h.00m.V2.Rep1.Set.4.74..WellB10"         
-    ## [310] "T..22d.12h.00m.V3.Rep1"                           
-    ## [311] "T..22d.12h.00m.V4.Rep1.Set.4.47..WellG6"          
-    ## [312] "T..22d.13h.00m.V1.Rep1.set.7.28.wellD4"           
-    ## [313] "T..22d.13h.00m.V2.Rep1.Set.1.4.Well.D1"           
-    ## [314] "T..22d.13h.00m.V3.Rep1.Set.5.26.WellB4"           
-    ## [315] "T..22d.13h.00m.V4.Rep1"                           
-    ## [316] "T..22d.14h.00m.V1.Rep1.set.7.7.wellG1"            
-    ## [317] "T..22d.14h.00m.V2.Rep1.Set.6.91.wellC12"          
-    ## [318] "T..22d.14h.00m.V3.Rep1.Set.1.28.Well.D4"          
-    ## [319] "T..22d.14h.00m.V4.Rep1.set.3.95..Well.G12"        
-    ## [320] "T..22d.15h.00m.V1.Rep1.set.3.65.Well.A9"          
-    ## [321] "T..22d.15h.00m.V2.Rep1"                           
-    ## [322] "T..22d.15h.00m.V3.Rep1.Set.5.95.WellG12"          
-    ## [323] "T..22d.15h.00m.V4.Rep1.set.3.30..Well.F4"         
-    ## [324] "T..22d.16h.00m.V1.Rep1"                           
-    ## [325] "T..22d.16h.00m.V1.Rep1.PostInnoc.Set.1.15.Well.G2"
-    ## [326] "T..22d.16h.00m.V1.Rep1.PostInnoc.set.1.59.wellC8" 
-    ## [327] "T..22d.16h.00m.V2.Rep1.PostInnoc"                 
-    ## [328] "T..22d.16h.00m.V2.Rep1.set.7.42.wellB6"           
-    ## [329] "T..22d.16h.00m.V3.Rep1.PostInnoc.Set.1.38.Well.F5"
-    ## [330] "T..22d.16h.00m.V3.Rep1.Set.4.1..WellA1"           
-    ## [331] "T..22d.16h.00m.V4.Rep1.PostInnoc.Set.6.37.wellE5" 
-    ## [332] "T..22d.16h.00m.V4.Rep1.set.3.73.Well.A10"         
-    ## [333] "T..22d.17h.00m.V1.Rep1.set.7.54.wellF7"           
-    ## [334] "T..22d.17h.00m.V2.Rep1.Set.4.24..WellH3"          
-    ## [335] "T..22d.17h.00m.V3.Rep1"                           
-    ## [336] "T..22d.17h.00m.V4.Rep1"                           
-    ## [337] "T..22d.18h.00m.V1.Rep1.Set.1.72.Well.H9"          
-    ## [338] "T..22d.18h.00m.V2.Rep1.Set.1.16.Well.H2"          
-    ## [339] "T..22d.18h.00m.V2.Rep1.set.1.67.wellF8"           
-    ## [340] "T..22d.18h.00m.V3.Rep1.Set.4.56..WellH7"          
-    ## [341] "T..22d.18h.00m.V4.Rep1.Set.5.93.WellE12"          
-    ## [342] "T..22d.19h.00m.V1.Rep1.Set.5.94.WellF12"          
-    ## [343] "T..22d.19h.00m.V2.Rep1.Set.4.3..WellC1"           
-    ## [344] "T..22d.19h.00m.V3.Rep1.Set.5.70.WellF9"           
-    ## [345] "T..22d.19h.00m.V4.Rep1.Set.6.8.wellH1"            
-    ## [346] "T..22d.20h.00m.V1.Rep1.set.3.9..Well.A2"          
-    ## [347] "T..22d.20h.00m.V2.Rep1.Set.5.89.WellA12"          
-    ## [348] "T..22d.20h.00m.V3.Rep1.Set.5.92.WellD12"          
-    ## [349] "T..22d.20h.00m.V4.Rep1.Set.6.78.wellF10"          
-    ## [350] "T..22d.21h.00m.V1.Rep1.Set.6.51.wellC7"           
-    ## [351] "T..22d.21h.00m.V2.Rep1"                           
-    ## [352] "T..22d.21h.00m.V4.Rep1.Set.6.27.wellC4"           
-    ## [353] "T..22d.22h.00m.V1.Rep1.set.3.86.Well.F11"         
-    ## [354] "T..22d.22h.00m.V2.Rep1.Set.6.96.wellH12"          
-    ## [355] "T..22d.22h.00m.V3.Rep1.Set.5.45.WellE6"           
-    ## [356] "T..22d.22h.00m.V4.Rep1"                           
-    ## [357] "T..22d.23h.00m.V1.Rep1.set.3.60.Well.D8"          
-    ## [358] "T..22d.23h.00m.V2.Rep1"                           
-    ## [359] "T..22d.23h.00m.V3.Rep1.set.7.41.wellA6"           
-    ## [360] "T..22d.23h.00m.V4.Rep1.Set.1.5.Well.E1"           
-    ## [361] "T..23d.00h.00m.V1.Rep1.Set.5.15.WellG2"           
-    ## [362] "T..23d.00h.00m.V2.Rep1.Set.1.22.Well.F3"          
-    ## [363] "T..23d.00h.00m.V3.Rep1.Set.4.11..WellC2"          
-    ## [364] "T..23d.00h.00m.V4.Rep1.Set.6.45.wellE6"           
-    ## [365] "T..23d.01h.00m.V1.Rep1.set.7.25.wellA4"           
-    ## [366] "T..23d.01h.00m.V2.Rep1.Set.1.35.Well.C5"          
-    ## [367] "T..23d.01h.00m.V3.Rep1.Set.1.82.Well.B11"         
-    ## [368] "T..23d.01h.00m.V4.Rep1.Set.4.15..WellG2"          
-    ## [369] "T..23d.02h.00m.V1.Rep1.Set.6.54.wellF7"           
-    ## [370] "T..23d.02h.00m.V2.Rep1"                           
-    ## [371] "T..23d.02h.00m.V3.Rep1.Set.4.13..WellE2"          
-    ## [372] "T..23d.02h.00m.V4.Rep1.set.7.19.wellC3"           
-    ## [373] "T..23d.03h.00m.V1.Rep1.Set.6.35.wellC5"           
-    ## [374] "T..23d.03h.00m.V2.Rep1.Set.6.56.wellH7"           
-    ## [375] "T..23d.03h.00m.V3.Rep1.set.3.22..Well.F3"         
-    ## [376] "T..23d.03h.00m.V4.Rep1.set.7.51.wellC7"           
-    ## [377] "T..23d.04h.00m.V1.Rep1.Set.4.25..WellA4"          
-    ## [378] "T..23d.04h.00m.V2.Rep1"                           
-    ## [379] "T..23d.04h.00m.V3.Rep1.set.7.13.wellE2"           
-    ## [380] "T..23d.04h.00m.V4.Rep1.Set.5.46.WellF6"           
-    ## [381] "T..23d.05h.00m.V1.Rep1.set.3.53.Well.E7"          
-    ## [382] "T..23d.05h.00m.V2.Rep1"                           
-    ## [383] "T..23d.05h.00m.V3.Rep1.Set.1.40.Well.H5"          
-    ## [384] "T..23d.05h.00m.V4.Rep1.set.7.31.wellG4"           
-    ## [385] "T..23d.06h.00m.V1.Rep1.Set.1.89.Well.A12"         
-    ## [386] "T..23d.06h.00m.V2.Rep1.Set.1.65.Well.A9"          
-    ## [387] "T..23d.06h.00m.V3.Rep1"                           
-    ## [388] "T..23d.06h.00m.V4.Rep1"                           
-    ## [389] "T..23d.07h.00m.V1.Rep1.Set.1.96.Well.H12"         
-    ## [390] "T..23d.07h.00m.V2.Rep1.Set.6.49.wellA7"           
-    ## [391] "T..23d.07h.00m.V3.Rep1.Set.4.48..WellH6"          
-    ## [392] "T..23d.07h.00m.V4.Rep1"                           
-    ## [393] "T..23d.08h.00m.V1.Rep1.Set.5.64.WellH8"           
-    ## [394] "T..23d.08h.00m.V2.Rep1.set.7.37.wellE5"           
-    ## [395] "T..23d.08h.00m.V3.Rep1.set.7.55.wellG7"           
-    ## [396] "T..23d.08h.00m.V4.Rep1.set.7.49.wellA7"           
-    ## [397] "T..23d.09h.00m.V1.Rep1"                           
-    ## [398] "T..23d.09h.00m.V2.Rep1.set.7.45.wellE6"           
-    ## [399] "T..23d.09h.00m.V3.Rep1.Set.5.50.WellB7"           
-    ## [400] "T..23d.09h.00m.V4.Rep1.Set.5.18.WellB3"           
-    ## [401] "T..23d.10h.00m.V1.Rep1.set.3.48.Well.H6"          
-    ## [402] "T..23d.10h.00m.V2.Rep1.set.3.29..Well.E4"         
-    ## [403] "T..23d.10h.00m.V3.Rep1.Set.1.1.Well.A1"           
-    ## [404] "T..23d.10h.00m.V4.Rep1.Set.4.91..WellC12"         
-    ## [405] "T..23d.11h.00m.V1.Rep1.Set.1.55.Well.G7"          
-    ## [406] "T..23d.11h.00m.V2.Rep1.Set.4.50..WellB7"          
-    ## [407] "T..23d.11h.00m.V3.Rep1.Set.1.63.Well.G8"          
-    ## [408] "T..23d.11h.00m.V4.Rep1.Set.6.40.wellH5"           
-    ## [409] "T..23d.12h.00m.V1.Rep1.set.7.43.wellC6"           
-    ## [410] "T..23d.12h.00m.V2.Rep1.Set.5.30.WellF4"           
-    ## [411] "T..23d.12h.00m.V3.Rep1.set.7.36.wellD5"           
-    ## [412] "T..23d.12h.00m.V4.Rep1.Set.6.42.wellB6"           
-    ## [413] "T..23d.13h.00m.V1.Rep1.set.7.56.wellH7"           
-    ## [414] "T..23d.13h.00m.V2.Rep1.Set.5.66.WellB9"           
-    ## [415] "T..23d.13h.00m.V3.Rep1.Set.4.70..WellF9"          
-    ## [416] "T..23d.13h.00m.V4.Rep1.Set.6.32.wellH4"           
-    ## [417] "T..23d.14h.00m.V1.Rep1.Set.4.34..WellB5"          
-    ## [418] "T..23d.14h.00m.V2.Rep1.Set.1.85.Well.E11"         
-    ## [419] "T..23d.14h.00m.V3.Rep1.Set.1.10.Well.B2"          
-    ## [420] "T..23d.14h.00m.V3.Rep1.set.1.73.wellG8"           
-    ## [421] "T..23d.14h.00m.V4.Rep1.Set.6.29.wellE4"           
-    ## [422] "T..23d.15h.00m.V1.Rep1.set.3.17..Well.A3"         
-    ## [423] "T..23d.15h.00m.V2.Rep1.set.3.1..Well.A1"          
-    ## [424] "T..23d.15h.00m.V3.Rep1.Set.6.47.wellG6"           
-    ## [425] "T..23d.15h.00m.V4.Rep1.Set.6.12.wellD2"           
-    ## [426] "T..23d.16h.00m.V1.Rep1.set.7.16.wellH2"           
-    ## [427] "T..23d.16h.00m.V2.Rep1.Set.5.9.WellA2"            
-    ## [428] "T..23d.16h.00m.V3.Rep1"                           
-    ## [429] "T..23d.16h.00m.V4.Rep1.Set.4.57..WellA8"          
-    ## [430] "T..23d.17h.00m.V1.Rep1.Set.6.60.wellD8"           
-    ## [431] "T..23d.17h.00m.V2.Rep1.Set.4.69..WellE9"          
-    ## [432] "T..23d.17h.00m.V3.Rep1.Set.5.54.WellF7"           
-    ## [433] "T..23d.17h.00m.V4.Rep1"                           
-    ## [434] "T..23d.18h.00m.V1.Rep1"                           
-    ## [435] "T..23d.18h.00m.V2.Rep1.set.3.76.Well.D10"         
-    ## [436] "T..23d.18h.00m.V3.Rep1.set.7.53.wellE7"           
-    ## [437] "T..23d.18h.00m.V4.Rep1.Set.4.63..WellG8"          
-    ## [438] "T..23d.19h.00m.V1.Rep1.Set.5.74.WellB10"          
-    ## [439] "T..23d.19h.00m.V2.Rep1.Set.5.55.WellG7"           
-    ## [440] "T..23d.19h.00m.V3.Rep1"                           
-    ## [441] "T..23d.19h.00m.V4.Rep1.Set.6.59.wellC8"           
-    ## [442] "T..23d.20h.00m.V1.Rep1"                           
-    ## [443] "T..23d.20h.00m.V2.Rep1.Set.4.75..WellC10"         
-    ## [444] "T..23d.20h.00m.V3.Rep1.Set.1.29.Well.E4"          
-    ## [445] "T..23d.20h.00m.V4.Rep1.Set.5.23.WellG3"           
-    ## [446] "T..23d.21h.00m.V1.Rep1.set.3.93..Well.E12"        
-    ## [447] "T..23d.21h.00m.V2.Rep1.Set.1.91.Well.C12"         
-    ## [448] "T..23d.21h.00m.V3.Rep1.Set.5.39.WellG5"           
-    ## [449] "T..23d.21h.00m.V4.Rep1.Set.1.50.Well.B7"          
-    ## [450] "T..23d.22h.00m.V1.Rep1.Set.4.32..WellH4"          
-    ## [451] "T..23d.22h.00m.V2.Rep1.Set.6.52.wellD7"           
-    ## [452] "T..23d.22h.00m.V3.Rep1.Set.1.70.Well.F9"          
-    ## [453] "T..23d.22h.00m.V4.Rep1.Set.1.32.Well.H4"          
-    ## [454] "T..23d.23h.00m.V1.Rep1.set.3.82.Well.B11"         
-    ## [455] "T..23d.23h.00m.V2.Rep1.Set.1.80.Well.H10"         
-    ## [456] "T..23d.23h.00m.V3.Rep1.set.3.59.Well.C8"          
-    ## [457] "T..23d.23h.00m.V4.Rep1.Set.4.53..WellE7"          
-    ## [458] "T..24d.00h.00m.V1.Rep1.Set.1.34.Well.B5"          
-    ## [459] "T..24d.00h.00m.V2.Rep1.Set.1.45.Well.E6"          
-    ## [460] "T..24d.00h.00m.V3.Rep1.Set.1.12.Well.D2"          
-    ## [461] "T..24d.00h.00m.V3.Rep1.set.1.58.wellB8"           
-    ## [462] "T..24d.00h.00m.V4.Rep1.Set.4.10..WellB2"          
-    ## [463] "T..24d.01h.00m.V1.Rep1.Set.5.75.WellC10"          
-    ## [464] "T..24d.01h.00m.V2.Rep1.Set.4.62..WellF8"          
-    ## [465] "T..24d.01h.00m.V3.Rep1.set.7.21.wellE3"           
-    ## [466] "T..24d.01h.00m.V4.Rep1.set.3.66.Well.B9"          
-    ## [467] "T..24d.02h.00m.V1.Rep1.Set.4.51..WellC7"          
-    ## [468] "T..24d.02h.00m.V2.Rep1.Set.6.69.wellE9"           
-    ## [469] "T..24d.02h.00m.V3.Rep1.Set.4.29..WellE4"          
-    ## [470] "T..24d.02h.00m.V4.Rep1.Set.1.33.Well.A5"          
-    ## [471] "T..24d.03h.00m.V1.Rep1"                           
-    ## [472] "T..24d.03h.00m.V2.Rep1.Set.5.96.WellH12"          
-    ## [473] "T..24d.03h.00m.V3.Rep1.Set.1.60.Well.D8"          
-    ## [474] "T..24d.03h.00m.V4.Rep1.Set.4.80..WellH10"         
-    ## [475] "T..24d.04h.00m.V1.Rep1.set.3.63.Well.G8"          
-    ## [476] "T..24d.04h.00m.V2.Rep1.Set.5.34.WellB5"           
-    ## [477] "T..24d.04h.00m.V3.Rep1.Set.4.12..WellD2"          
-    ## [478] "T..24d.04h.00m.V4.Rep1"                           
-    ## [479] "T..24d.05h.00m.V1.Rep1"                           
-    ## [480] "T..24d.05h.00m.V2.Rep1.Set.4.96..WellH12"         
-    ## [481] "T..24d.05h.00m.V3.Rep1.Set.4.27..WellC4"          
-    ## [482] "T..24d.05h.00m.V4.Rep1.Set.6.1.wellA1"            
-    ## [483] "T..24d.06h.00m.V1.Rep1.Set.6.17.wellA3"           
-    ## [484] "T..24d.06h.00m.V2.Rep1"                           
-    ## [485] "T..24d.06h.00m.V3.Rep1.Set.5.14.WellF2"           
-    ## [486] "T..24d.06h.00m.V4.Rep1.Set.6.34.wellB5"           
-    ## [487] "T..24d.07h.00m.V1.Rep1.Set.5.37.WellE5"           
-    ## [488] "T..24d.07h.00m.V2.Rep1.set.7.30.wellF4"           
-    ## [489] "T..24d.07h.00m.V3.Rep1.Set.4.28..WellD4"          
-    ## [490] "T..24d.07h.00m.V4.Rep1.Set.5.57.WellA8"           
-    ## [491] "T..24d.08h.00m.V1.Rep1.Set.6.28.wellD4"           
-    ## [492] "T..24d.08h.00m.V2.Rep1.Set.1.3.Well.C1"           
-    ## [493] "T..24d.08h.00m.V3.Rep1.Set.1.81.Well.A11"         
-    ## [494] "T..24d.08h.00m.V4.Rep1.Set.5.79.WellG10"          
-    ## [495] "T..24d.09h.00m.V1.Rep1.Set.4.17..WellA3"          
-    ## [496] "T..24d.09h.00m.V2.Rep1.Set.4.94..WellF12"         
-    ## [497] "T..24d.09h.00m.V3.Rep1.Set.6.65.wellA9"           
-    ## [498] "T..24d.09h.00m.V4.Rep1.Set.4.37..WellE5"          
-    ## [499] "T..24d.10h.00m.V1.Rep1.Set.5.31.WellG4"           
-    ## [500] "T..24d.10h.00m.V2.Rep1"                           
-    ## [501] "T..24d.10h.00m.V3.Rep1.set.7.23.wellG3"           
-    ## [502] "T..24d.10h.00m.V4.Rep1.set.7.2.wellB1"            
-    ## [503] "T..24d.11h.00m.V1.Rep1.set.7.11.wellC2"           
-    ## [504] "T..24d.11h.00m.V2.Rep1.Set.6.63.wellG8"           
-    ## [505] "T..24d.11h.00m.V3.Rep1.Set.1.64.Well.H8"          
-    ## [506] "T..24d.11h.00m.V4.Rep1"                           
-    ## [507] "T..24d.12h.00m.V1.Rep1"                           
-    ## [508] "T..24d.12h.00m.V2.Rep1.Set.4.46..WellF6"          
-    ## [509] "T..24d.12h.00m.V3.Rep1"                           
-    ## [510] "T..24d.12h.00m.V4.Rep1.set.3.43.Well.C6"          
-    ## [511] "T..24d.13h.00m.V1.Rep1.Set.5.71.WellG9"           
-    ## [512] "T..24d.13h.00m.V2.Rep1.set.3.78.Well.F10"         
-    ## [513] "T..24d.13h.00m.V3.Rep1.set.3.4..Well.D1"          
-    ## [514] "T..24d.13h.00m.V4.Rep1.set.7.34.wellB5"           
-    ## [515] "T..24d.14h.00m.V1.Rep1.Set.4.33..WellA5"          
-    ## [516] "T..24d.14h.00m.V2.Rep1.set.3.72.Well.H9"          
-    ## [517] "T..24d.14h.00m.V3.Rep1.Set.4.43..WellC6"          
-    ## [518] "T..24d.14h.00m.V4.Rep1.Set.4.59..WellC8"          
-    ## [519] "T..24d.15h.00m.V1.Rep1.Set.4.20..WellD3"          
-    ## [520] "T..24d.15h.00m.V2.Rep1.Set.6.41.wellA6"           
-    ## [521] "T..24d.15h.00m.V3.Rep1.Set.1.43.Well.C6"          
-    ## [522] "T..24d.15h.00m.V4.Rep1.Set.1.94.Well.F12"         
-    ## [523] "T..24d.16h.00m.V1.Rep1"                           
-    ## [524] "T..24d.16h.00m.V2.Rep1"                           
-    ## [525] "T..24d.16h.00m.V3.Rep1.Set.6.66.wellB9"           
-    ## [526] "T..24d.16h.00m.V4.Rep1.Set.5.42.WellB6"           
-    ## [527] "T..25.Days.V1.Rep1.Set.6.87.wellG11"              
-    ## [528] "T..25.Days.V2.Rep1"                               
-    ## [529] "T..25.Days.V3.Rep1.Set.5.12.WellD2"               
-    ## [530] "T..25.Days.V4.Rep1.set.7.17.wellA3"               
-    ## [531] "T..26.Days.V1.Rep1.Set.1.23.Well.G3"              
-    ## [532] "T..26.Days.V2.Rep1"                               
-    ## [533] "T..26.Days.V3.Rep1.set.3.6..Well.F1"              
-    ## [534] "T..26.Days.V4.Rep1.set.3.88.Well.H11"             
-    ## [535] "T..27.Days.V1.Rep1.Set.4.83..WellC11"             
-    ## [536] "T..27.Days.V2.Rep1.Set.4.4..WellD1"               
-    ## [537] "T..27.Days.V3.Rep1.Set.5.28.WellD4"               
-    ## [538] "T..27.Days.V4.Rep1.set.3.57.Well.A8"              
-    ## [539] "T..28.V1.1.set.7.35.wellC5"                       
-    ## [540] "T..28.V1.10.Set.6.53.wellE7"                      
-    ## [541] "T..28.V1.11"                                      
-    ## [542] "T..28.V1.12.Set.4.30..WellF4"                     
-    ## [543] "T..28.V1.13"                                      
-    ## [544] "T..28.V1.14.Set.6.86.wellF11"                     
-    ## [545] "T..28.V1.15.Set.4.5..WellE1"                      
-    ## [546] "T..28.V1.16.set.3.11..Well.C2"                    
-    ## [547] "T..28.V1.17.Set.4.21..WellE3"                     
-    ## [548] "T..28.V1.18.set.3.45.Well.E6"                     
-    ## [549] "T..28.V1.19.set.3.3..Well.C1"                     
-    ## [550] "T..28.V1.2.Set.5.10.WellB2"                       
-    ## [551] "T..28.V1.20.set.7.27.wellC4"                      
-    ## [552] "T..28.V1.3.Set.4.88..WellH11"                     
-    ## [553] "T..28.V1.4"                                       
-    ## [554] "T..28.V1.5"                                       
-    ## [555] "T..28.V1.6.Set.4.93..WellE12"                     
-    ## [556] "T..28.V1.7.Set.4.40..WellH5"                      
-    ## [557] "T..28.V1.8"                                       
-    ## [558] "T..28.V1.9.Set.4.36..WellD5"                      
-    ## [559] "T..28.V2.1"                                       
-    ## [560] "T..28.V2.10.Set.6.50.wellB7"                      
-    ## [561] "T..28.V2.11"                                      
-    ## [562] "T..28.V2.12.Set.1.47.Well.G6"                     
-    ## [563] "T..28.V2.13.Set.4.8..WellH1"                      
-    ## [564] "T..28.V2.14.Set.4.9..WellA2"                      
-    ## [565] "T..28.V2.15"                                      
-    ## [566] "T..28.V2.16.Set.1.30.Well.F4"                     
-    ## [567] "T..28.V2.17.set.3.23..Well.G3"                    
-    ## [568] "T..28.V2.18.set.3.83.Well.C11"                    
-    ## [569] "T..28.V2.19.set.3.12..Well.D2"                    
-    ## [570] "T..28.V2.2.Set.6.13.wellE2"                       
-    ## [571] "T..28.V2.20.Set.5.3.WellC1"                       
-    ## [572] "T..28.V2.3.Set.1.74.Well.B10"                     
-    ## [573] "T..28.V2.4.Set.1.56.Well.H7"                      
-    ## [574] "T..28.V2.5.Set.6.93.wellE12"                      
-    ## [575] "T..28.V2.6.Set.6.48.wellH6"                       
-    ## [576] "T..28.V2.7.set.3.16..Well.H2"                     
-    ## [577] "T..28.V2.8.set.7.18.wellB3"                       
-    ## [578] "T..28.V2.9.Set.4.16..WellH2"                      
-    ## [579] "T..28.V3.1.set.7.22.wellF3"                       
-    ## [580] "T..28.V3.10.set.3.33..Well.A5"                    
-    ## [581] "T..28.V3.11.Set.6.30.wellF4"                      
-    ## [582] "T..28.V3.12.Set.1.2.Well.B1"                      
-    ## [583] "T..28.V3.13.Set.4.7..WellG1"                      
-    ## [584] "T..28.V3.14"                                      
-    ## [585] "T..28.V3.15.Set.1.11.Well.C2"                     
-    ## [586] "T..28.V3.16.Set.1.37.Well.E5"                     
-    ## [587] "T..28.V3.17.Set.6.72.wellH9"                      
-    ## [588] "T..28.V3.18.Set.1.95.Well.G12"                    
-    ## [589] "T..28.V3.19.set.3.87.Well.G11"                    
-    ## [590] "T..28.V3.2"                                       
-    ## [591] "T..28.V3.20.Set.5.76.WellD10"                     
-    ## [592] "T..28.V3.3.Set.6.26.wellB4"                       
-    ## [593] "T..28.V3.4.Set.4.78..WellF10"                     
-    ## [594] "T..28.V3.5.Set.6.20.wellD3"                       
-    ## [595] "T..28.V3.6.set.7.24.wellH3"                       
-    ## [596] "T..28.V3.7.set.3.74.Well.B10"                     
-    ## [597] "T..28.V3.8.set.3.46.Well.F6"                      
-    ## [598] "T..28.V3.9.Set.5.90.WellB12"                      
-    ## [599] "T..28.V4.1.Set.5.72.WellH9"                       
-    ## [600] "T..28.V4.10.Set.5.35.WellC5"                      
-    ## [601] "T..28.V4.11.Set.1.31.Well.G4"                     
-    ## [602] "T..28.V4.12.Set.6.55.wellG7"                      
-    ## [603] "T..28.V4.13.Set.5.60.WellD8"                      
-    ## [604] "T..28.V4.14"                                      
-    ## [605] "T..28.V4.15.Set.6.23.wellG3"                      
-    ## [606] "T..28.V4.16.Set.6.46.wellF6"                      
-    ## [607] "T..28.V4.17.Set.1.73.Well.A10"                    
-    ## [608] "T..28.V4.18"                                      
-    ## [609] "T..28.V4.19.Set.4.41..WellA6"                     
-    ## [610] "T..28.V4.2.Set.5.49.WellA7"                       
-    ## [611] "T..28.V4.20.set.3.8..Well.H1"                     
-    ## [612] "T..28.V4.3.Set.6.33.wellA5"                       
-    ## [613] "T..28.V4.4.Set.6.44.wellD6"                       
-    ## [614] "T..28.V4.5.Set.6.89.wellA12"                      
-    ## [615] "T..28.V4.6.set.3.89..Well.A12"                    
-    ## [616] "T..28.V4.7.Set.4.81..WellA11"                     
-    ## [617] "T..28.V4.8.Set.6.83.wellC11"                      
-    ## [618] "T..28.V4.9.set.3.51.Well.C7"                      
-    ## [619] "T..3.Days.V.1.Rep.1..Set.6.10.wellB2"             
-    ## [620] "T..3.Days.V.2.Rep.1..set.7.15.wellG2"             
-    ## [621] "T..3.Days.V.3.Rep.1..set.3.32..Well.H4"           
-    ## [622] "T..3.Days.V.4.Rep.1..Set.6.5.wellE1"              
-    ## [623] "T..6.Days.V.1.Rep.1..Set.1.51.Well.C7"            
-    ## [624] "T..6.Days.V.2.Rep.1."                             
-    ## [625] "T..6.Days.V.3.Rep.1..Set.4.95..WellG12"           
-    ## [626] "T..6.Days.V.4.Rep.1..Set.1.76.Well.D10"           
-    ## [627] "T..7.Days.V.1.Rep.1..Set.5.78.WellF10"            
-    ## [628] "T..7.Days.V.2.Rep.1..set.3.55.Well.G7"            
-    ## [629] "T..7.Days.V.3.Rep.1..Set.5.58.WellB8"             
-    ## [630] "T..7.Days.V.4.Rep.1..Set.6.21.wellE3"             
-    ## [631] "T..8.Days.V.1.Rep.1."                             
-    ## [632] "T..8.Days.V.2.Rep.1."                             
-    ## [633] "T..8.Days.V.2.Rep.1..set.2.57.wellA8"             
-    ## [634] "T..8.Days.V.3.Rep.1..Set.6.70.wellF9"             
-    ## [635] "T..8.Days.V.4.Rep.1..Set.1.79.Well.G10"           
-    ## [636] "T..9.Days.V.1.Rep.1..set.3.84.Well.D11"           
-    ## [637] "T..9.Days.V.2.Rep.1..Set.4.42..WellB6"            
-    ## [638] "T..9.Days.V.3.Rep.1..Set.5.25.WellA4"             
-    ## [639] "T..9.Days.V.4.Rep.1..Set.5.84.WellD11"
-
-``` r
 # create columns for day/hour info and vessel number
 # extract the infos from sample names
 sample_cols <- 
@@ -739,6 +658,7 @@ sample_cols <-
   .[day == 28, vessel := str_extract(names, "V[0-9]\\.[0-9][0-9]")] %>% 
   .[day == 28 & is.na(vessel),
     vessel := str_extract(names, "V[0-9]\\.[0-9]")] %>% 
+  .[, c("vessel", "number") := tstrsplit(vessel, "\\.")] %>% 
   # format days and hours as numeric
   .[, day := as.numeric(str_remove(day, "d"))] %>% 
   .[, hours := as.numeric(str_remove(hours, "h"))] %>% 
@@ -752,52 +672,233 @@ sample_cols <-
 sample_cols[, .(day, hours, vessel)] %>% uniqueN()
 ```
 
-    ## [1] 627
+    ## [1] 551
 
 ``` r
 sample_cols[duplicated(sample_cols[, .(day, hours, vessel)])]
 ```
 
-    ##                                                 names day hours vessel     time
-    ##  1: T..22d.16h.00m.V1.Rep1.PostInnoc.Set.1.15.Well.G2  22    16     V1 22.66667
-    ##  2:            T..22d.16h.00m.V3.Rep1.Set.4.1..WellA1  22    16     V3 22.66667
-    ##  3:            T..20d.21h.00m.V4.Rep1.set.1.66.wellE8  20    21     V4 20.87500
-    ##  4:            T..20d.23h.00m.V1.Rep1.set.1.74.wellH8  20    23     V1 20.95833
-    ##  5:            T..21d.10h.00m.V4.Rep1.set.1.65.wellD8  21    10     V4 21.41667
-    ##  6:  T..22d.16h.00m.V1.Rep1.PostInnoc.set.1.59.wellC8  22    16     V1 22.66667
-    ##  7:            T..22d.16h.00m.V2.Rep1.set.7.42.wellB6  22    16     V2 22.66667
-    ##  8:          T..22d.16h.00m.V4.Rep1.set.3.73.Well.A10  22    16     V4 22.66667
-    ##  9:            T..22d.18h.00m.V2.Rep1.set.1.67.wellF8  22    18     V2 22.75000
-    ## 10:            T..23d.14h.00m.V3.Rep1.set.1.73.wellG8  23    14     V3 23.58333
-    ## 11:            T..24d.00h.00m.V3.Rep1.set.1.58.wellB8  24     0     V3 24.00000
-    ## 12:              T..8.Days.V.2.Rep.1..set.2.57.wellA8   8    NA     V2  8.00000
+    ##                                                 names day hours vessel number
+    ##  1: T..22d.16h.00m.V1.Rep1.PostInnoc.Set.1.15.Well.G2  22    16     V1   <NA>
+    ##  2:            T..22d.16h.00m.V3.Rep1.Set.4.1..WellA1  22    16     V3   <NA>
+    ##  3:                      T..28.V1.12.Set.4.30..WellF4  28    NA     V1     12
+    ##  4:                                       T..28.V1.13  28    NA     V1     13
+    ##  5:                       T..28.V1.15.Set.4.5..WellE1  28    NA     V1     15
+    ##  6:                     T..28.V1.16.set.3.11..Well.C2  28    NA     V1     16
+    ##  7:                      T..28.V1.17.Set.4.21..WellE3  28    NA     V1     17
+    ##  8:                      T..28.V1.19.set.3.3..Well.C1  28    NA     V1     19
+    ##  9:                      T..28.V1.3.Set.4.88..WellH11  28    NA     V1      3
+    ## 10:                                        T..28.V1.4  28    NA     V1      4
+    ## 11:                                        T..28.V1.5  28    NA     V1      5
+    ## 12:                      T..28.V1.6.Set.4.93..WellE12  28    NA     V1      6
+    ## 13:                       T..28.V1.7.Set.4.40..WellH5  28    NA     V1      7
+    ## 14:                                        T..28.V1.8  28    NA     V1      8
+    ## 15:                       T..28.V1.9.Set.4.36..WellD5  28    NA     V1      9
+    ## 16:                                       T..28.V2.11  28    NA     V2     11
+    ## 17:                      T..28.V2.12.Set.1.47.Well.G6  28    NA     V2     12
+    ## 18:                       T..28.V2.13.Set.4.8..WellH1  28    NA     V2     13
+    ## 19:                       T..28.V2.14.Set.4.9..WellA2  28    NA     V2     14
+    ## 20:                                       T..28.V2.15  28    NA     V2     15
+    ## 21:                      T..28.V2.16.Set.1.30.Well.F4  28    NA     V2     16
+    ## 22:                     T..28.V2.17.set.3.23..Well.G3  28    NA     V2     17
+    ## 23:                     T..28.V2.19.set.3.12..Well.D2  28    NA     V2     19
+    ## 24:                      T..28.V2.3.Set.1.74.Well.B10  28    NA     V2      3
+    ## 25:                       T..28.V2.4.Set.1.56.Well.H7  28    NA     V2      4
+    ## 26:                      T..28.V2.7.set.3.16..Well.H2  28    NA     V2      7
+    ## 27:                       T..28.V2.9.Set.4.16..WellH2  28    NA     V2      9
+    ## 28:                       T..28.V3.12.Set.1.2.Well.B1  28    NA     V3     12
+    ## 29:                       T..28.V3.13.Set.4.7..WellG1  28    NA     V3     13
+    ## 30:                                       T..28.V3.14  28    NA     V3     14
+    ## 31:                      T..28.V3.15.Set.1.11.Well.C2  28    NA     V3     15
+    ## 32:                      T..28.V3.16.Set.1.37.Well.E5  28    NA     V3     16
+    ## 33:                     T..28.V3.18.Set.1.95.Well.G12  28    NA     V3     18
+    ## 34:                                        T..28.V3.2  28    NA     V3      2
+    ## 35:                      T..28.V3.4.Set.4.78..WellF10  28    NA     V3      4
+    ## 36:                                       T..28.V4.14  28    NA     V4     14
+    ## 37:                     T..28.V4.17.Set.1.73.Well.A10  28    NA     V4     17
+    ## 38:                                       T..28.V4.18  28    NA     V4     18
+    ## 39:                      T..28.V4.19.Set.4.41..WellA6  28    NA     V4     19
+    ## 40:                      T..28.V4.20.set.3.8..Well.H1  28    NA     V4     20
+    ## 41:                     T..28.V4.6.set.3.89..Well.A12  28    NA     V4      6
+    ## 42:                      T..28.V4.7.Set.4.81..WellA11  28    NA     V4      7
+    ## 43:            T..20d.21h.00m.V4.Rep1.set.1.66.wellE8  20    21     V4   <NA>
+    ## 44:            T..20d.23h.00m.V1.Rep1.set.1.74.wellH8  20    23     V1   <NA>
+    ## 45:            T..21d.10h.00m.V4.Rep1.set.1.65.wellD8  21    10     V4   <NA>
+    ## 46:  T..22d.16h.00m.V1.Rep1.PostInnoc.set.1.59.wellC8  22    16     V1   <NA>
+    ## 47:            T..22d.16h.00m.V2.Rep1.set.7.42.wellB6  22    16     V2   <NA>
+    ## 48:          T..22d.16h.00m.V4.Rep1.set.3.73.Well.A10  22    16     V4   <NA>
+    ## 49:            T..22d.18h.00m.V2.Rep1.set.1.67.wellF8  22    18     V2   <NA>
+    ## 50:            T..23d.14h.00m.V3.Rep1.set.1.73.wellG8  23    14     V3   <NA>
+    ## 51:            T..24d.00h.00m.V3.Rep1.set.1.58.wellB8  24     0     V3   <NA>
+    ## 52:                        T..28.V1.1.set.7.35.wellC5  28    NA     V1      1
+    ## 53:                       T..28.V1.10.Set.6.53.wellE7  28    NA     V1     10
+    ## 54:                      T..28.V1.14.Set.6.86.wellF11  28    NA     V1     14
+    ## 55:                      T..28.V1.18.set.3.45.Well.E6  28    NA     V1     18
+    ## 56:                        T..28.V1.2.Set.5.10.WellB2  28    NA     V1      2
+    ## 57:                       T..28.V1.20.set.7.27.wellC4  28    NA     V1     20
+    ## 58:                       T..28.V2.10.Set.6.50.wellB7  28    NA     V2     10
+    ## 59:                     T..28.V2.18.set.3.83.Well.C11  28    NA     V2     18
+    ## 60:                        T..28.V2.2.Set.6.13.wellE2  28    NA     V2      2
+    ## 61:                        T..28.V2.20.Set.5.3.WellC1  28    NA     V2     20
+    ## 62:                       T..28.V2.5.Set.6.93.wellE12  28    NA     V2      5
+    ## 63:                        T..28.V2.6.Set.6.48.wellH6  28    NA     V2      6
+    ## 64:                        T..28.V2.8.set.7.18.wellB3  28    NA     V2      8
+    ## 65:                        T..28.V3.1.set.7.22.wellF3  28    NA     V3      1
+    ## 66:                       T..28.V3.11.Set.6.30.wellF4  28    NA     V3     11
+    ## 67:                       T..28.V3.17.Set.6.72.wellH9  28    NA     V3     17
+    ## 68:                     T..28.V3.19.set.3.87.Well.G11  28    NA     V3     19
+    ## 69:                      T..28.V3.20.Set.5.76.WellD10  28    NA     V3     20
+    ## 70:                        T..28.V3.3.Set.6.26.wellB4  28    NA     V3      3
+    ## 71:                        T..28.V3.5.Set.6.20.wellD3  28    NA     V3      5
+    ## 72:                        T..28.V3.6.set.7.24.wellH3  28    NA     V3      6
+    ## 73:                      T..28.V3.7.set.3.74.Well.B10  28    NA     V3      7
+    ## 74:                       T..28.V3.8.set.3.46.Well.F6  28    NA     V3      8
+    ## 75:                       T..28.V3.9.Set.5.90.WellB12  28    NA     V3      9
+    ## 76:                        T..28.V4.1.Set.5.72.WellH9  28    NA     V4      1
+    ## 77:                       T..28.V4.10.Set.5.35.WellC5  28    NA     V4     10
+    ## 78:                       T..28.V4.12.Set.6.55.wellG7  28    NA     V4     12
+    ## 79:                       T..28.V4.13.Set.5.60.WellD8  28    NA     V4     13
+    ## 80:                       T..28.V4.15.Set.6.23.wellG3  28    NA     V4     15
+    ## 81:                       T..28.V4.16.Set.6.46.wellF6  28    NA     V4     16
+    ## 82:                        T..28.V4.2.Set.5.49.WellA7  28    NA     V4      2
+    ## 83:                        T..28.V4.3.Set.6.33.wellA5  28    NA     V4      3
+    ## 84:                        T..28.V4.4.Set.6.44.wellD6  28    NA     V4      4
+    ## 85:                       T..28.V4.5.Set.6.89.wellA12  28    NA     V4      5
+    ## 86:                       T..28.V4.8.Set.6.83.wellC11  28    NA     V4      8
+    ## 87:                       T..28.V4.9.set.3.51.Well.C7  28    NA     V4      9
+    ## 88:              T..8.Days.V.2.Rep.1..set.2.57.wellA8   8    NA     V2   <NA>
+    ##                                                 names day hours vessel number
+    ##         time
+    ##  1: 22.66667
+    ##  2: 22.66667
+    ##  3: 28.00000
+    ##  4: 28.00000
+    ##  5: 28.00000
+    ##  6: 28.00000
+    ##  7: 28.00000
+    ##  8: 28.00000
+    ##  9: 28.00000
+    ## 10: 28.00000
+    ## 11: 28.00000
+    ## 12: 28.00000
+    ## 13: 28.00000
+    ## 14: 28.00000
+    ## 15: 28.00000
+    ## 16: 28.00000
+    ## 17: 28.00000
+    ## 18: 28.00000
+    ## 19: 28.00000
+    ## 20: 28.00000
+    ## 21: 28.00000
+    ## 22: 28.00000
+    ## 23: 28.00000
+    ## 24: 28.00000
+    ## 25: 28.00000
+    ## 26: 28.00000
+    ## 27: 28.00000
+    ## 28: 28.00000
+    ## 29: 28.00000
+    ## 30: 28.00000
+    ## 31: 28.00000
+    ## 32: 28.00000
+    ## 33: 28.00000
+    ## 34: 28.00000
+    ## 35: 28.00000
+    ## 36: 28.00000
+    ## 37: 28.00000
+    ## 38: 28.00000
+    ## 39: 28.00000
+    ## 40: 28.00000
+    ## 41: 28.00000
+    ## 42: 28.00000
+    ## 43: 20.87500
+    ## 44: 20.95833
+    ## 45: 21.41667
+    ## 46: 22.66667
+    ## 47: 22.66667
+    ## 48: 22.66667
+    ## 49: 22.75000
+    ## 50: 23.58333
+    ## 51: 24.00000
+    ## 52: 28.00000
+    ## 53: 28.00000
+    ## 54: 28.00000
+    ## 55: 28.00000
+    ## 56: 28.00000
+    ## 57: 28.00000
+    ## 58: 28.00000
+    ## 59: 28.00000
+    ## 60: 28.00000
+    ## 61: 28.00000
+    ## 62: 28.00000
+    ## 63: 28.00000
+    ## 64: 28.00000
+    ## 65: 28.00000
+    ## 66: 28.00000
+    ## 67: 28.00000
+    ## 68: 28.00000
+    ## 69: 28.00000
+    ## 70: 28.00000
+    ## 71: 28.00000
+    ## 72: 28.00000
+    ## 73: 28.00000
+    ## 74: 28.00000
+    ## 75: 28.00000
+    ## 76: 28.00000
+    ## 77: 28.00000
+    ## 78: 28.00000
+    ## 79: 28.00000
+    ## 80: 28.00000
+    ## 81: 28.00000
+    ## 82: 28.00000
+    ## 83: 28.00000
+    ## 84: 28.00000
+    ## 85: 28.00000
+    ## 86: 28.00000
+    ## 87: 28.00000
+    ## 88:  8.00000
+    ##         time
 
 ``` r
 # duplicates examples
 sample_cols[day == 8] %>% .[order(vessel)]
 ```
 
-    ##                                     names day hours vessel time
-    ## 1:                   T..8.Days.V.1.Rep.1.   8    NA     V1    8
-    ## 2:                   T..8.Days.V.2.Rep.1.   8    NA     V2    8
-    ## 3:   T..8.Days.V.2.Rep.1..set.2.57.wellA8   8    NA     V2    8
-    ## 4:   T..8.Days.V.3.Rep.1..Set.6.70.wellF9   8    NA     V3    8
-    ## 5: T..8.Days.V.4.Rep.1..Set.1.79.Well.G10   8    NA     V4    8
+    ##                                     names day hours vessel number time
+    ## 1:                   T..8.Days.V.1.Rep.1.   8    NA     V1   <NA>    8
+    ## 2:                   T..8.Days.V.2.Rep.1.   8    NA     V2   <NA>    8
+    ## 3:   T..8.Days.V.2.Rep.1..set.2.57.wellA8   8    NA     V2   <NA>    8
+    ## 4:   T..8.Days.V.3.Rep.1..Set.6.70.wellF9   8    NA     V3   <NA>    8
+    ## 5: T..8.Days.V.4.Rep.1..Set.1.79.Well.G10   8    NA     V4   <NA>    8
 
 ``` r
 sample_cols[day == 22 & hours == 16] %>% .[order(vessel)]
 ```
 
-    ##                                                names day hours vessel     time
-    ## 1:                            T..22d.16h.00m.V1.Rep1  22    16     V1 22.66667
-    ## 2: T..22d.16h.00m.V1.Rep1.PostInnoc.Set.1.15.Well.G2  22    16     V1 22.66667
-    ## 3:  T..22d.16h.00m.V1.Rep1.PostInnoc.set.1.59.wellC8  22    16     V1 22.66667
-    ## 4:                  T..22d.16h.00m.V2.Rep1.PostInnoc  22    16     V2 22.66667
-    ## 5:            T..22d.16h.00m.V2.Rep1.set.7.42.wellB6  22    16     V2 22.66667
-    ## 6: T..22d.16h.00m.V3.Rep1.PostInnoc.Set.1.38.Well.F5  22    16     V3 22.66667
-    ## 7:            T..22d.16h.00m.V3.Rep1.Set.4.1..WellA1  22    16     V3 22.66667
-    ## 8:  T..22d.16h.00m.V4.Rep1.PostInnoc.Set.6.37.wellE5  22    16     V4 22.66667
-    ## 9:          T..22d.16h.00m.V4.Rep1.set.3.73.Well.A10  22    16     V4 22.66667
+    ##                                                names day hours vessel number
+    ## 1:                            T..22d.16h.00m.V1.Rep1  22    16     V1   <NA>
+    ## 2: T..22d.16h.00m.V1.Rep1.PostInnoc.Set.1.15.Well.G2  22    16     V1   <NA>
+    ## 3:  T..22d.16h.00m.V1.Rep1.PostInnoc.set.1.59.wellC8  22    16     V1   <NA>
+    ## 4:                  T..22d.16h.00m.V2.Rep1.PostInnoc  22    16     V2   <NA>
+    ## 5:            T..22d.16h.00m.V2.Rep1.set.7.42.wellB6  22    16     V2   <NA>
+    ## 6: T..22d.16h.00m.V3.Rep1.PostInnoc.Set.1.38.Well.F5  22    16     V3   <NA>
+    ## 7:            T..22d.16h.00m.V3.Rep1.Set.4.1..WellA1  22    16     V3   <NA>
+    ## 8:  T..22d.16h.00m.V4.Rep1.PostInnoc.Set.6.37.wellE5  22    16     V4   <NA>
+    ## 9:          T..22d.16h.00m.V4.Rep1.set.3.73.Well.A10  22    16     V4   <NA>
+    ##        time
+    ## 1: 22.66667
+    ## 2: 22.66667
+    ## 3: 22.66667
+    ## 4: 22.66667
+    ## 5: 22.66667
+    ## 6: 22.66667
+    ## 7: 22.66667
+    ## 8: 22.66667
+    ## 9: 22.66667
+
+``` r
+## TODO: remove duplicates 
+```
 
 ``` r
 # add time info to count data.table
@@ -812,15 +913,15 @@ dt_SilvermanAGut_count <-
 # function to create bar plot for data
 barplot_Silverman <- 
   function(data, v = "V1", time_type = "day", level = "seq", legend = "none"){
-  data <- data[vessel == v]
+  
+    if(v != "all"){
+      data <- data[vessel == v]
+    }
+    
   if(time_type == "day"){
     data <- data[time %% 1 == 0]
-    time_name <- "time (days)"
   } else if(time_type == "hour"){
     data <- data[time > 19 & time < 25]
-    time_name = "time (hours)"
-  } else if(time_type == "all"){
-    time_name = "time"
   }
   
   pl <-
@@ -829,7 +930,9 @@ barplot_Silverman <-
     theme(legend.position = legend) +
     labs(title = "SilvermanAGut Data",
          subtitle = paste("Vessel", str_remove(v, "V")),
-         x = time_name)
+         x = "time (days)",
+         fill = level) +
+    scale_fill_viridis(discrete = TRUE, option = "turbo")
   
   print(pl)
 }
@@ -837,36 +940,36 @@ barplot_Silverman <-
 
 ``` r
 # plots
-barplot_Silverman(dt_SilvermanAGut_count, "V1", "all")
+barplot_Silverman(dt_SilvermanAGut_count, "V2", "all")
 ```
 
     ## Warning: Removed 826 rows containing missing values (`geom_bar()`).
 
-![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 ``` r
 barplot_Silverman(dt_SilvermanAGut_count, "V1", "day")
 ```
 
-![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-16-2.png)<!-- -->
 
 ``` r
 barplot_Silverman(dt_SilvermanAGut_count, "V2", "day")
 ```
 
-![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-5-3.png)<!-- -->
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-16-3.png)<!-- -->
 
 ``` r
 barplot_Silverman(dt_SilvermanAGut_count, "V3", "day")
 ```
 
-![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-5-4.png)<!-- -->
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-16-4.png)<!-- -->
 
 ``` r
 barplot_Silverman(dt_SilvermanAGut_count, "V4", "day")
 ```
 
-![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-5-5.png)<!-- -->
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-16-5.png)<!-- -->
 
 ``` r
 barplot_Silverman(dt_SilvermanAGut_count, "V1", "hour")
@@ -874,343 +977,178 @@ barplot_Silverman(dt_SilvermanAGut_count, "V1", "hour")
 
     ## Warning: Removed 826 rows containing missing values (`geom_bar()`).
 
-![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-5-6.png)<!-- -->
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-16-6.png)<!-- -->
 
-### Analysis by genus
+### Group by Species
 
 ``` r
-# sum counts over genus
-dt_SilvermanAGut_count_genus <-
-  dt_SilvermanAGut_count[is.na(Genus), Genus := "unknown"] %>% 
-    .[, .(count = sum(count)),
-      by = c("desc", "Genus", "vessel", "time")]
+# add category "other" for Species with small count
+th_species <- 0.1
+
+dt_species_other <-
+  dt_SilvermanAGut_count[, rel_count_species := count/sum(count),
+              by = c("time", "vessel")] %>% 
+  .[, .(max_count = max(rel_count_species)),
+             by = c("Species")] %>% 
+      .[max_count < th_species, .(Species)]
+
+dt_SilvermanAGut_count[, Species_grouped := Species] %>% 
+  .[Species %in% dt_species_other$Species, Species_grouped := "other"]
+
+
+# plot for grouped species
+barplot_Silverman(dt_SilvermanAGut_count, 
+                  "V1", "day", level = "Species_grouped", legend = "right")
+```
+
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+
+### by Genus
+
+``` r
+# rename NAs as unknown
+dt_SilvermanAGut_count[is.na(Genus), Genus := "unknown"]
+
+# add threshold for category "other"
+th_genus <- 0.1
+
+# find genus with small count/abundances
+dt_genus_other <-
+  dt_SilvermanAGut_count[, .(rel_count_genus = sum(rel_count_species)),
+                         by = c("desc", "Genus", "vessel", "time")] %>%
+  .[, .(max_count = max(rel_count_genus, na.rm = T)),
+             by = c("Genus")] %>% 
+  .[max_count < th_genus, .(Genus)]
+
+# add category other to grouped genus
+dt_SilvermanAGut_count[, Genus_grouped := Genus] %>% 
+  .[Genus %in% dt_genus_other$Genus, Genus_grouped := "other"]
 ```
 
 ``` r
 # plot results
-barplot_Silverman(dt_SilvermanAGut_count_genus, "V1", "day", "Genus")
+barplot_Silverman(dt_SilvermanAGut_count, 
+                  "V1", "day", "Genus_grouped", legend = "right")
 ```
 
-![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+
+``` r
+# plot results
+barplot_Silverman(dt_SilvermanAGut_count, 
+                  "V2", "hour", "Genus_grouped", legend = "right")
+```
+
+    ## Warning: Removed 826 rows containing missing values (`geom_bar()`).
+
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-19-2.png)<!-- -->
 
 ``` r
 # list of all genus
-dt_SilvermanAGut_count_genus$Genus %>% unique()
+dt_SilvermanAGut_count$Genus_grouped %>% unique()
 ```
 
-    ##   [1] "Alistipes"                            
-    ##   [2] "Hungatella"                           
-    ##   [3] "Paenibacillus"                        
-    ##   [4] "Ruminococcus_2"                       
-    ##   [5] "Lachnospiraceae_ND3007_group"         
-    ##   [6] "Anaerotruncus"                        
-    ##   [7] "Erysipelotrichaceae_UCG-003"          
-    ##   [8] "Roseburia"                            
-    ##   [9] "Blautia"                              
-    ##  [10] "Bifidobacterium"                      
-    ##  [11] "Subdoligranulum"                      
-    ##  [12] "Peptoniphilus"                        
-    ##  [13] "Lachnoclostridium"                    
-    ##  [14] "[Eubacterium]_coprostanoligenes_group"
-    ##  [15] "Ruminococcaceae_UCG-005"              
-    ##  [16] "Coprococcus_1"                        
-    ##  [17] "Lachnospiraceae_UCG-010"              
-    ##  [18] "Lachnospira"                          
-    ##  [19] "Family_XIII_AD3011_group"             
-    ##  [20] "Ruminiclostridium"                    
-    ##  [21] "Faecalibacterium"                     
-    ##  [22] "Eisenbergiella"                       
-    ##  [23] "Clostridium_sensu_stricto_1"          
-    ##  [24] "unknown"                              
-    ##  [25] "Anaerostipes"                         
-    ##  [26] "Lachnospiraceae_UCG-004"              
-    ##  [27] "Bacteroides"                          
-    ##  [28] "Bacillus"                             
-    ##  [29] "Ruminiclostridium_5"                  
-    ##  [30] "Lachnospiraceae_NK4A136_group"        
-    ##  [31] "Lachnospiraceae_UCG-005"              
-    ##  [32] "Collinsella"                          
-    ##  [33] "Ruminiclostridium_9"                  
-    ##  [34] "Parabacteroides"                      
-    ##  [35] "Ruminococcaceae_UCG-013"              
-    ##  [36] "[Ruminococcus]_gauvreauii_group"      
-    ##  [37] "Veillonella"                          
-    ##  [38] "Ruminococcaceae_UCG-008"              
-    ##  [39] "Dialister"                            
-    ##  [40] "Eubacterium"                          
-    ##  [41] "Phascolarctobacterium"                
-    ##  [42] "Intestinibacter"                      
-    ##  [43] "Coprococcus_3"                        
-    ##  [44] "Dorea"                                
-    ##  [45] "Family_XIII_UCG-001"                  
-    ##  [46] "Candidatus_Soleaferrea"               
-    ##  [47] "Streptococcus"                        
-    ##  [48] "Holdemania"                           
-    ##  [49] "[Eubacterium]_hallii_group"           
-    ##  [50] "Odoribacter"                          
-    ##  [51] "Romboutsia"                           
-    ##  [52] "Barnesiella"                          
-    ##  [53] "Parasutterella"                       
-    ##  [54] "Fusobacterium"                        
-    ##  [55] "Lactonifactor"                        
-    ##  [56] "Flavonifractor"                       
-    ##  [57] "Haemophilus"                          
-    ##  [58] "Catabacter"                           
-    ##  [59] "Lachnospiraceae_UCG-001"              
-    ##  [60] "Fusicatenibacter"                     
-    ##  [61] "Gelria"                               
-    ##  [62] "Anaerococcus"                         
-    ##  [63] "Tyzzerella"                           
-    ##  [64] "Ruminococcaceae_UCG-002"              
-    ##  [65] "Lactococcus"                          
-    ##  [66] "Akkermansia"                          
-    ##  [67] "Dielma"                               
-    ##  [68] "Bilophila"                            
-    ##  [69] "Acetanaerobacterium"                  
-    ##  [70] "Succinivibrio"                        
-    ##  [71] "Phormidium"                           
-    ##  [72] "Ezakiella"                            
-    ##  [73] "Prevotella_6"                         
-    ##  [74] "Escherichia/Shigella"                 
-    ##  [75] "Prevotella_7"                         
-    ##  [76] "Lachnospiraceae_FCS020_group"         
-    ##  [77] "Stenotrophomonas"                     
-    ##  [78] "Lactobacillus"                        
-    ##  [79] "Corynebacterium_1"                    
-    ##  [80] "Domibacillus"                         
-    ##  [81] "Ruminococcaceae_UCG-003"              
-    ##  [82] "Enterococcus"                         
-    ##  [83] "Sutterella"                           
-    ##  [84] "Ruminococcaceae_UCG-004"              
-    ##  [85] "Kocuria"                              
-    ##  [86] "Alloprevotella"                       
-    ##  [87] "Lysinibacillus"                       
-    ##  [88] "Eggerthella"                          
-    ##  [89] "Incertae_Sedis"                       
-    ##  [90] "Erysipelatoclostridium"               
-    ##  [91] "Megasphaera"                          
-    ##  [92] "Bradyrhizobium"                       
-    ##  [93] "Clostridium_sensu_stricto_13"         
-    ##  [94] "Pyramidobacter"                       
-    ##  [95] "Viridibacillus"                       
-    ##  [96] "Anaerofilum"                          
-    ##  [97] "Oscillibacter"                        
-    ##  [98] "Anaeroglobus"                         
-    ##  [99] "Desulfovibrio"                        
-    ## [100] "Christensenellaceae_R-7_group"        
-    ## [101] "Oscillospira"                         
-    ## [102] "Intestinimonas"                       
-    ## [103] "Pseudobutyrivibrio"                   
-    ## [104] "[Eubacterium]_ventriosum_group"
+    ##  [1] "Alistipes"                   "other"                      
+    ##  [3] "Erysipelotrichaceae_UCG-003" "Subdoligranulum"            
+    ##  [5] "Lachnoclostridium"           "Faecalibacterium"           
+    ##  [7] "Bacteroides"                 "Ruminiclostridium_5"        
+    ##  [9] "Fusobacterium"               "Escherichia/Shigella"       
+    ## [11] "Pyramidobacter"
 
-### Analysis by family
+### by Family
 
 ``` r
-# sum counts over Family
-dt_SilvermanAGut_count_Family <-
-  dt_SilvermanAGut_count[is.na(Family), Family := "unknown"] %>% 
-    .[, .(count = sum(count)),
-      by = c("desc", "Family", "vessel", "time")]
+# # sum counts over Family
+# dt_SilvermanAGut_count_Family <-
+#   dt_SilvermanAGut_count[is.na(Family), Family := "unknown"] %>% 
+#     .[, .(count = sum(count)),
+#       by = c("desc", "Family", "vessel", "time")]
+
+# rename NAs as unknown
+dt_SilvermanAGut_count[is.na(Family), Family := "unknown"]
+
+# add threshold for category "other"
+th_family <- 0.05
+
+# find family with small count/abundances
+dt_family_other <-
+  dt_SilvermanAGut_count[, .(rel_count_family = sum(rel_count_species)),
+                         by = c("desc", "Family", "vessel", "time")] %>%
+  .[, .(max_count = max(rel_count_family, na.rm = T)),
+             by = c("Family")] %>% 
+  .[max_count < th_family, .(Family)]
+
+# add category other to grouped family
+dt_SilvermanAGut_count[, Family_grouped := Family] %>% 
+  .[Family %in% dt_family_other$Family, Family_grouped := "other"]
 ```
 
 ``` r
 # plot results
-barplot_Silverman(dt_SilvermanAGut_count_Family, "V1", "day", "Family")
+barplot_Silverman(dt_SilvermanAGut_count, "V1", "day", "Family")
 ```
 
-![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
 ``` r
-barplot_Silverman(dt_SilvermanAGut_count_Family, "V1", "day", "Family", legend = "bottom")
+barplot_Silverman(dt_SilvermanAGut_count, 
+                  "V1", "day", "Family_grouped", legend = "right")
 ```
 
-![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-9-2.png)<!-- -->
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-21-2.png)<!-- -->
 
-## hitchip1006 Data
+## Analyse over all vessels
 
-### miaTIME tutorial
-
-<https://microbiome.github.io/miaTime/articles/manipulation.html>
-
-<!-- ```{r} -->
-<!-- data("hitchip1006") -->
-<!-- tse <- hitchip1006 -->
-<!-- tse2 <- tse %>% tidySingleCellExperiment::arrange(subject, time) -->
-<!-- ``` -->
+group vessels (take mean)
 
 ``` r
-# Load demo data
-data(hitchip1006)
-tse <- hitchip1006
-
-# Time is given in days in the demo data.
-# Convert days to seconds
-time_in_seconds <- 60*60*24*colData(tse)[,"time"]
-# Convert the time data to period class
-Seconds <- as.period(time_in_seconds, unit="sec")
-# Check the output
-Seconds[1140:1151]
+### test
+dt_SilvermanAGut_count[duplicated(dt_SilvermanAGut_count[, .(vessel, time, seq)]) |
+                         duplicated(dt_SilvermanAGut_count[, .(vessel, time, seq)], fromLast = TRUE), .N]
 ```
 
-    ##  [1] "492480S" "198720S" "673920S" "198720S" "198720S" "708480S" "198720S"
-    ##  [8] "699840S" "198720S" "708480S" "181440S" "682560S"
+    ## [1] 42539
 
 ``` r
-Hours <- as.period(Seconds, unit = "hour")
-Hours[1140:1151]
+### test
+
+dt_SilvermanAGut_count_mean <-
+  dt_SilvermanAGut_count[, .(count = mean(count)),
+                         by = c("vessel", "seq", "time")] %>% 
+  .[, .(count = mean(count)),  by = c("seq", "time")] %>% 
+  merge(., dt_taxonomic_tree,
+        by.x = "seq", by.y = "rn")
+
+# remove NAs for species/genus/family
+dt_SilvermanAGut_count_mean[is.na(Species), Species := "unknown"] %>% 
+  .[is.na(Genus), Genus := "unknown"] %>% 
+  .[is.na(Family), Family := "unknown"]
+
+# add category other to grouped genus
+dt_SilvermanAGut_count_mean[, Genus_grouped := Genus] %>% 
+  .[Genus %in% dt_genus_other$Genus, Genus_grouped := "other"]
+
+# plot
+barplot_Silverman(dt_SilvermanAGut_count_mean, v = "all", level = "Genus_grouped")
 ```
 
-    ##  [1] "136H 48M 0S"                "55H 11M 59.9999999999709S" 
-    ##  [3] "187H 12M 0S"                "55H 11M 59.9999999999709S" 
-    ##  [5] "55H 11M 59.9999999999709S"  "196H 47M 59.9999999998836S"
-    ##  [7] "55H 11M 59.9999999999709S"  "194H 24M 0S"               
-    ##  [9] "55H 11M 59.9999999999709S"  "196H 47M 59.9999999998836S"
-    ## [11] "50H 24M 0S"                 "189H 36M 0S"
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
 
 ``` r
-colData(tse)$timeSec <- Seconds
-colData(tse)
+# ggsave("01c-timeseries-miaTIME_files/figure-gfm/plot_genus_days.jpg",
+#        width = 6,
+#        height = 5)
+
+barplot_Silverman(dt_SilvermanAGut_count_mean, 
+                  v = "all", time_type = "hour", level = "Genus_grouped")
 ```
 
-    ## DataFrame with 1151 rows and 11 columns
-    ##                   age      sex nationality DNA_extraction_method  project
-    ##             <integer> <factor>    <factor>              <factor> <factor>
-    ## Sample-1           28   male            US                    NA        1
-    ## Sample-2           24   female          US                    NA        1
-    ## Sample-3           52   male            US                    NA        1
-    ## Sample-4           22   female          US                    NA        1
-    ## Sample-5           25   female          US                    NA        1
-    ## ...               ...      ...         ...                   ...      ...
-    ## Sample-1168        50   female Scandinavia                     r       40
-    ## Sample-1169        31   female Scandinavia                     r       40
-    ## Sample-1170        31   female Scandinavia                     r       40
-    ## Sample-1171        52   male   Scandinavia                     r       40
-    ## Sample-1172        52   male   Scandinavia                     r       40
-    ##             diversity   bmi_group  subject      time      sample  timeSec
-    ##             <numeric>    <factor> <factor> <numeric> <character> <Period>
-    ## Sample-1         5.76 severeobese        1         0    Sample-1       0S
-    ## Sample-2         6.06 obese              2         0    Sample-2       0S
-    ## Sample-3         5.50 lean               3         0    Sample-3       0S
-    ## Sample-4         5.87 underweight        4         0    Sample-4       0S
-    ## Sample-5         5.89 lean               5         0    Sample-5       0S
-    ## ...               ...         ...      ...       ...         ...      ...
-    ## Sample-1168      5.87 severeobese      244       8.1 Sample-1168  699840S
-    ## Sample-1169      5.87 overweight       245       2.3 Sample-1169  198720S
-    ## Sample-1170      5.92 overweight       245       8.2 Sample-1170  708480S
-    ## Sample-1171      6.04 overweight       246       2.1 Sample-1171  181440S
-    ## Sample-1172      5.74 overweight       246       7.9 Sample-1172  682560S
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-22-2.png)<!-- -->
 
 ``` r
-Duration <- as.duration(Seconds)
-Duration[1140:1151]
-```
-
-    ##  [1] "492480s (~5.7 days)"   "198720s (~2.3 days)"   "673920s (~1.11 weeks)"
-    ##  [4] "198720s (~2.3 days)"   "198720s (~2.3 days)"   "708480s (~1.17 weeks)"
-    ##  [7] "198720s (~2.3 days)"   "699840s (~1.16 weeks)" "198720s (~2.3 days)"  
-    ## [10] "708480s (~1.17 weeks)" "181440s (~2.1 days)"   "682560s (~1.13 weeks)"
-
-``` r
-Timediff <- diff(Duration)
-Timediff <- c(NA, Timediff)
-Timediff[1140:1151]
-```
-
-    ##  [1] -216000 -293760  475200 -475200       0  509760 -509760  501120 -501120
-    ## [10]  509760 -527040  501120
-
-``` r
-base <- Hours - Hours[1] #distance from starting point
-base[1140:1151]
-```
-
-    ##  [1] "136H 48M 0S"                "55H 11M 59.9999999999709S" 
-    ##  [3] "187H 12M 0S"                "55H 11M 59.9999999999709S" 
-    ##  [5] "55H 11M 59.9999999999709S"  "196H 47M 59.9999999998836S"
-    ##  [7] "55H 11M 59.9999999999709S"  "194H 24M 0S"               
-    ##  [9] "55H 11M 59.9999999999709S"  "196H 47M 59.9999999998836S"
-    ## [11] "50H 24M 0S"                 "189H 36M 0S"
-
-``` r
-base_1140 <- Seconds - Seconds[1140]
-base_1140[1140:1151]
-```
-
-    ##  [1] "0S"       "-293760S" "181440S"  "-293760S" "-293760S" "216000S" 
-    ##  [7] "-293760S" "207360S"  "-293760S" "216000S"  "-311040S" "190080S"
-
-``` r
-colData(tse)$rank <- rank(colData(tse)$time)
-colData(tse)
-```
-
-    ## DataFrame with 1151 rows and 12 columns
-    ##                   age      sex nationality DNA_extraction_method  project
-    ##             <integer> <factor>    <factor>              <factor> <factor>
-    ## Sample-1           28   male            US                    NA        1
-    ## Sample-2           24   female          US                    NA        1
-    ## Sample-3           52   male            US                    NA        1
-    ## Sample-4           22   female          US                    NA        1
-    ## Sample-5           25   female          US                    NA        1
-    ## ...               ...      ...         ...                   ...      ...
-    ## Sample-1168        50   female Scandinavia                     r       40
-    ## Sample-1169        31   female Scandinavia                     r       40
-    ## Sample-1170        31   female Scandinavia                     r       40
-    ## Sample-1171        52   male   Scandinavia                     r       40
-    ## Sample-1172        52   male   Scandinavia                     r       40
-    ##             diversity   bmi_group  subject      time      sample  timeSec
-    ##             <numeric>    <factor> <factor> <numeric> <character> <Period>
-    ## Sample-1         5.76 severeobese        1         0    Sample-1       0S
-    ## Sample-2         6.06 obese              2         0    Sample-2       0S
-    ## Sample-3         5.50 lean               3         0    Sample-3       0S
-    ## Sample-4         5.87 underweight        4         0    Sample-4       0S
-    ## Sample-5         5.89 lean               5         0    Sample-5       0S
-    ## ...               ...         ...      ...       ...         ...      ...
-    ## Sample-1168      5.87 severeobese      244       8.1 Sample-1168  699840S
-    ## Sample-1169      5.87 overweight       245       2.3 Sample-1169  198720S
-    ## Sample-1170      5.92 overweight       245       8.2 Sample-1170  708480S
-    ## Sample-1171      6.04 overweight       246       2.1 Sample-1171  181440S
-    ## Sample-1172      5.74 overweight       246       7.9 Sample-1172  682560S
-    ##                  rank
-    ##             <numeric>
-    ## Sample-1        503.5
-    ## Sample-2        503.5
-    ## Sample-3        503.5
-    ## Sample-4        503.5
-    ## Sample-5        503.5
-    ## ...               ...
-    ## Sample-1168    1128.5
-    ## Sample-1169    1077.0
-    ## Sample-1170    1132.5
-    ## Sample-1171    1067.0
-    ## Sample-1172    1127.0
-
-``` r
-colData(tse) <- colData(tse) %>%
-   as.data.frame() %>%
-   group_by(subject) %>%
-   mutate(rank = rank(time, ties.method="average")) %>%
-   DataFrame()
-```
-
-<!-- ```{r} -->
-<!-- # Pick samples with time point 0 -->
-<!-- tse <- hitchip1006 |> filter(time == 0) -->
-<!-- # Or: tse <- tse[, tse$time==0] -->
-<!-- # Sample with the smallest time point within each subject -->
-<!-- colData(tse) <- colData(tse) %>% -->
-<!--    as.data.frame() %>% -->
-<!--    group_by(subject) %>% -->
-<!--    mutate(rank = rank(time, ties.method="average")) %>% -->
-<!--    DataFrame -->
-<!-- # Pick the subset including first time point per subject -->
-<!-- tse1 <- tse[, tse$rank == 1] -->
-<!-- ``` -->
-
-### further analysis
-
-``` r
-dt_tse <- as.data.table(colData(tse))
+# ggsave("01c-timeseries-miaTIME_files/figure-gfm/plot_genus_hours.jpg",
+#        width = 6,
+#        height = 5)
 ```
 
 ## Files written
