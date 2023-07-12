@@ -1,7 +1,7 @@
 Simulation of synthetic time series with second order interactions
 (miaSim)
 ================
-Compiled at 2023-07-10 15:00:49 UTC
+Compiled at 2023-07-11 14:06:23 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "097d888c-3dd7-4302-ad02-3bed36ed3cfe")
@@ -143,14 +143,50 @@ save_and_plot_glv(n_species = 2, A_matrix, growth_rates,
 
 ## General gLV for arbitrary number n of species
 
-### a) 5 Species
+### a.1) 5 Species
 
 ``` r
 n = 5
 
-# Generate random interaction matrix for GLV (3 Species)
-set.seed(246)
-A_matrix <- randomA(n_species = n)
+# Generate interaction matrix for GLV (5 Species)
+A_matrix <- matrix(c(-0.5, 20, 0, 0, 0,
+                     -28, -0.5, 0, 0, 0,
+                     0, 0, -0.5, 0, 0,
+                     0, 0, 0, -0.5, 40,
+                     0, 0, -20, -60, -0.5), nrow = n)
+A_matrix
+```
+
+    ##      [,1]  [,2] [,3] [,4]  [,5]
+    ## [1,] -0.5 -28.0  0.0  0.0   0.0
+    ## [2,] 20.0  -0.5  0.0  0.0   0.0
+    ## [3,]  0.0   0.0 -0.5  0.0 -20.0
+    ## [4,]  0.0   0.0  0.0 -0.5 -60.0
+    ## [5,]  0.0   0.0  0.0 40.0  -0.5
+
+``` r
+# specify growth rates or use rep(1, n) by default
+growth_rates = c(10, -1, 4, 10, -10)
+growth_rates
+```
+
+    ## [1]  10  -1   4  10 -10
+
+``` r
+save_and_plot_glv(n_species = n, A_matrix, growth_rates, 
+                  sim_name = "_fewInteractions")
+```
+
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+### a.2) 5 Species
+
+``` r
+n = 5
+
+# # Generate random interaction matrix for GLV (5 Species)
+# set.seed(246)
+# A_matrix <- randomA(n_species = n)
 A_matrix <- matrix(c(-0.5, 20, 0, 0, 0,
                      -28, -0.5, -3, 0, 0,
                      0, 10, -0.5, 0, 0,
@@ -176,10 +212,10 @@ growth_rates
 
 ``` r
 save_and_plot_glv(n_species = n, A_matrix, growth_rates, 
-                  sim_name = "_V1")
+                  sim_name = "_manyInteractions")
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 ### b) 2 species
 
@@ -206,7 +242,7 @@ save_and_plot_glv(n_species = n, A_matrix, growth_rates,
                   sim_name = "_oscillating")
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 ### c) 3 Species
 
@@ -236,7 +272,7 @@ save_and_plot_glv(n_species = n, A_matrix, growth_rates,
                   sim_name = "_oscillating")
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 ### c.1) 4 Species
 
@@ -266,7 +302,7 @@ save_and_plot_glv(n_species = n, A_matrix, growth_rates,
                   sim_name = "_oscillating_three")
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 ### c.2) 4 Species
 
@@ -296,7 +332,7 @@ save_and_plot_glv(n_species = n, A_matrix, growth_rates,
                   sim_name = "_oscillating_zero")
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 ### d) 4 Species
 
@@ -327,7 +363,7 @@ save_and_plot_glv(n_species = n, A_matrix, growth_rates, x0,
                   sim_name = "_Vd")
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ## Example with 4 species
 
@@ -352,7 +388,7 @@ set.seed(123)
 save_and_plot_glv(n_species = n, A_matrix = A_normal)
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 ``` r
 A <- miaSim::powerlawA(4, alpha = 1.01)
@@ -369,7 +405,7 @@ A
 save_and_plot_glv(n_species = 4, A_matrix = A)
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 ## Large Example for simulating GLV
 
@@ -514,7 +550,7 @@ A_matrix
 save_and_plot_glv(n_species = n, A_matrix)
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 ### b) with 10 Species
 
@@ -561,7 +597,7 @@ growth_rates
 save_and_plot_glv(n_species = n, A_matrix, growth_rates)
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 ## Files written
 
@@ -572,17 +608,18 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 11 × 4
+    ## # A tibble: 12 × 4
     ##    path                                      type       size modification_time  
     ##    <fs::path>                                <fct> <fs::byt> <dttm>             
-    ##  1 miaSim_GLV_10species.mat                  file      43.2K 2023-07-10 15:01:21
-    ##  2 miaSim_GLV_2species_oscillating.mat       file      11.9K 2023-07-10 15:01:06
-    ##  3 miaSim_GLV_2species_V1.mat                file      11.9K 2023-07-10 15:01:02
-    ##  4 miaSim_GLV_2species_V3.mat                file      11.9K 2023-07-10 15:01:04
-    ##  5 miaSim_GLV_30species.mat                  file     121.3K 2023-07-10 15:01:18
-    ##  6 miaSim_GLV_3species_oscillating.mat       file      15.8K 2023-07-10 15:01:07
-    ##  7 miaSim_GLV_4species.mat                   file      19.7K 2023-07-10 15:01:16
-    ##  8 miaSim_GLV_4species_oscillating_three.mat file      19.7K 2023-07-10 15:01:08
-    ##  9 miaSim_GLV_4species_oscillating_zero.mat  file      19.7K 2023-07-10 15:01:10
-    ## 10 miaSim_GLV_4species_Vd.mat                file      19.7K 2023-07-10 15:01:14
-    ## 11 miaSim_GLV_5species_V1.mat                file      23.6K 2023-07-10 15:01:05
+    ##  1 miaSim_GLV_10species.mat                  file      43.2K 2023-07-11 14:06:54
+    ##  2 miaSim_GLV_2species_oscillating.mat       file      11.9K 2023-07-11 14:06:41
+    ##  3 miaSim_GLV_2species_V1.mat                file      11.9K 2023-07-11 14:06:36
+    ##  4 miaSim_GLV_2species_V3.mat                file      11.9K 2023-07-11 14:06:38
+    ##  5 miaSim_GLV_30species.mat                  file     121.3K 2023-07-11 14:06:50
+    ##  6 miaSim_GLV_3species_oscillating.mat       file      15.8K 2023-07-11 14:06:42
+    ##  7 miaSim_GLV_4species.mat                   file      19.7K 2023-07-11 14:06:49
+    ##  8 miaSim_GLV_4species_oscillating_three.mat file      19.7K 2023-07-11 14:06:43
+    ##  9 miaSim_GLV_4species_oscillating_zero.mat  file      19.7K 2023-07-11 14:06:43
+    ## 10 miaSim_GLV_4species_Vd.mat                file      19.7K 2023-07-11 14:06:47
+    ## 11 miaSim_GLV_5species_fewInteractions.mat   file      23.6K 2023-07-11 14:06:39
+    ## 12 miaSim_GLV_5species_manyInteractions.mat  file      23.6K 2023-07-11 14:06:40

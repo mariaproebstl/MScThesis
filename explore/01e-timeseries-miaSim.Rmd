@@ -86,6 +86,11 @@ save_and_plot_glv <-
     
     # write .mat file for python
     glv_tmp_mat <- data.matrix(cbind(1:500, t(glv_tmp)))
+    colnames(glv_tmp_mat) <- c("t", paste0("S",1:n_species))
+    # write.csv(glv_tmp_mat,
+    #           paste0(path_target(),"/miaSim_GLV_", n_species, "species",
+    #                 sim_name, ".csv"),
+    #           row.names = F)
     writeMat(paste0(path_target(),"/miaSim_GLV_", n_species, "species",
                     sim_name, ".mat"),
              ts_glv = glv_tmp_mat)
@@ -134,16 +139,38 @@ save_and_plot_glv(n_species = 2, A_matrix, growth_rates,
 ```
 
 
-## General gLV for arbitrary number n of species
+## General gLV simulation for arbitrary number n of species
 
-### a) 5 Species
+### a.1) 5 Species
 
 ```{r}
 n = 5
 
-# Generate random interaction matrix for GLV (3 Species)
-set.seed(246)
-A_matrix <- randomA(n_species = n)
+# Generate interaction matrix for GLV (5 Species)
+A_matrix <- matrix(c(-0.5, 20, 0, 0, 0,
+                     -28, -0.5, 0, 0, 0,
+                     0, 0, -0.5, 0, 0,
+                     0, 0, 0, -0.5, 40,
+                     0, 0, -20, -60, -0.5), nrow = n)
+A_matrix
+
+# specify growth rates or use rep(1, n) by default
+growth_rates = c(10, -1, 4, 10, -10)
+growth_rates
+
+save_and_plot_glv(n_species = n, A_matrix, growth_rates, 
+                  sim_name = "_fewInteractions")
+```
+
+
+### a.2) 5 Species
+
+```{r}
+n = 5
+
+# # Generate random interaction matrix for GLV (5 Species)
+# set.seed(246)
+# A_matrix <- randomA(n_species = n)
 A_matrix <- matrix(c(-0.5, 20, 0, 0, 0,
                      -28, -0.5, -3, 0, 0,
                      0, 10, -0.5, 0, 0,
@@ -156,7 +183,7 @@ growth_rates = c(10, -1, 1, 1, -1)
 growth_rates
 
 save_and_plot_glv(n_species = n, A_matrix, growth_rates, 
-                  sim_name = "_V1")
+                  sim_name = "_manyInteractions")
 ```
 
 ### b) 2 species
