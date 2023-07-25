@@ -1,5 +1,5 @@
 ---
-title: "Time series (Compositional Lotka Volterra)"
+title: "Time series (Bucci Dataset from cLV paper)"
 date: "Compiled at `r format(Sys.time(), '%Y-%m-%d %H:%M:%S', tz = 'UTC')` UTC"
 output: github_document
 params:
@@ -10,15 +10,19 @@ params:
 here::i_am(paste0(params$name, ".Rmd"), uuid = "fbad9ade-134a-4a83-a801-9900003f3395")
 ```
 
-The purpose of this document is to have a look at the time series data used in the Compositional Lotka Volterra paper.
+In this document the pre-processing of the "Bucci" dataset from the Compositional Lotka Volterra paper is done.
 
-## Packages
+# Packages
 
 ```{r packages, message=FALSE}
 library("conflicted")
 library(tidyverse)
 library(data.table)
 library(viridis) # for color palettes
+library(phyloseq)
+library(microViz)
+
+library(ggfortify) # to autoplot time series
 ```
 
 
@@ -33,181 +37,177 @@ path_target <- projthis::proj_path_target(params$name)
 path_source <- projthis::proj_path_source(params$name)
 ```
 
-# Main
 
-## Bucci
+# Bucci dataset
 
-### Read data
+## Read data
 
 ```{r}
+folderpath <- 
+  "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/Literatur/Code/clv/data/bucci/data_cdiff/"
+  
 #### read the file
 dt_bucci_raw <- 
   fread("data/clv/bucci/data_cdiff/counts.txt", header = T)
 
 knitr::kable(head(dt_bucci_raw))
 
-# change format of count data
-dt_bucci_long <-
-  melt(dt_bucci_raw,
-       id.vars = "Species", value.name = "Count", variable.name = "sampleID") %>% 
-  .[, sampleID := as.numeric(as.character(sampleID))]
-
 # read metadata file
 dt_bucci_meta <-
   fread("data/clv/bucci/data_cdiff/metadata.txt", header = T)
 
-# merge metadata to count data
-dt_bucci_long <-
-  merge(dt_bucci_long, dt_bucci_meta, by = "sampleID")
+head(dt_bucci_meta)
 
-# show first rows of table
-knitr::kable(head(dt_bucci_long))
+# read taxonomic information
+dt_tax_bucci <-
+  fread(paste0(folderpath, "taxonomy_table.csv"), header = T)
 
 ```
 
+## Info 
 
-Info about time points: When was the data collected?
+... on the time points: When was the data collected?
 
 Fecal pellets were collected at days 0.75, 1, 2, 3, 4, 6, 8, 10, 14, 17, 21, 24, and 28 of the initial colonization 
 and at days 0.75, 1, 2, 3, 4, 6, 8, 10, 14, 17, 21, 24, and 28 post-infection with C. difficile.
 
+--> measurementid
 
 
-### Plot data
+## Phyloseq
 
-#### by Species
+### Prepare otu table
 
 ```{r}
-# plot time series in correct time intervals
-ggplot(dt_bucci_long[subjectID == 1], aes(measurementid, Count)) +
-    geom_bar(aes(fill = Species), stat = "identity") +
-    theme(legend.position = "none") +
-    labs(x = "Time",
-         title = paste("Subject", 1)) +
-    scale_fill_viridis(discrete = TRUE, option = "turbo")
+mat_otu_bucci <-
+  dt_bucci_raw %>%
+    tibble::column_to_rownames("Species")
+colnames(mat_otu_bucci) <-
+  sprintf("ID-%03d", as.numeric(colnames(mat_otu_bucci)))
 
-# plot time series with no distance between time intervals
-for(i in 1:5){
-  pl <- ggplot(dt_bucci_long[subjectID == i], aes(as.factor(measurementid), Count)) +
-    geom_bar(aes(fill = Species), stat = "identity", position = "fill") +
-    theme(legend.position = "right") +
-    labs(x = "Time",
-         title = paste("Subject", i)) +
-    scale_fill_viridis(discrete = TRUE, option = "turbo")
+OTU_bucci = otu_table(mat_otu_bucci, taxa_are_rows = TRUE)
+
+```
+
+
+### Prepare sample table (metadata)
+
+```{r}
+mat_samples_bucci <-
+  copy(dt_bucci_meta) %>% 
+  .[, sampleID := sprintf("ID-%03d", sampleID)] %>%
+  tibble::column_to_rownames("sampleID") 
+
+samples_bucci = sample_data(mat_samples_bucci)
+
+```
+
+
+### Generate taxonomic table
+
+```{r}
+mat_tax_bucci <-
+  dt_tax_bucci %>% 
+  tibble::column_to_rownames("Names") 
+
+TAX_bucci = tax_table(as.matrix(mat_tax_bucci))
+
+```
+
+
+### Create phyloseq object
+
+```{r}
+ps_bucci_all <- phyloseq(OTU_bucci, TAX_bucci, samples_bucci)
+```
+
+
+### Devide dataset by subjects
+
+```{r}
+# change count data to relative counts
+# filter for most abundant species
+
+ps_bucci_rel <- 
+  ps_bucci_all %>% 
+  transform_sample_counts(function(x) x / sum(x)) %>% 
+  filter_taxa(function(x) mean(x) > 1e-5, TRUE)
+
+
+# get a subset for each subject 
+
+ps_bucci_1 <-
+  subset_samples(ps_bucci_rel, subjectID == 1)
+
+ps_bucci_2 <-
+  subset_samples(ps_bucci_rel, subjectID == 2)
+
+ps_bucci_3 <-
+  subset_samples(ps_bucci_rel, subjectID == 3)
+
+ps_bucci_4 <-
+  subset_samples(ps_bucci_rel, subjectID == 4)
+
+ps_bucci_5 <-
+  subset_samples(ps_bucci_rel, subjectID == 5)
+
+```
+
+### plot data
+
+```{r}
+# plot for all subjects
+
+sample_data(ps_bucci_rel)$time <- 
+  ordered(sample_data(ps_bucci_rel)$measurementid)
+
+plot_bar(ps_bucci_rel,
+         x = "time",
+         fill = "Species",
+         title = "All Subjects") +
+  geom_bar(aes(color=Species, fill=Species), stat="identity", position="stack")
+
+```
+
+
+```{r}
+# plots for all subjects separately
+for (id in 1:5) {
+  plt_tmp <-
+    plot_bar(get(paste0("ps_bucci_", id)),
+             # x = "measurementid", 
+             fill = "Species",
+             title = paste("Subject", id))
   
-  print(pl)
+  print(plt_tmp)
+}
+```
+
+### Save phyloseq of all subjects to test in deepymod
+
+```{r}
+for(id in 1:5){
+  # get the tmp phyloseq object
+  ps_obj <- get(paste0("ps_bucci_", id))
+  
+  # combine count data with time information
+  ts_obj <-
+    cbind(sample_data(ps_obj)[, "measurementid"],
+          t(otu_table(ps_obj)))
+  
+  # save time series as csv file
+  write.csv(
+    ts_obj,
+    paste0(path_target(), "/ts_bucci_subject_", id, "_rel_count.csv"),
+    row.names = F
+  )
+  
+  # plot time series
+  print(autoplot(ts(ts_obj[,2:17]), facets = F))
 }
 
-# plot mean count over all mice
-ggplot(dt_bucci_long, 
-               aes(as.factor(measurementid), Count)) +
-    geom_bar(aes(fill = Species), stat = "identity", position = "fill") +
-    theme(legend.position = "right") +
-    labs(x = "Time",
-         title = paste("All Subjects")) +
-    scale_fill_viridis(discrete = TRUE, option = "turbo")
-
-```
-```{r}
-# * add category "other" for Species with small count
-th_species <- 0.05
-
-dt_species_other <-
-  dt_bucci_long[, rel_count_species := Count/sum(Count),
-              by = c("subjectID", "measurementid", "sampleID")] %>% 
-  .[, .(max_count = max(rel_count_species)),
-             by = c("Species")] %>% 
-      .[max_count < th_species, .(Species)]
-
-dt_bucci_long[, Species_grouped := Species] %>% 
-  .[Species %in% dt_species_other$Species, Species_grouped := "other"]
-
-
-# plot count over all mice for grouped species
-ggplot(dt_bucci_long, 
-               aes(as.factor(measurementid), Count)) +
-    geom_bar(aes(fill = Species_grouped), stat = "identity", position = "fill") +
-    theme(legend.position = "right") +
-    labs(x = "Time",
-         title = paste("All Subjects")) +
-    scale_fill_viridis(discrete = TRUE, option = "turbo")
-
 ```
 
-
-#### by Genus
-
-
-```{r}
-# add Genus column
-dt_bucci_long[, Genus := tstrsplit(Species, "-")[1]]
-
-
-# plot time series by genus
-
-ggplot(dt_bucci_long[subjectID == 1], aes(measurementid, Count)) +
-    geom_bar(aes(fill = Genus), stat = "identity") +
-    theme(legend.position = "right") +
-    labs(x = "Time",
-         title = paste("Subject", 1)) +
-    scale_fill_viridis(discrete = TRUE, option = "turbo")
-
-for(i in 1:5){
-  pl <- ggplot(dt_bucci_long[subjectID == i], 
-               aes(as.factor(measurementid), Count)) +
-    geom_bar(aes(fill = Genus), stat = "identity", position = "fill") +
-    theme(legend.position = "right") +
-    labs(x = "Time",
-         title = paste("Subject", i)) +
-    scale_fill_viridis(discrete = TRUE, option = "turbo")
-  
-  print(pl)
-}
-
-ggplot(dt_bucci_long, 
-               aes(as.factor(measurementid), Count)) +
-    geom_bar(aes(fill = Genus), stat = "identity", position = "fill") +
-    theme(legend.position = "right") +
-    labs(x = "Time",
-         title = paste("All Subjects")) +
-    scale_fill_viridis(discrete = TRUE, option = "turbo")
-
-```
-
-
-```{r}
-# add category "other" for Genus with small count
-th_genus <- 0.05
-
-dt_genus_other <-
-  dt_bucci_long[, rel_count_genus := Count/sum(Count),
-              by = c("subjectID", "measurementid", "sampleID")] %>% 
-  .[, .(max_count = max(rel_count_genus)),
-             by = c("Genus")] %>% 
-      .[max_count < th_genus, .(Genus)]
-
-dt_bucci_long[, Genus_grouped := Genus] %>% 
-  .[Genus %in% dt_genus_other$Genus, Genus_grouped := "other"]
-
-
-# plot count over all mice for grouped genus
-ggplot(dt_bucci_long, 
-               aes(as.factor(measurementid), Count)) +
-    geom_bar(aes(fill = Genus_grouped), stat = "identity", position = "fill") +
-    theme(legend.position = "right") +
-    labs(x = "Time",
-         title = paste("All Subjects")) +
-    scale_fill_viridis(discrete = TRUE, option = "turbo")
-
-```
-
-<!-- ```{r} -->
-<!-- # add mean count and sum count of all mice -->
-<!-- dt_bucci_long[, Count_mean := mean(Count), -->
-<!--               by = c("measurementid", "Species")] %>%  -->
-<!--   .[, Count_sum := sum(Count), -->
-<!--               by = c("measurementid", "Species")] -->
-<!-- ``` -->
 
 
 

@@ -1,21 +1,25 @@
-Time series (Compositional Lotka Volterra)
+Time series (Bucci Dataset from cLV paper)
 ================
-Compiled at 2023-06-12 14:51:25 UTC
+Compiled at 2023-07-25 08:09:53 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "fbad9ade-134a-4a83-a801-9900003f3395")
 ```
 
-The purpose of this document is to have a look at the time series data
-used in the Compositional Lotka Volterra paper.
+In this document the pre-processing of the “Bucci” dataset from the
+Compositional Lotka Volterra paper is done.
 
-## Packages
+# Packages
 
 ``` r
 library("conflicted")
 library(tidyverse)
 library(data.table)
 library(viridis) # for color palettes
+library(phyloseq)
+library(microViz)
+
+library(ggfortify) # to autoplot time series
 ```
 
 ``` r
@@ -29,13 +33,14 @@ path_target <- projthis::proj_path_target(params$name)
 path_source <- projthis::proj_path_source(params$name)
 ```
 
-# Main
+# Bucci dataset
 
-## Bucci
-
-### Read data
+## Read data
 
 ``` r
+folderpath <- 
+  "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/Literatur/Code/clv/data/bucci/data_cdiff/"
+  
 #### read the file
 dt_bucci_raw <- 
   fread("data/clv/bucci/data_cdiff/counts.txt", header = T)
@@ -53,192 +58,165 @@ knitr::kable(head(dt_bucci_raw))
 | Ruminococcus-obeum      |   30 |  408 | 1405 | 312 |  754 | 1322 | 1301 | 1931 | 2064 | 3734 | 2338 | 1555 | 1835 | 2094 | 1171 | 210 |  370 |    2 | 4888 | 8381 | 2435 | 3235 | 1791 | 1828 | 2743 | 3213 |    3 |    8 | 834 | 465 |  828 | 2992 | 3278 | 1913 | 2837 | 3848 | 3614 | 2183 | 2326 | 3558 | 1240 |  378 | 3685 | 3719 | 5261 | 2721 |  859 | 1208 | 1085 | 754 | 1374 | 854 |   13 |  137 | 875 |  272 | 322 |  971 | 1269 | 1034 | 2218 | 1902 | 1534 | 1247 | 1062 | 1319 | 1260 |  260 |   28 |    2 | 2340 | 2703 | 1452 | 2893 | 1228 | 1160 | 1316 | 753 |   23 |  194 |  85 | 213 |  497 |  982 | 1578 | 1410 | 1636 | 1724 | 2220 | 1379 | 996 | 1379 | 890 | 433 |   77 | 363 | 947 | 1143 |  829 | 1046 | 1137 | 602 | 1414 | 1542 |  49 |    3 |   73 | 560 |  717 |  984 |  575 | 1125 | 1425 | 993 | 820 | 1385 | 1105 | 736 | 732 | 402 | 203 |  114 | 2056 | 1655 | 1488 | 1636 | 1267 | 1012 | 1102 | 1276 |
 
 ``` r
-# change format of count data
-dt_bucci_long <-
-  melt(dt_bucci_raw,
-       id.vars = "Species", value.name = "Count", variable.name = "sampleID") %>% 
-  .[, sampleID := as.numeric(as.character(sampleID))]
-
 # read metadata file
 dt_bucci_meta <-
   fread("data/clv/bucci/data_cdiff/metadata.txt", header = T)
 
-# merge metadata to count data
-dt_bucci_long <-
-  merge(dt_bucci_long, dt_bucci_meta, by = "sampleID")
-
-# show first rows of table
-knitr::kable(head(dt_bucci_long))
+head(dt_bucci_meta)
 ```
 
-| sampleID | Species                 | Count | isIncluded | subjectID | measurementid | perturbid | exptblock | intv |
-|---------:|:------------------------|------:|-----------:|----------:|--------------:|----------:|----------:|-----:|
-|        1 | Collinsella-aerofaciens |     0 |          1 |         1 |          0.75 |         0 |         1 |    0 |
-|        1 | Clostridium-hiranonis   |  1483 |          1 |         1 |          0.75 |         0 |         1 |    0 |
-|        1 | Clostridium-difficile   |     0 |          1 |         1 |          0.75 |         0 |         1 |    0 |
-|        1 | Proteus-mirabilis       |  1330 |          1 |         1 |          0.75 |         0 |         1 |    0 |
-|        1 | Clostridium-scindens    |  1065 |          1 |         1 |          0.75 |         0 |         1 |    0 |
-|        1 | Ruminococcus-obeum      |    30 |          1 |         1 |          0.75 |         0 |         1 |    0 |
+    ##    sampleID isIncluded subjectID measurementid perturbid exptblock intv
+    ## 1:        1          1         1          0.75         0         1    0
+    ## 2:        2          1         1          1.00         0         1    0
+    ## 3:        3          1         1          2.00         0         1   14
+    ## 4:        4          1         1          3.00         0         1    0
+    ## 5:        5          1         1          4.00         0         1    0
+    ## 6:        6          1         1          6.00         0         1    0
 
-Info about time points: When was the data collected?
+``` r
+# read taxonomic information
+dt_tax_bucci <-
+  fread(paste0(folderpath, "taxonomy_table.csv"), header = T)
+```
+
+## Info
+
+… on the time points: When was the data collected?
 
 Fecal pellets were collected at days 0.75, 1, 2, 3, 4, 6, 8, 10, 14, 17,
 21, 24, and 28 of the initial colonization and at days 0.75, 1, 2, 3, 4,
 6, 8, 10, 14, 17, 21, 24, and 28 post-infection with C. difficile.
 
-### Plot data
+–\> measurementid
 
-#### by Species
+## Phyloseq
+
+### Prepare otu table
 
 ``` r
-# plot time series in correct time intervals
-ggplot(dt_bucci_long[subjectID == 1], aes(measurementid, Count)) +
-    geom_bar(aes(fill = Species), stat = "identity") +
-    theme(legend.position = "none") +
-    labs(x = "Time",
-         title = paste("Subject", 1)) +
-    scale_fill_viridis(discrete = TRUE, option = "turbo")
+mat_otu_bucci <-
+  dt_bucci_raw %>%
+    tibble::column_to_rownames("Species")
+colnames(mat_otu_bucci) <-
+  sprintf("ID-%03d", as.numeric(colnames(mat_otu_bucci)))
+
+OTU_bucci = otu_table(mat_otu_bucci, taxa_are_rows = TRUE)
 ```
 
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+### Prepare sample table (metadata)
 
 ``` r
-# plot time series with no distance between time intervals
-for(i in 1:5){
-  pl <- ggplot(dt_bucci_long[subjectID == i], aes(as.factor(measurementid), Count)) +
-    geom_bar(aes(fill = Species), stat = "identity", position = "fill") +
-    theme(legend.position = "right") +
-    labs(x = "Time",
-         title = paste("Subject", i)) +
-    scale_fill_viridis(discrete = TRUE, option = "turbo")
+mat_samples_bucci <-
+  copy(dt_bucci_meta) %>% 
+  .[, sampleID := sprintf("ID-%03d", sampleID)] %>%
+  tibble::column_to_rownames("sampleID") 
+
+samples_bucci = sample_data(mat_samples_bucci)
+```
+
+### Generate taxonomic table
+
+``` r
+mat_tax_bucci <-
+  dt_tax_bucci %>% 
+  tibble::column_to_rownames("Names") 
+
+TAX_bucci = tax_table(as.matrix(mat_tax_bucci))
+```
+
+### Create phyloseq object
+
+``` r
+ps_bucci_all <- phyloseq(OTU_bucci, TAX_bucci, samples_bucci)
+```
+
+### Devide dataset by subjects
+
+``` r
+# change count data to relative counts
+# filter for most abundant species
+
+ps_bucci_rel <- 
+  ps_bucci_all %>% 
+  transform_sample_counts(function(x) x / sum(x)) %>% 
+  filter_taxa(function(x) mean(x) > 1e-5, TRUE)
+
+
+# get a subset for each subject 
+
+ps_bucci_1 <-
+  subset_samples(ps_bucci_rel, subjectID == 1)
+
+ps_bucci_2 <-
+  subset_samples(ps_bucci_rel, subjectID == 2)
+
+ps_bucci_3 <-
+  subset_samples(ps_bucci_rel, subjectID == 3)
+
+ps_bucci_4 <-
+  subset_samples(ps_bucci_rel, subjectID == 4)
+
+ps_bucci_5 <-
+  subset_samples(ps_bucci_rel, subjectID == 5)
+```
+
+### plot data
+
+``` r
+# plot for all subjects
+
+sample_data(ps_bucci_rel)$time <- 
+  ordered(sample_data(ps_bucci_rel)$measurementid)
+
+plot_bar(ps_bucci_rel,
+         x = "time",
+         fill = "Species",
+         title = "All Subjects") +
+  geom_bar(aes(color=Species, fill=Species), stat="identity", position="stack")
+```
+
+![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
+``` r
+# plots for all subjects separately
+for (id in 1:5) {
+  plt_tmp <-
+    plot_bar(get(paste0("ps_bucci_", id)),
+             # x = "measurementid", 
+             fill = "Species",
+             title = paste("Subject", id))
   
-  print(pl)
+  print(plt_tmp)
 }
 ```
 
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-2-3.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-2-4.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-2-5.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-2-6.png)<!-- -->
+![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-8-2.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-8-3.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-8-4.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-8-5.png)<!-- -->
+
+### Save phyloseq of all subjects to test in deepymod
 
 ``` r
-# plot mean count over all mice
-ggplot(dt_bucci_long, 
-               aes(as.factor(measurementid), Count)) +
-    geom_bar(aes(fill = Species), stat = "identity", position = "fill") +
-    theme(legend.position = "right") +
-    labs(x = "Time",
-         title = paste("All Subjects")) +
-    scale_fill_viridis(discrete = TRUE, option = "turbo")
-```
-
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-2-7.png)<!-- -->
-
-``` r
-# * add category "other" for Species with small count
-th_species <- 0.05
-
-dt_species_other <-
-  dt_bucci_long[, rel_count_species := Count/sum(Count),
-              by = c("subjectID", "measurementid", "sampleID")] %>% 
-  .[, .(max_count = max(rel_count_species)),
-             by = c("Species")] %>% 
-      .[max_count < th_species, .(Species)]
-
-dt_bucci_long[, Species_grouped := Species] %>% 
-  .[Species %in% dt_species_other$Species, Species_grouped := "other"]
-
-
-# plot count over all mice for grouped species
-ggplot(dt_bucci_long, 
-               aes(as.factor(measurementid), Count)) +
-    geom_bar(aes(fill = Species_grouped), stat = "identity", position = "fill") +
-    theme(legend.position = "right") +
-    labs(x = "Time",
-         title = paste("All Subjects")) +
-    scale_fill_viridis(discrete = TRUE, option = "turbo")
-```
-
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
-
-#### by Genus
-
-``` r
-# add Genus column
-dt_bucci_long[, Genus := tstrsplit(Species, "-")[1]]
-
-
-# plot time series by genus
-
-ggplot(dt_bucci_long[subjectID == 1], aes(measurementid, Count)) +
-    geom_bar(aes(fill = Genus), stat = "identity") +
-    theme(legend.position = "right") +
-    labs(x = "Time",
-         title = paste("Subject", 1)) +
-    scale_fill_viridis(discrete = TRUE, option = "turbo")
-```
-
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
-
-``` r
-for(i in 1:5){
-  pl <- ggplot(dt_bucci_long[subjectID == i], 
-               aes(as.factor(measurementid), Count)) +
-    geom_bar(aes(fill = Genus), stat = "identity", position = "fill") +
-    theme(legend.position = "right") +
-    labs(x = "Time",
-         title = paste("Subject", i)) +
-    scale_fill_viridis(discrete = TRUE, option = "turbo")
+for(id in 1:5){
+  # get the tmp phyloseq object
+  ps_obj <- get(paste0("ps_bucci_", id))
   
-  print(pl)
+  # combine count data with time information
+  ts_obj <-
+    cbind(sample_data(ps_obj)[, "measurementid"],
+          t(otu_table(ps_obj)))
+  
+  # save time series as csv file
+  write.csv(
+    ts_obj,
+    paste0(path_target(), "/ts_bucci_subject_", id, "_rel_count.csv"),
+    row.names = F
+  )
+  
+  # plot time series
+  print(autoplot(ts(ts_obj[,2:17]), facets = F))
 }
 ```
 
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-4-3.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-4-4.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-4-5.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-4-6.png)<!-- -->
-
-``` r
-ggplot(dt_bucci_long, 
-               aes(as.factor(measurementid), Count)) +
-    geom_bar(aes(fill = Genus), stat = "identity", position = "fill") +
-    theme(legend.position = "right") +
-    labs(x = "Time",
-         title = paste("All Subjects")) +
-    scale_fill_viridis(discrete = TRUE, option = "turbo")
-```
-
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-4-7.png)<!-- -->
-
-``` r
-# add category "other" for Genus with small count
-th_genus <- 0.05
-
-dt_genus_other <-
-  dt_bucci_long[, rel_count_genus := Count/sum(Count),
-              by = c("subjectID", "measurementid", "sampleID")] %>% 
-  .[, .(max_count = max(rel_count_genus)),
-             by = c("Genus")] %>% 
-      .[max_count < th_genus, .(Genus)]
-
-dt_bucci_long[, Genus_grouped := Genus] %>% 
-  .[Genus %in% dt_genus_other$Genus, Genus_grouped := "other"]
-
-
-# plot count over all mice for grouped genus
-ggplot(dt_bucci_long, 
-               aes(as.factor(measurementid), Count)) +
-    geom_bar(aes(fill = Genus_grouped), stat = "identity", position = "fill") +
-    theme(legend.position = "right") +
-    labs(x = "Time",
-         title = paste("All Subjects")) +
-    scale_fill_viridis(discrete = TRUE, option = "turbo")
-```
-
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
-
-<!-- ```{r} -->
-<!-- # add mean count and sum count of all mice -->
-<!-- dt_bucci_long[, Count_mean := mean(Count), -->
-<!--               by = c("measurementid", "Species")] %>%  -->
-<!--   .[, Count_sum := sum(Count), -->
-<!--               by = c("measurementid", "Species")] -->
-<!-- ``` -->
+![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-9-2.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-9-3.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-9-4.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-9-5.png)<!-- -->
 
 ## Files written
 
@@ -249,6 +227,11 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 0 × 4
-    ## # ℹ 4 variables: path <fs::path>, type <fct>, size <fs::bytes>,
-    ## #   modification_time <dttm>
+    ## # A tibble: 5 × 4
+    ##   path                             type         size modification_time  
+    ##   <fs::path>                       <fct> <fs::bytes> <dttm>             
+    ## 1 ts_bucci_subject_1_rel_count.csv file        7.54K 2023-07-25 08:10:15
+    ## 2 ts_bucci_subject_2_rel_count.csv file        7.78K 2023-07-25 08:10:16
+    ## 3 ts_bucci_subject_3_rel_count.csv file        7.61K 2023-07-25 08:10:17
+    ## 4 ts_bucci_subject_4_rel_count.csv file        7.58K 2023-07-25 08:10:18
+    ## 5 ts_bucci_subject_5_rel_count.csv file         7.5K 2023-07-25 08:10:19
