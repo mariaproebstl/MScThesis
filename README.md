@@ -4,7 +4,7 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-This project is for all contents regarding my M.Sc. Thesis to the topic "Estimation of higher-order species interactions from ecological time series". 
+This project includes the R and python code for my M.Sc. Thesis with the topic "Estimation of higher-order species interactions from ecological time series". 
 
 ## Installation
 
