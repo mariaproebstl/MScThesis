@@ -1,6 +1,6 @@
 01d-timeseries-HumanGutData-Karwowska-paper
 ================
-Compiled at 2023-07-31 15:14:52 UTC
+Compiled at 2023-08-24 07:13:58 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "4435c437-d4bf-4c0c-a851-45bef7011c59")
@@ -15,6 +15,7 @@ library("conflicted")
 library(tidyverse)
 library(data.table)
 library(phyloseq)
+library(microViz)
 ```
 
 ``` r
@@ -64,10 +65,15 @@ for(subject in four_subjects){
   
   tax_cols <-
     c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
-  tmp[, (tax_cols) := tstrsplit(Taxon, ";")] %>% 
-    .[, (tax_cols) := lapply(.SD, sub, pattern = ".*__", replacement = ""), 
-      .SDcols =  tax_cols] %>% 
-    .[, Taxon := NULL]
+  tmp[, (tax_cols) := tstrsplit(Taxon, ";")] %>%
+    # remove "d__", "p__", etc. in front of taxonomic ranks
+    .[, (tax_cols) := lapply(.SD, sub, pattern = ".*__", replacement = ""),
+      .SDcols =  tax_cols] %>%
+    # remove columns that contain listed taxonomic ranks and confidence value
+    .[, c("Taxon", "Confidence") := NULL]
+  # replace NAs with "unknown"
+  tmp[is.na(tmp)] <- "unknown"
+  
   assign(paste0("tax_", subject),
          tmp)
 }
@@ -104,6 +110,54 @@ for(subject in four_subjects){
 }
 ```
 
+``` r
+ps_donorA
+```
+
+    ## phyloseq-class experiment-level object
+    ## otu_table()   OTU Table:         [ 1524 taxa and 365 samples ]
+    ## tax_table()   Taxonomy Table:    [ 1524 taxa by 7 taxonomic ranks ]
+
+``` r
+ps_donorB
+```
+
+    ## phyloseq-class experiment-level object
+    ## otu_table()   OTU Table:         [ 1569 taxa and 253 samples ]
+    ## tax_table()   Taxonomy Table:    [ 1569 taxa by 7 taxonomic ranks ]
+
+``` r
+ps_male
+```
+
+    ## phyloseq-class experiment-level object
+    ## otu_table()   OTU Table:         [ 1253 taxa and 443 samples ]
+    ## tax_table()   Taxonomy Table:    [ 1253 taxa by 7 taxonomic ranks ]
+
+``` r
+ps_female
+```
+
+    ## phyloseq-class experiment-level object
+    ## otu_table()   OTU Table:         [ 551 taxa and 185 samples ]
+    ## tax_table()   Taxonomy Table:    [ 551 taxa by 7 taxonomic ranks ]
+
+## Transform counts to relative abundances
+
+``` r
+ps_donorA <-
+  transform_sample_counts(ps_donorA, function(x) x / sum(x) )
+
+ps_donorB <-
+  transform_sample_counts(ps_donorB, function(x) x / sum(x) )
+
+ps_male <-
+  transform_sample_counts(ps_male, function(x) x / sum(x) )
+
+ps_female <-
+  transform_sample_counts(ps_female, function(x) x / sum(x) )
+```
+
 ## Plot Phyloseq
 
 ``` r
@@ -111,9 +165,9 @@ for(subject in four_subjects){
 for(subject in four_subjects){
   plt_tmp <-
     ggplot(psmelt(get(paste0("ps_", subject))),
-           aes(as.numeric(Sample), Abundance, fill = Family)) +
+           aes(as.numeric(Sample), Abundance, fill = Phylum)) +
     geom_bar(stat = "identity")  +
-    theme(legend.position = "none") +
+    # theme(legend.position = "none") +
     labs(title = subject,
          x = "time [days]")
   print(plt_tmp)
@@ -134,6 +188,118 @@ for(subject in four_subjects){
 # }
 ```
 
+## Summarize counts per taxonomic level
+
+Aggregate the timeseries by summarizing counts over a taxonomic level.
+
+### Pyhlum level
+
+``` r
+tax_level = "Phylum"
+
+for(subject in four_subjects){
+  tmp_ps <-
+    get(paste0("ps_", subject)) %>%
+    # summarize over Phylum, include NAs
+    tax_glom(taxrank = tax_level, NArm = FALSE) %>% 
+    # tax_fix(sep = "_") %>% 
+    speedyseq::transmute_tax_table(Kingdom, Phylum, .otu = get(tax_level))
+  
+  assign(paste0("ps_", subject, "_", tax_level),
+         tmp_ps)
+}
+```
+
+``` r
+# bar plot phyloseq objects
+for(subject in four_subjects){
+# subject = "female"
+  plt_tmp <-
+    plot_bar(get(paste0("ps_", subject, "_", tax_level)),
+             x = "as.numeric(Sample)",
+             fill = tax_level) +
+    theme(legend.position = "none") +
+    labs(title = subject,
+         x = "Time [days]")
+  print(plt_tmp)
+}
+```
+
+![](01d-timeseries-HumanGutData-Karwowska-paper_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->![](01d-timeseries-HumanGutData-Karwowska-paper_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->![](01d-timeseries-HumanGutData-Karwowska-paper_files/figure-gfm/unnamed-chunk-5-3.png)<!-- -->![](01d-timeseries-HumanGutData-Karwowska-paper_files/figure-gfm/unnamed-chunk-5-4.png)<!-- -->
+
+``` r
+ps_donorA_Phylum
+```
+
+    ## phyloseq-class experiment-level object
+    ## otu_table()   OTU Table:          [ 27 taxa and 365 samples ]:
+    ## tax_table()   Taxonomy Table:     [ 27 taxa by 2 taxonomic ranks ]:
+    ## taxa are rows
+
+``` r
+ps_donorB_Phylum
+```
+
+    ## phyloseq-class experiment-level object
+    ## otu_table()   OTU Table:          [ 25 taxa and 253 samples ]:
+    ## tax_table()   Taxonomy Table:     [ 25 taxa by 2 taxonomic ranks ]:
+    ## taxa are rows
+
+``` r
+ps_male_Phylum
+```
+
+    ## phyloseq-class experiment-level object
+    ## otu_table()   OTU Table:          [ 18 taxa and 443 samples ]:
+    ## tax_table()   Taxonomy Table:     [ 18 taxa by 2 taxonomic ranks ]:
+    ## taxa are rows
+
+``` r
+ps_female_Phylum
+```
+
+    ## phyloseq-class experiment-level object
+    ## otu_table()   OTU Table:          [ 11 taxa and 185 samples ]:
+    ## tax_table()   Taxonomy Table:     [ 11 taxa by 2 taxonomic ranks ]:
+    ## taxa are rows
+
+### Class level
+
+``` r
+tax_level = "Class"
+
+for(subject in four_subjects){
+  tmp_ps <-
+    get(paste0("ps_", subject)) %>%
+    # summarize over Phylum, include NAs
+    tax_glom(taxrank = tax_level, NArm = FALSE) %>% 
+    tax_fix(sep = "_") %>%
+    speedyseq::transmute_tax_table(Kingdom, Phylum, Class, .otu = get(tax_level))
+  
+  assign(paste0("ps_", subject, "_", tax_level),
+         tmp_ps)
+}
+```
+
+## Save phyloseq objects as csv file
+
+``` r
+for(subject in four_subjects) {
+  tmp_output <-
+    t(otu_table(get(paste0("ps_", subject, "_Phylum"))))
+  write.csv(
+    data.frame(Time = as.numeric(rownames(tmp_output)), tmp_output),
+    paste0(
+      path_target(),
+      "/ts_",
+      subject,
+      "_Phylumlevel_rel_count.csv"
+    ),
+    row.names = F
+  )
+}
+```
+
 ## Files written
 
 These files have been written to the target directory,
@@ -143,6 +309,10 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 0 × 4
-    ## # ℹ 4 variables: path <fs::path>, type <fct>, size <fs::bytes>,
-    ## #   modification_time <dttm>
+    ## # A tibble: 4 × 4
+    ##   path                                type         size modification_time  
+    ##   <fs::path>                          <fct> <fs::bytes> <dttm>             
+    ## 1 ts_donorA_Phylumlevel_rel_count.csv file        69.9K 2023-08-24 07:15:07
+    ## 2 ts_donorB_Phylumlevel_rel_count.csv file        48.5K 2023-08-24 07:15:07
+    ## 3 ts_female_Phylumlevel_rel_count.csv file        31.2K 2023-08-24 07:15:07
+    ## 4 ts_male_Phylumlevel_rel_count.csv   file        87.4K 2023-08-24 07:15:07

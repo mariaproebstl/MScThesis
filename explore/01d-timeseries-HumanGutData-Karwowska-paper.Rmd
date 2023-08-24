@@ -17,6 +17,7 @@ library("conflicted")
 library(tidyverse)
 library(data.table)
 library(phyloseq)
+library(microViz)
 ```
 
 ```{r directories}
@@ -67,10 +68,15 @@ for(subject in four_subjects){
   
   tax_cols <-
     c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
-  tmp[, (tax_cols) := tstrsplit(Taxon, ";")] %>% 
-    .[, (tax_cols) := lapply(.SD, sub, pattern = ".*__", replacement = ""), 
-      .SDcols =  tax_cols] %>% 
-    .[, Taxon := NULL]
+  tmp[, (tax_cols) := tstrsplit(Taxon, ";")] %>%
+    # remove "d__", "p__", etc. in front of taxonomic ranks
+    .[, (tax_cols) := lapply(.SD, sub, pattern = ".*__", replacement = ""),
+      .SDcols =  tax_cols] %>%
+    # remove columns that contain listed taxonomic ranks and confidence value
+    .[, c("Taxon", "Confidence") := NULL]
+  # replace NAs with "unknown"
+  tmp[is.na(tmp)] <- "unknown"
+  
   assign(paste0("tax_", subject),
          tmp)
 }
@@ -111,6 +117,31 @@ for(subject in four_subjects){
 ```
 
 
+```{r}
+ps_donorA
+ps_donorB
+ps_male
+ps_female
+```
+
+
+## Transform counts to relative abundances
+
+```{r}
+ps_donorA <-
+  transform_sample_counts(ps_donorA, function(x) x / sum(x) )
+
+ps_donorB <-
+  transform_sample_counts(ps_donorB, function(x) x / sum(x) )
+
+ps_male <-
+  transform_sample_counts(ps_male, function(x) x / sum(x) )
+
+ps_female <-
+  transform_sample_counts(ps_female, function(x) x / sum(x) )
+```
+
+
 ## Plot Phyloseq
 
 ```{r plot}
@@ -118,9 +149,9 @@ for(subject in four_subjects){
 for(subject in four_subjects){
   plt_tmp <-
     ggplot(psmelt(get(paste0("ps_", subject))),
-           aes(as.numeric(Sample), Abundance, fill = Family)) +
+           aes(as.numeric(Sample), Abundance, fill = Phylum)) +
     geom_bar(stat = "identity")  +
-    theme(legend.position = "none") +
+    # theme(legend.position = "none") +
     labs(title = subject,
          x = "time [days]")
   print(plt_tmp)
@@ -139,6 +170,94 @@ for(subject in four_subjects){
 #          x = "Time [days]")
 #   print(plt_tmp)
 # }
+
+```
+
+
+## Summarize counts per taxonomic level
+
+Aggregate the timeseries by summarizing counts over a taxonomic level.
+
+### Pyhlum level
+
+```{r}
+tax_level = "Phylum"
+
+for(subject in four_subjects){
+  tmp_ps <-
+    get(paste0("ps_", subject)) %>%
+    # summarize over Phylum, include NAs
+    tax_glom(taxrank = tax_level, NArm = FALSE) %>% 
+    # tax_fix(sep = "_") %>% 
+    speedyseq::transmute_tax_table(Kingdom, Phylum, .otu = get(tax_level))
+  
+  assign(paste0("ps_", subject, "_", tax_level),
+         tmp_ps)
+}
+
+```
+
+```{r}
+# bar plot phyloseq objects
+for(subject in four_subjects){
+# subject = "female"
+  plt_tmp <-
+    plot_bar(get(paste0("ps_", subject, "_", tax_level)),
+             x = "as.numeric(Sample)",
+             fill = tax_level) +
+    theme(legend.position = "none") +
+    labs(title = subject,
+         x = "Time [days]")
+  print(plt_tmp)
+}
+```
+
+
+```{r}
+ps_donorA_Phylum
+ps_donorB_Phylum
+ps_male_Phylum
+ps_female_Phylum
+```
+
+
+### Class level
+
+```{r}
+tax_level = "Class"
+
+for(subject in four_subjects){
+  tmp_ps <-
+    get(paste0("ps_", subject)) %>%
+    # summarize over Phylum, include NAs
+    tax_glom(taxrank = tax_level, NArm = FALSE) %>% 
+    tax_fix(sep = "_") %>%
+    speedyseq::transmute_tax_table(Kingdom, Phylum, Class, .otu = get(tax_level))
+  
+  assign(paste0("ps_", subject, "_", tax_level),
+         tmp_ps)
+}
+
+```
+
+
+## Save phyloseq objects as csv file
+
+```{r}
+for(subject in four_subjects) {
+  tmp_output <-
+    t(otu_table(get(paste0("ps_", subject, "_Phylum"))))
+  write.csv(
+    data.frame(Time = as.numeric(rownames(tmp_output)), tmp_output),
+    paste0(
+      path_target(),
+      "/ts_",
+      subject,
+      "_Phylumlevel_rel_count.csv"
+    ),
+    row.names = F
+  )
+}
 
 ```
 
