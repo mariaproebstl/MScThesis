@@ -39,6 +39,7 @@ else:
     device = "cpu"
 
 ################################## Commands #######################################
+
 # C:/Users/Maria/anaconda3/envs/DeePyMoD/python.exe c:/Users/Maria/Documents/Masterstudium/Masterarbeit/MScThesis/Python/DeePyMoD/script_deepmod_ODE.py 
 # +
 # # human ts 
@@ -74,12 +75,13 @@ def parse_args():
     parser.add_argument('-threshold', type = float, default = 0.1)
     parser.add_argument('-max_iterations', type = int, default = 100000)
     parser.add_argument('-n_runs', type = int, default = 1)
+    parser.add_argument('-set_threshold', default = True)
     
     args = parser.parse_args()
     return args
 
 def initialize_args(args):
-    global data_name, filename, max_samples, int_order, hl_number, hl_size, add_alr, threshold, max_iterations, n_runs
+    global data_name, filename, max_samples, int_order, hl_number, hl_size, add_alr, threshold, max_iterations, n_runs, set_threshold
     
     data_name = f"{args.data_name}_{datetime.now().strftime('%m-%d_%H-%M')}"
     filename = args.filename
@@ -91,6 +93,7 @@ def initialize_args(args):
     threshold = args.threshold
     max_iterations = args.max_iterations
     n_runs = args.n_runs
+    set_threshold = args.set_threshold
 
     # # some example files/names
     # name = "ts_bucci_subject_1"
@@ -112,14 +115,13 @@ def initialize_args(args):
     # max_iterations = 50000
     # n_runs = 1
     
-    
 # function to initialize all variables
 def set_variables():
     global filepath, folderpath_out, folderpath_plots, folderpath_data, write_iterations
 
     args = parse_args()
-    initialize_args(args) # = None
-
+    initialize_args(args)
+    
     # specify how often data is written to tensorboard and checks train loss , by default 25.
     write_iterations = 25
     
@@ -146,12 +148,12 @@ def set_variables():
     
     logging.info(f"""the parameters are initialized for {data_name}:\n
                 ALR transformation: {add_alr}\n
-                threshold: {threshold}\n
                 hidden layers: number={hl_number}, size={hl_size}\n
                 order of interactions: {int_order} \n
                 max. iterations: {max_iterations}\n
                 number of runs: {n_runs}\n
-                \n
+                set_threshold: {set_threshold} \n
+                threshold: {threshold}\n
                 device = {device}""")
 
 
@@ -164,7 +166,7 @@ def add_alr_transformation(T, P):
 
     # plot alr
     fig, ax = plt.subplots()
-    for i in np.arange(n_otu-1):
+    for i in np.arange(n_taxa-1):
         ax.plot(T, ALR[0][:, i])  # , label = f"x{i+1}"
     ax.set_title(f"chosen denominator is otu {denom+1}")
     # ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
@@ -185,13 +187,13 @@ def create_data():
         data_y = usol[:, 1:]
 
     # set dimensions of the dataset
-    global n_samples, n_otu
-    n_samples, n_otu = data_y.shape
+    global n_samples, n_taxa
+    n_samples, n_taxa = data_y.shape
 
     # plot the raw data
     fig, ax = plt.subplots()
-    for i in np.arange(n_otu):
-        ax.plot(ts, data_y[:, i], label=f"otu {i+1}")
+    for i in np.arange(n_taxa):
+        ax.plot(ts, data_y[:, i], label=f"x{i+1}")
     ax.set_xlabel("Time")
     ax.set_ylabel("Abundance")
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
@@ -202,7 +204,7 @@ def create_data():
     # include alr transformation (and save plot)
     if add_alr:
         data_y = add_alr_transformation(ts, [data_y])
-        n_otu = n_otu-1
+        n_taxa = n_taxa-1
 
     T = torch.from_numpy(ts.reshape(-1, 1)).float()
     Y = torch.from_numpy(data_y).float()
@@ -246,7 +248,7 @@ def run_deepmod_and_save_results(dataset, network_shape):
 
     # network
     hidden_layer = list(np.repeat(network_shape[0], network_shape[1]))
-    network = NN(1, hidden_layer, n_otu)
+    network = NN(1, hidden_layer, n_taxa)
 
     # library function
     library = LibraryODE(int_order=int_order, intercept=False)
@@ -275,7 +277,7 @@ def run_deepmod_and_save_results(dataset, network_shape):
 
     # log print output of train()
     old_stdout = sys.stdout
-    log_file = open(f"{folderpath_out}/log_iterations.log", "w")
+    log_file = open(f"{folderpath_out}/log_iteration{iter}.log", "w")
     sys.stdout = log_file
 
     train(
@@ -286,7 +288,6 @@ def run_deepmod_and_save_results(dataset, network_shape):
         sparsity_scheduler,
         log_dir=log_path,
         max_iterations=max_iterations,
-        write_iterations=write_iterations,
         delta=1e-2,
         sparsity_update = False
     )
@@ -310,7 +311,7 @@ def run_deepmod_and_save_results(dataset, network_shape):
     df_library_values.to_csv(
         f"{folderpath_data}/model_library_values.csv")
 
-    # number of coefficients per otu
+    # number of coefficients per taxon
     n_coefs = len(library_values[0])
 
     # save sparsity mask and estimated coefficients
@@ -344,15 +345,15 @@ def run_deepmod_and_save_results(dataset, network_shape):
     # loss_vars = ["loss_mse_output_0", "remaining_MSE_test_val_0",
     #               "loss_l1_output_0", "loss_reg_output_0"]
 
-    for otu_tmp in np.arange(n_otu):
+    for taxon_tmp in np.arange(n_otu):
 
         loss_mse = access_TFRecordDataset(
-            f"loss_mse_output_{otu_tmp}", log_path)
+            f"loss_mse_output_{taxon_tmp}", log_path)
         loss_reg = access_TFRecordDataset(
-            f"loss_reg_output_{otu_tmp}", log_path)
+            f"loss_reg_output_{taxon_tmp}", log_path)
         MSE_test = access_TFRecordDataset(
-            f"remaining_MSE_test_val_{otu_tmp}", log_path)
-        loss_l1 = access_TFRecordDataset(f"loss_l1_output_{otu_tmp}", log_path)
+            f"remaining_MSE_test_val_{taxon_tmp}", log_path)
+        loss_l1 = access_TFRecordDataset(f"loss_l1_output_{taxon_tmp}", log_path)
 
         # plot mse and reg loss
         fig, ax = plt.subplots()
@@ -363,9 +364,9 @@ def run_deepmod_and_save_results(dataset, network_shape):
         ax.set_yscale('log')
         ax.set_xlabel('Iteration')
         ax.set_ylabel('Cost')
-        ax.set_title(f'loss for x{otu_tmp+1}')
+        ax.set_title(f'loss for x{taxon_tmp+1}')
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        plt.savefig(f'{folderpath_plots}/loss_plot_x{otu_tmp+1}.png',
+        plt.savefig(f'{folderpath_plots}/loss_plot_x{taxon_tmp+1}.png',
             bbox_inches='tight', dpi = 200)
         plt.close()
 
@@ -374,19 +375,19 @@ def run_deepmod_and_save_results(dataset, network_shape):
 
         for coef in np.arange(n_coefs):
             output_coef = access_TFRecordDataset(
-                f"estimator_coeffs_output_{otu_tmp}_coeff_{coef}", log_path)
+                f"estimator_coeffs_output_{taxon_tmp}_coeff_{coef}", log_path)
             output.append(output_coef)
 
         fig, ax = plt.subplots()
         for coef in np.arange(n_coefs):
             ax.scatter(output[coef][0], output[coef][1], 
-                       label=f'{library_values[otu_tmp][coef]}', s=1)
+                       label=f'{library_values[taxon_tmp][coef]}', s=1)
         ax.set_xlabel('Iteration')
         ax.set_ylabel('Coefficient')
-        ax.set_title(f'Coefficients for x{otu_tmp+1}')
+        ax.set_title(f'Coefficients for x{taxon_tmp+1}')
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.savefig(
-            f'{folderpath_plots}/estimated_coeffs_x{otu_tmp+1}.png',
+            f'{folderpath_plots}/estimated_coeffs_x{taxon_tmp+1}.png',
             bbox_inches='tight', dpi = 200)
         plt.close()
 
@@ -422,8 +423,10 @@ if __name__ == "__main__":
         create_data,
         device=device,
     )
+
     logging.info("preparation of the dataset is done")
 
     model = run_deepmod_and_save_results(dataset, network_shape=[hl_size, hl_number])
 
     logging.info("run finished")
+
