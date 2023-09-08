@@ -39,19 +39,24 @@ else:
     device = "cpu"
 
 ################################## Commands #######################################
+# C:/Users/Maria/anaconda3/envs/DeePyMoD/python.exe c:/Users/Maria/Documents/Masterstudium/Masterarbeit/MScThesis/Python/DeePyMoD/script_deepmod_ODE.py 
+# +
 # # human ts 
-# python3 script_deepmod_ODE.py -data_name "humanTS_donorA" -filename 'ts_donorA_Phylumlevel_rel_count.csv' -hl_number 15 -hl_size 60 -max_iterations $iterations -threshold 0.1
-# python3 script_deepmod_ODE.py -data_name "humanTS_donorB" -filename 'ts_donorB_Phylumlevel_rel_count.csv' -hl_number 15 -hl_size 60 -max_iterations $iterations -threshold 0.1
-# python3 script_deepmod_ODE.py -data_name "humanTS_male" -filename 'ts_male_Phylumlevel_rel_count.csv' -hl_number 15 -hl_size 60 -max_iterations $iterations -threshold 0.1
-# python3 script_deepmod_ODE.py -data_name "humanTS_female" -filename 'ts_female_Phylumlevel_rel_count.csv' -hl_number 15 -hl_size 60 -max_iterations 50000
+# -data_name "humanTS_donorA" -filename 'ts_donorA_Phylumlevel_rel_count.csv' -hl_number 15 -hl_size 60 -max_iterations 50000
+# -data_name "humanTS_donorB" -filename 'ts_donorB_Phylumlevel_rel_count.csv' -hl_number 15 -hl_size 60 -max_iterations 50000
+# -data_name "humanTS_male" -filename 'ts_male_Phylumlevel_rel_count.csv' -hl_number 15 -hl_size 60 -max_iterations 50000
+# -data_name "humanTS_female" -filename 'ts_female_Phylumlevel_rel_count.csv' -hl_number 15 -hl_size 60 -max_iterations 50000
 # # bucci
-# python3 script_deepmod_ODE.py -data_name "ts_bucci_subject_1_run$i" -filename "ts_bucci_subject_1_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
-# python3 script_deepmod_ODE.py -data_name "ts_bucci_subject_2_run$i" -filename "ts_bucci_subject_2_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
-# python3 script_deepmod_ODE.py -data_name "ts_bucci_subject_3_run$i" -filename "ts_bucci_subject_3_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
-# python3 script_deepmod_ODE.py -data_name "ts_bucci_subject_4_run$i" -filename "ts_bucci_subject_4_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
-# python3 script_deepmod_ODE.py -data_name "ts_bucci_subject_5_run$i" -filename "ts_bucci_subject_5_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
+# -data_name "ts_bucci_subject_1_run$i" -filename "ts_bucci_subject_1_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
+# -data_name "ts_bucci_subject_2_run$i" -filename "ts_bucci_subject_2_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
+# -data_name "ts_bucci_subject_3_run$i" -filename "ts_bucci_subject_3_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
+# -data_name "ts_bucci_subject_4_run$i" -filename "ts_bucci_subject_4_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
+# -data_name "ts_bucci_subject_5_run$i" -filename "ts_bucci_subject_5_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
 # # miaSim S4
-# python3 script_deepmod_ODE.py -data_name "ts_miaSim_S4_run$i" -filename "miaSim_GLV_4species_oscillating_zero.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
+# -data_name "ts_miaSim_S4_run$i" -filename "miaSim_GLV_4species_oscillating_zero.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
+
+
+# C:/Users/Maria/anaconda3/envs/DeePyMoD/python.exe c:/Users/Maria/Documents/Masterstudium/Masterarbeit/MScThesis/Python/DeePyMoD/script_deepmod_ODE.py -data_name "ts_miaSim_S4_test" -filename "miaSim_GLV_4species_oscillating_zero.csv" -hl_number 5 -hl_size 30 -max_iterations 100
 
 
 ################################### Variables ######################################
@@ -86,56 +91,47 @@ def initialize_args(args):
     threshold = args.threshold
     max_iterations = args.max_iterations
     n_runs = args.n_runs
+
+    # # some example files/names
+    # name = "ts_bucci_subject_1"
+    # filename = "ts_bucci_subject_1_rel_count.csv"
+    # name = "ts_miaSim_S4"
+    # filename = "miaSim_GLV_4species_oscillating_zero.csv"
+    # name = "humanTS_donorA"
+    # filename = "ts_donorA_Phylumlevel_rel_count.csv"
+
+    # name = "ts_bucci_subject_1"
+    # data_name = f"{name}_{datetime.now().strftime('%m-%d_%H-%M')}"
+    # filename = "ts_bucci_subject_1_rel_count.csv"
+    # # max_samples = 100
+    # int_order = 2
+    # hl_number = 10
+    # hl_size = 60
+    # add_alr = True
+    # threshold = 0.1
+    # max_iterations = 50000
+    # n_runs = 1
     
     
 # function to initialize all variables
 def set_variables():
-    global filepath, folderpath_out
-    
-    # # name of the dataset including current date_time
-    # data_name = f"humanTS_female_{datetime.now().strftime('%m-%d_%H-%M')}"
-    # 
-    # # filename = "ts_bucci_subject_5_rel_count.csv"
-    # # filename = "miaSim_GLV_4species_oscillating_zero.csv"
-    # filename = "ts_female_Phylumlevel_rel_count.csv"
-    # 
-    # # add alr transformation to the data
-    # add_alr = False
-    # 
-    # ### specify the model parameters for training
-    # 
-    # # order of interactions included in the library (2 or 3)
-    # int_order = 2
-    # 
-    # # threshold
-    # threshold = 0.5
-    # 
-    # # network
-    # # number of hidden layers
-    # hl_number = 15
-    # # size of hidden layers
-    # hl_size = 50
-    # 
-    # # maximal iterations
-    # max_iterations = 100000
-    # 
-    # # number of runs
-    # n_runs = 2
-    
-    
-    # python3 script_deepmod_ODE.py 
-    # -data_name 'humanTS_female' -filename 'ts_female_Phylumlevel_rel_count.csv'
-    # -hl_number 5 -hl_size 50 -n_runs 3
+    global filepath, folderpath_out, folderpath_plots, folderpath_data, write_iterations
 
     args = parse_args()
-    initialize_args(args)
+    initialize_args(args) # = None
+
+    # specify how often data is written to tensorboard and checks train loss , by default 25.
+    write_iterations = 25
     
-    
-    # folderpath output
+    # folderpaths for output
     folderpath_out = f"../output/output_{data_name}"
+    folderpath_plots = f'{folderpath_out}/Plots'
+    folderpath_data = f'{folderpath_out}/Data'
+
     # create output folder
-    if not os.path.exists(folderpath_out):
-        os.makedirs(folderpath_out)
+    os.makedirs(folderpath_out)
+    os.makedirs(folderpath_plots)
+    os.makedirs(folderpath_data)
     
     # initialize log file
     log_filename = f'{folderpath_out}/log_{data_name}.log'
@@ -145,7 +141,7 @@ def set_variables():
                         level=logging.INFO)
     
     # path of data file (input)
-    filepath = "../data/" + filename
+    filepath = "../../data/" + filename
     
     
     logging.info(f"""the parameters are initialized for {data_name}:\n
@@ -171,7 +167,8 @@ def add_alr_transformation(T, P):
     for i in np.arange(n_otu-1):
         ax.plot(T, ALR[0][:, i])  # , label = f"x{i+1}"
     ax.set_title(f"chosen denominator is otu {denom+1}")
-    plt.savefig(f'{folderpath_out}/plot_dataset_alr.png')
+    # ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.savefig(f'{folderpath_plots}/plot_dataset_alr.png', dpi = 200) #, bbox_inches='tight'
     plt.close()
 
     return ALR[0]
@@ -197,8 +194,9 @@ def create_data():
         ax.plot(ts, data_y[:, i], label=f"otu {i+1}")
     ax.set_xlabel("Time")
     ax.set_ylabel("Abundance")
-    ax.legend()
-    plt.savefig(f'{folderpath_out}/plot_dataset.png')
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.savefig(f'{folderpath_plots}/plot_dataset.png', 
+                bbox_inches='tight', dpi = 200)
     plt.close()
 
     # include alr transformation (and save plot)
@@ -221,20 +219,26 @@ def access_TFRecordDataset(out_var, log_path):
     tmp_file = os.listdir(out_var_dir)[-1]
     file_dir = out_var_dir + tmp_file
 
-    res = np.array([])
+    out = np.array([])
+    index = np.array([])
     i = 0
     for serialized_example in tf.data.TFRecordDataset(file_dir):
         event = event_pb2.Event.FromString(serialized_example.numpy())
         for value in event.summary.value:
             # Extract relevant information from the event
             val = value.simple_value
-            res = np.append(res, val)
+            out = np.append(out, val)
+            index = np.append(index, (i+1)*write_iterations)
             i += 1
+    
+    # save values
+    df_tmp = pd.DataFrame({'Iteration': index, 'Value': out})
+    df_tmp.to_csv(f"{log_path}/data/{out_var}.csv", index=False)
+    
+    return [index, out]
 
-    return res
 
-
-def run_deepmod_and_save_results(iter, dataset, folderpath_out, network_shape):
+def run_deepmod_and_save_results(dataset, network_shape):
 
     # Split dataset
     train_dataloader, test_dataloader = get_train_test_loader(
@@ -263,13 +267,15 @@ def run_deepmod_and_save_results(iter, dataset, folderpath_out, network_shape):
     # Run DeepMoD
 
     # create directory for train output
-    log_path = f'{folderpath_out}/train_log_{iter}'
+    log_path = f'{folderpath_out}/train_log'
     if not os.path.exists(log_path):
         os.makedirs(log_path)
+        os.makedirs(f'{log_path}/Plots/')
+        os.makedirs(f'{log_path}/Data/')
 
     # log print output of train()
     old_stdout = sys.stdout
-    log_file = open(f"{folderpath_out}/log_iteration{iter}.log", "w")
+    log_file = open(f"{folderpath_out}/log_iterations.log", "w")
     sys.stdout = log_file
 
     train(
@@ -280,17 +286,14 @@ def run_deepmod_and_save_results(iter, dataset, folderpath_out, network_shape):
         sparsity_scheduler,
         log_dir=log_path,
         max_iterations=max_iterations,
-        delta=1e-3,
+        write_iterations=write_iterations,
+        delta=1e-2,
+        sparsity_update = False
     )
 
     # close log file again
     sys.stdout = old_stdout
     log_file.close()
-
-    # move prediction plots to parent folder
-    for i in np.arange(n_otu):
-        shutil.move(f"{log_path}/prediction_x{i+1}.png",
-                    f"{folderpath_out}/prediction_x{i+1}.png")
 
     ####################### save results ########################
 
@@ -305,7 +308,7 @@ def run_deepmod_and_save_results(iter, dataset, folderpath_out, network_shape):
         idx += 1
 
     df_library_values.to_csv(
-        f"{folderpath_out}/model_library_values_{iter}.csv")
+        f"{folderpath_data}/model_library_values.csv")
 
     # number of coefficients per otu
     n_coefs = len(library_values[0])
@@ -321,7 +324,7 @@ def run_deepmod_and_save_results(iter, dataset, folderpath_out, network_shape):
         idx += 1
 
     df_sparsity_masks.to_csv(
-        f"{folderpath_out}/model_sparsity_masks_{iter}.csv")
+        f"{folderpath_data}/model_sparsity_masks.csv")
 
     # estimation coefficients
     df_estimated_coeffs = pd.DataFrame()
@@ -332,7 +335,7 @@ def run_deepmod_and_save_results(iter, dataset, folderpath_out, network_shape):
         idx += 1
 
     df_estimated_coeffs.to_csv(
-        f"{folderpath_out}/model_estimated_coeffs_{iter}.csv")
+        f"{folderpath_data}/model_estimated_coeffs.csv")
 
     # Analysis/Visualization of the loss
 
@@ -343,30 +346,27 @@ def run_deepmod_and_save_results(iter, dataset, folderpath_out, network_shape):
 
     for otu_tmp in np.arange(n_otu):
 
-        train_loss = access_TFRecordDataset(
+        loss_mse = access_TFRecordDataset(
             f"loss_mse_output_{otu_tmp}", log_path)
-        test_loss = access_TFRecordDataset(
-            f"remaining_MSE_test_val_{otu_tmp}", log_path)
-        l1_loss = access_TFRecordDataset(f"loss_l1_output_{otu_tmp}", log_path)
-        reg_loss = access_TFRecordDataset(
+        loss_reg = access_TFRecordDataset(
             f"loss_reg_output_{otu_tmp}", log_path)
+        MSE_test = access_TFRecordDataset(
+            f"remaining_MSE_test_val_{otu_tmp}", log_path)
+        loss_l1 = access_TFRecordDataset(f"loss_l1_output_{otu_tmp}", log_path)
 
-        # plot and save loss
+        # plot mse and reg loss
         fig, ax = plt.subplots()
-        ax.plot(train_loss, c='#002635', marker='o', label='Train loss')
-        ax.plot(test_loss, c='red', marker='o',
-                ls='--', alpha=0.6, label='Test loss')
-        ax.plot(reg_loss, c='gray', marker='o',
-                ls='--', alpha=0.6, label='Reg loss')
-        ax.plot(l1_loss, c='darkgray', marker='o',
-                ls='--', alpha=0.6, label='L1 loss')
+        ax.plot(loss_mse[0], loss_mse[1],
+                c='#002635', marker='o', label='MSE loss')
+        ax.plot(loss_reg[0], loss_reg[1],
+                c='gray', marker='o', ls='--', alpha=0.6, label='Reg loss')
         ax.set_yscale('log')
         ax.set_xlabel('Iteration')
         ax.set_ylabel('Cost')
         ax.set_title(f'loss for x{otu_tmp+1}')
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        plt.savefig(f'{folderpath_out}/loss_plot_x{otu_tmp+1}_iter{iter}.png',
-            bbox_inches='tight')
+        plt.savefig(f'{folderpath_plots}/loss_plot_x{otu_tmp+1}.png',
+            bbox_inches='tight', dpi = 200)
         plt.close()
 
         # plot and save estimated coefs by iteration
@@ -377,21 +377,38 @@ def run_deepmod_and_save_results(iter, dataset, folderpath_out, network_shape):
                 f"estimator_coeffs_output_{otu_tmp}_coeff_{coef}", log_path)
             output.append(output_coef)
 
-        n_iteration = len(output[0])
-
         fig, ax = plt.subplots()
         for coef in np.arange(n_coefs):
-            ax.scatter(np.arange(25*n_iteration, step=25),
-                       output[coef], label=f'{library_values[otu_tmp][coef]}', s=1)
+            ax.scatter(output[coef][0], output[coef][1], 
+                       label=f'{library_values[otu_tmp][coef]}', s=1)
         ax.set_xlabel('Iteration')
         ax.set_ylabel('Coefficient')
         ax.set_title(f'Coefficients for x{otu_tmp+1}')
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.savefig(
-            f'{folderpath_out}/estimated_coeffs_x{otu_tmp+1}_{iter}.png',
-            bbox_inches='tight')
+            f'{folderpath_plots}/estimated_coeffs_x{otu_tmp+1}.png',
+            bbox_inches='tight', dpi = 200)
         plt.close()
 
+    
+    # # move prediction plots and values to parent folder
+    # shutil.move(f"{log_path}/Plots/",
+    #             folderpath_out)
+    # shutil.move(f"{log_path}/Data/",
+    #             folderpath_out)
+    # fetch all Plots
+    for file_name in os.listdir(f"{log_path}/Plots/"):
+        # construct full file path
+        source = f"{log_path}/Plots/" + file_name
+        destination = folderpath_plots + "/" + file_name
+        shutil.move(source, destination)
+    # fetch all data files
+    for file_name in os.listdir(f"{log_path}/Data/"):
+        # construct full file path
+        source = f"{log_path}/Data/" + file_name
+        destination = folderpath_data + "/" + file_name
+        shutil.move(source, destination)
+    
     # remove log folder with all training output
     shutil.rmtree(log_path)
 
@@ -407,15 +424,6 @@ if __name__ == "__main__":
     )
     logging.info("preparation of the dataset is done")
 
-    # run deepmod several times - start loop
-    for iter in np.arange(n_runs):
-        logging.info(f"iteration {iter} started")
+    model = run_deepmod_and_save_results(dataset, network_shape=[hl_size, hl_number])
 
-        output_iter = f'{folderpath_out}/output_iteration_{iter}'
-        if not os.path.exists(output_iter):
-            os.makedirs(output_iter)
-
-        model = run_deepmod_and_save_results(
-            iter, dataset, output_iter, network_shape=[hl_size, hl_number])
-
-        logging.info(f"iteration {iter} finished")
+    logging.info("run finished")
