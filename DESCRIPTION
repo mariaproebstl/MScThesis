@@ -10,6 +10,8 @@ Encoding: UTF-8
 URL: https://github.com/mariaproebstl/MScThesis
 BugReports: https://github.com/mariaproebstl/MScThesis/issues
 Imports: 
+    base,
+    biomeUtils,
     conflicted,
     data.table,
     deSolve,
@@ -35,9 +37,12 @@ Imports:
     rmarkdown,
     shiny,
     sparsevar,
+    speedyseq,
+    stringr,
     SummarizedExperiment,
     tibble,
     tidyr,
     tidyverse,
     TreeSummarizedExperiment,
-    viridis
+    viridis,
+    xlsx
