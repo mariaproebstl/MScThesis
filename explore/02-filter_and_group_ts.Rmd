@@ -1,0 +1,179 @@
+---
+title: "02 General Preprocessing (grouping and filtering) of the time series"
+date: "Compiled at `r format(Sys.time(), '%Y-%m-%d %H:%M:%S', tz = 'UTC')` UTC"
+output: github_document
+params:
+  name: "02-filter_and_group_ts" # change if you rename file
+---
+
+```{r here, message=FALSE}
+here::i_am(paste0(params$name, ".Rmd"), uuid = "b3a179f8-2944-4abb-be92-171ebdfd8e78")
+```
+
+Previously all time series have been converted into a uniform format as a phyloseq object.
+This document now can be used for further processing of the datasets.
+This includes conversion to relative counts, filtering by the most abundant taxa and grouping by a certain taxonomic level.
+
+```{r packages, message=FALSE}
+library("conflicted")
+library("tidyverse")
+library("data.table")
+library("phyloseq")
+library("microViz") # for tax_fix
+```
+
+```{r directories}
+# create or *empty* the target directory, used to write this file's data: 
+projthis::proj_create_dir_target(params$name, clean = TRUE)
+
+# function to get path to target directory: path_target("sample.csv")
+path_target <- projthis::proj_path_target(params$name)
+
+# function to get path to previous data: path_source("00-import", "sample.csv")
+path_source <- projthis::proj_path_source(params$name)
+```
+
+## Select name of object
+
+```{r}
+# data_source <- "01a-timeseries-BioTIME"
+# data_name <- "study-339"
+
+# data_source <- "01b-timeseries-CLVpaper"
+# data_name <- "bucci_subject_1"
+# data_name <- "bucci_subject_2"
+# data_name <- "bucci_subject_3"
+# data_name <- "bucci_subject_4"
+# data_name <- "bucci_subject_5"
+
+# data_source <- "01c-timeseries-miaTIME"
+# data_name <- "ps_Silverman_V1"
+# data_name <- "ps_Silverman_V2"
+# data_name <- "ps_Silverman_V3"
+# data_name <- "ps_Silverman_V4"
+
+data_source <- "01d-timeseries-HumanGutData-Karwowska-paper"
+data_name <- "donorA"
+# data_name <- "donorB"
+# data_name <- "female"
+# data_name <- "male"
+
+# data_source <- "01e-timeseries-miaSim"
+# data_name <- "miaSim_GLV_4species_oscillating_zero"
+
+# data_source <- "01f-timeseries-NODEBNGMpaper"
+# data_name <- "TS_3DLV"
+# data_name <- "TS_AFR1"
+# data_name <- "TS_AFR2"
+# data_name <- "TS_AFR3"
+# data_name <- "TS_HL"
+# data_name <- "TS_RPS"
+# data_name <- "TS_Ushio"
+
+```
+
+
+## Load phyloseq object
+
+```{r}
+assign(paste0("ps_", data_name),
+       readRDS(path_source(data_source,
+                           paste0("ps_", data_name, ".rds"))))
+```
+
+
+## Transform counts to relative counts
+
+```{r}
+# calculate count/sum(count) for each sample
+assign(paste0("ps_", data_name, "_rel_counts"),
+       speedyseq::transform_sample_counts(get(paste0("ps_", data_name)),
+                               function(x) x / sum(x) ))
+# update data name
+data_name <-
+  paste0(data_name, "_rel_counts")
+```
+
+
+## Group dataset by taxonomic rank
+
+```{r}
+tax_level = "Phylum"
+
+tmp_ps <-
+  get(paste0("ps_", data_name)) %>%
+  # summarize over tax level, include NAs
+  tax_glom(taxrank = tax_level, NArm = FALSE) %>% 
+  tax_fix(sep = "_") %>%
+  speedyseq::transmute_tax_table(Kingdom, Phylum, Class, Order, .otu = get(tax_level))
+
+assign(paste0("ps_", data_name, "_", tax_level, "level"),
+       tmp_ps)
+
+# update data name
+data_name <-
+  paste0(data_name, "_", tax_level, "level")
+
+```
+
+
+## Filter for most abundant taxa
+
+```{r}
+assign(
+  paste0("ps_", data_name, "_most_abundant"),
+  get(paste0("ps_", data_name)) %>%
+    filter_taxa(function(x)
+      mean(x) > 1e-5, TRUE)
+)
+
+# update data name
+data_name <-
+  paste0(data_name, "_most_abundant")
+```
+
+
+## Plot final dataset
+
+```{r}
+plot_bar(get(paste0("ps_", data_name)),
+         x = "Time") +
+  # theme(legend.position = "none") +
+  labs(title = data_name,
+       x = "Time",
+       fill = tax_level) +
+  geom_bar(aes(color = get(tax_level), fill = get(tax_level)),
+           stat = "identity",
+           position = "stack") +
+  guides(color = "none")
+```
+
+
+## Save as csv file
+
+```{r}
+# get the tmp phyloseq object
+ps_obj <- get(paste0("ps_", data_name))
+
+# combine count data with time information
+ts_obj <-
+  cbind(sample_data(ps_obj)[, "Time"],
+        t(otu_table(ps_obj)))
+
+# save time series as csv file
+write.csv(
+  ts_obj,
+  path_target(paste0("ts_", data_name, ".csv")),
+  row.names = F
+)
+  
+```
+
+
+## Files written
+
+These files have been written to the target directory, ```r paste0("data/", params$name)```:
+
+```{r list-files-target}
+projthis::proj_dir_info(path_target())
+```
