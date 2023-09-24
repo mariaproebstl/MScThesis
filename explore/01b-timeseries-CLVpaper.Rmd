@@ -54,7 +54,10 @@ knitr::kable(head(dt_bucci_raw))
 
 # read metadata file
 dt_bucci_meta <-
-  fread("data/clv/bucci/data_cdiff/metadata.txt", header = T)
+  fread("data/clv/bucci/data_cdiff/metadata.txt", header = T) %>% 
+  .[, Time := measurementid] %>% 
+  .[, Time_factor := ordered(Time)] %>% 
+  .[, measurementid := NULL]
 
 head(dt_bucci_meta)
 
@@ -71,7 +74,7 @@ dt_tax_bucci <-
 Fecal pellets were collected at days 0.75, 1, 2, 3, 4, 6, 8, 10, 14, 17, 21, 24, and 28 of the initial colonization 
 and at days 0.75, 1, 2, 3, 4, 6, 8, 10, 14, 17, 21, 24, and 28 post-infection with C. difficile.
 
---> measurementid
+--> Time (prev. measurementid)
 
 
 ## Phyloseq
@@ -122,7 +125,7 @@ ps_bucci_all <- phyloseq(OTU_bucci, TAX_bucci, samples_bucci)
 ```
 
 
-### Devide dataset by subjects
+## Transform counts to relative counts
 
 ```{r}
 # change count data to relative counts
@@ -130,10 +133,14 @@ ps_bucci_all <- phyloseq(OTU_bucci, TAX_bucci, samples_bucci)
 
 ps_bucci_rel <- 
   ps_bucci_all %>% 
-  transform_sample_counts(function(x) x / sum(x)) %>% 
-  filter_taxa(function(x) mean(x) > 1e-5, TRUE)
+  transform_sample_counts(function(x) x / sum(x))
+
+```
 
 
+### Devide dataset by subjects
+
+```{r}
 # get a subset for each subject 
 
 ps_bucci_1 <-
@@ -153,16 +160,49 @@ ps_bucci_5 <-
 
 ```
 
+
+### Get one dataset, that contains mean of all subjects in one
+
+```{r}
+ps_bucci_mean <-
+  merge_samples(ps_bucci_all, "Time") %>% 
+  transform_sample_counts(function(x) x / sum(x))
+```
+
+
+
+### Overview of datasets (and their taxonimic levels)
+
+```{r}
+ps_bucci_1
+ps_bucci_2
+ps_bucci_3
+ps_bucci_4
+ps_bucci_5
+
+# # summarize how many unique levels are available for each taxonomic rank
+# # (for overview table)
+# for(subject in c(seq(5), "all")){
+#   cat("----------------------------------")
+#   cat("\n")
+#   cat("Subject ", subject, "\n")
+#   cat("----------------------------------\n")
+#   for(tax_rank in c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")) {
+#     cat(tax_rank, ": \t")
+#     cat(" uniqueN:   ", tax_table(get(paste0("ps_bucci_", subject)))[, tax_rank] %>% uniqueN(), "\n")
+#     cat("\t\t NAs:       ", (sum(is.na(tax_table(get(paste0("ps_bucci_", subject)))[, tax_rank]))), "\n")
+#   }
+#   cat("\n")
+# }
+```
+
+
 ### plot data
 
 ```{r}
 # plot for all subjects
-
-sample_data(ps_bucci_rel)$time <- 
-  ordered(sample_data(ps_bucci_rel)$measurementid)
-
-plot_bar(ps_bucci_rel,
-         x = "time",
+plot_bar(ps_bucci_mean,
+         x = "Time_factor",
          fill = "Species",
          title = "All Subjects") +
   geom_bar(aes(color=Species, fill=Species), stat="identity", position="stack")
@@ -171,44 +211,28 @@ plot_bar(ps_bucci_rel,
 
 
 ```{r}
-# plots for all subjects separately
+# plots for each subject separately
 for (id in 1:5) {
   plt_tmp <-
     plot_bar(get(paste0("ps_bucci_", id)),
-             # x = "measurementid", 
+             x = "Time_factor",
              fill = "Species",
-             title = paste("Subject", id))
+             title = paste("Subject", id)) +
+    geom_bar(aes(color=Species, fill=Species), stat="identity", position="stack")
   
   print(plt_tmp)
 }
 ```
 
-### Save phyloseq of all subjects to test in deepymod
+
+## Save Phyloseq Objects
 
 ```{r}
-for(id in 1:5){
-  # get the tmp phyloseq object
-  ps_obj <- get(paste0("ps_bucci_", id))
-  
-  # combine count data with time information
-  ts_obj <-
-    cbind(sample_data(ps_obj)[, "measurementid"],
-          t(otu_table(ps_obj)))
-  
-  # save time series as csv file
-  write.csv(
-    ts_obj,
-    paste0(path_target(), "/ts_bucci_subject_", id, "_rel_count.csv"),
-    row.names = F
-  )
-  
-  # plot time series
-  print(autoplot(ts(ts_obj[,2:17]), facets = F))
+for (id in c(1:5, "mean")) {
+  saveRDS(get(paste0("ps_bucci_", id)),
+          path_target(paste0("ps_bucci_subject_", id, "_rel_count.rds")))
 }
-
 ```
-
-
 
 
 ## Files written

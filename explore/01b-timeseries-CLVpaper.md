@@ -1,6 +1,6 @@
 Time series (Bucci Dataset from cLV paper)
 ================
-Compiled at 2023-07-25 08:09:53 UTC
+Compiled at 2023-09-24 18:56:48 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "fbad9ade-134a-4a83-a801-9900003f3395")
@@ -60,18 +60,21 @@ knitr::kable(head(dt_bucci_raw))
 ``` r
 # read metadata file
 dt_bucci_meta <-
-  fread("data/clv/bucci/data_cdiff/metadata.txt", header = T)
+  fread("data/clv/bucci/data_cdiff/metadata.txt", header = T) %>% 
+  .[, Time := measurementid] %>% 
+  .[, Time_factor := ordered(Time)] %>% 
+  .[, measurementid := NULL]
 
 head(dt_bucci_meta)
 ```
 
-    ##    sampleID isIncluded subjectID measurementid perturbid exptblock intv
-    ## 1:        1          1         1          0.75         0         1    0
-    ## 2:        2          1         1          1.00         0         1    0
-    ## 3:        3          1         1          2.00         0         1   14
-    ## 4:        4          1         1          3.00         0         1    0
-    ## 5:        5          1         1          4.00         0         1    0
-    ## 6:        6          1         1          6.00         0         1    0
+    ##    sampleID isIncluded subjectID perturbid exptblock intv Time Time_factor
+    ## 1:        1          1         1         0         1    0 0.75        0.75
+    ## 2:        2          1         1         0         1    0 1.00           1
+    ## 3:        3          1         1         0         1   14 2.00           2
+    ## 4:        4          1         1         0         1    0 3.00           3
+    ## 5:        5          1         1         0         1    0 4.00           4
+    ## 6:        6          1         1         0         1    0 6.00           6
 
 ``` r
 # read taxonomic information
@@ -87,7 +90,7 @@ Fecal pellets were collected at days 0.75, 1, 2, 3, 4, 6, 8, 10, 14, 17,
 21, 24, and 28 of the initial colonization and at days 0.75, 1, 2, 3, 4,
 6, 8, 10, 14, 17, 21, 24, and 28 post-infection with C. difficile.
 
-–\> measurementid
+–\> Time (prev. measurementid)
 
 ## Phyloseq
 
@@ -130,7 +133,7 @@ TAX_bucci = tax_table(as.matrix(mat_tax_bucci))
 ps_bucci_all <- phyloseq(OTU_bucci, TAX_bucci, samples_bucci)
 ```
 
-### Devide dataset by subjects
+## Transform counts to relative counts
 
 ``` r
 # change count data to relative counts
@@ -138,10 +141,12 @@ ps_bucci_all <- phyloseq(OTU_bucci, TAX_bucci, samples_bucci)
 
 ps_bucci_rel <- 
   ps_bucci_all %>% 
-  transform_sample_counts(function(x) x / sum(x)) %>% 
-  filter_taxa(function(x) mean(x) > 1e-5, TRUE)
+  transform_sample_counts(function(x) x / sum(x))
+```
 
+### Devide dataset by subjects
 
+``` r
 # get a subset for each subject 
 
 ps_bucci_1 <-
@@ -160,63 +165,115 @@ ps_bucci_5 <-
   subset_samples(ps_bucci_rel, subjectID == 5)
 ```
 
+### Get one dataset, that contains mean of all subjects in one
+
+``` r
+ps_bucci_mean <-
+  merge_samples(ps_bucci_all, "Time") %>% 
+  transform_sample_counts(function(x) x / sum(x))
+```
+
+### Overview of datasets (and their taxonimic levels)
+
+``` r
+ps_bucci_1
+```
+
+    ## phyloseq-class experiment-level object
+    ## otu_table()   OTU Table:         [ 23 taxa and 26 samples ]
+    ## sample_data() Sample Data:       [ 26 samples by 7 sample variables ]
+    ## tax_table()   Taxonomy Table:    [ 23 taxa by 7 taxonomic ranks ]
+
+``` r
+ps_bucci_2
+```
+
+    ## phyloseq-class experiment-level object
+    ## otu_table()   OTU Table:         [ 23 taxa and 26 samples ]
+    ## sample_data() Sample Data:       [ 26 samples by 7 sample variables ]
+    ## tax_table()   Taxonomy Table:    [ 23 taxa by 7 taxonomic ranks ]
+
+``` r
+ps_bucci_3
+```
+
+    ## phyloseq-class experiment-level object
+    ## otu_table()   OTU Table:         [ 23 taxa and 26 samples ]
+    ## sample_data() Sample Data:       [ 26 samples by 7 sample variables ]
+    ## tax_table()   Taxonomy Table:    [ 23 taxa by 7 taxonomic ranks ]
+
+``` r
+ps_bucci_4
+```
+
+    ## phyloseq-class experiment-level object
+    ## otu_table()   OTU Table:         [ 23 taxa and 26 samples ]
+    ## sample_data() Sample Data:       [ 26 samples by 7 sample variables ]
+    ## tax_table()   Taxonomy Table:    [ 23 taxa by 7 taxonomic ranks ]
+
+``` r
+ps_bucci_5
+```
+
+    ## phyloseq-class experiment-level object
+    ## otu_table()   OTU Table:         [ 23 taxa and 26 samples ]
+    ## sample_data() Sample Data:       [ 26 samples by 7 sample variables ]
+    ## tax_table()   Taxonomy Table:    [ 23 taxa by 7 taxonomic ranks ]
+
+``` r
+# # summarize how many unique levels are available for each taxonomic rank
+# # (for overview table)
+# for(subject in c(seq(5), "all")){
+#   cat("----------------------------------")
+#   cat("\n")
+#   cat("Subject ", subject, "\n")
+#   cat("----------------------------------\n")
+#   for(tax_rank in c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")) {
+#     cat(tax_rank, ": \t")
+#     cat(" uniqueN:   ", tax_table(get(paste0("ps_bucci_", subject)))[, tax_rank] %>% uniqueN(), "\n")
+#     cat("\t\t NAs:       ", (sum(is.na(tax_table(get(paste0("ps_bucci_", subject)))[, tax_rank]))), "\n")
+#   }
+#   cat("\n")
+# }
+```
+
 ### plot data
 
 ``` r
 # plot for all subjects
-
-sample_data(ps_bucci_rel)$time <- 
-  ordered(sample_data(ps_bucci_rel)$measurementid)
-
-plot_bar(ps_bucci_rel,
-         x = "time",
+plot_bar(ps_bucci_mean,
+         x = "Time_factor",
          fill = "Species",
          title = "All Subjects") +
   geom_bar(aes(color=Species, fill=Species), stat="identity", position="stack")
 ```
 
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 ``` r
-# plots for all subjects separately
+# plots for each subject separately
 for (id in 1:5) {
   plt_tmp <-
     plot_bar(get(paste0("ps_bucci_", id)),
-             # x = "measurementid", 
+             x = "Time_factor",
              fill = "Species",
-             title = paste("Subject", id))
+             title = paste("Subject", id)) +
+    geom_bar(aes(color=Species, fill=Species), stat="identity", position="stack")
   
   print(plt_tmp)
 }
 ```
 
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-8-2.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-8-3.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-8-4.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-8-5.png)<!-- -->
+![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-11-2.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-11-3.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-11-4.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-11-5.png)<!-- -->
 
-### Save phyloseq of all subjects to test in deepymod
+## Save Phyloseq Objects
 
 ``` r
-for(id in 1:5){
-  # get the tmp phyloseq object
-  ps_obj <- get(paste0("ps_bucci_", id))
-  
-  # combine count data with time information
-  ts_obj <-
-    cbind(sample_data(ps_obj)[, "measurementid"],
-          t(otu_table(ps_obj)))
-  
-  # save time series as csv file
-  write.csv(
-    ts_obj,
-    paste0(path_target(), "/ts_bucci_subject_", id, "_rel_count.csv"),
-    row.names = F
-  )
-  
-  # plot time series
-  print(autoplot(ts(ts_obj[,2:17]), facets = F))
+for (id in c(1:5, "mean")) {
+  saveRDS(get(paste0("ps_bucci_", id)),
+          path_target(paste0("ps_bucci_subject_", id, "_rel_count.rds")))
 }
 ```
-
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-9-2.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-9-3.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-9-4.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-9-5.png)<!-- -->
 
 ## Files written
 
@@ -227,11 +284,12 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 5 × 4
-    ##   path                             type         size modification_time  
-    ##   <fs::path>                       <fct> <fs::bytes> <dttm>             
-    ## 1 ts_bucci_subject_1_rel_count.csv file        7.54K 2023-07-25 08:10:15
-    ## 2 ts_bucci_subject_2_rel_count.csv file        7.78K 2023-07-25 08:10:16
-    ## 3 ts_bucci_subject_3_rel_count.csv file        7.61K 2023-07-25 08:10:17
-    ## 4 ts_bucci_subject_4_rel_count.csv file        7.58K 2023-07-25 08:10:18
-    ## 5 ts_bucci_subject_5_rel_count.csv file         7.5K 2023-07-25 08:10:19
+    ## # A tibble: 6 × 4
+    ##   path                                type         size modification_time  
+    ##   <fs::path>                          <fct> <fs::bytes> <dttm>             
+    ## 1 ps_bucci_subject_1_rel_count.rds    file        4.77K 2023-09-24 18:56:59
+    ## 2 ps_bucci_subject_2_rel_count.rds    file         4.8K 2023-09-24 18:56:59
+    ## 3 ps_bucci_subject_3_rel_count.rds    file        4.75K 2023-09-24 18:56:59
+    ## 4 ps_bucci_subject_4_rel_count.rds    file        4.75K 2023-09-24 18:56:59
+    ## 5 ps_bucci_subject_5_rel_count.rds    file        4.73K 2023-09-24 18:56:59
+    ## 6 ps_bucci_subject_mean_rel_count.rds file        4.83K 2023-09-24 18:56:59
