@@ -44,15 +44,31 @@ four_subjects <-
   c("donorA", "donorB", "male", "female")
 
 # read data files (otu tables - interpolated)
+# extract abundance info into otu_table and Time info into sample_table
 for(subject in four_subjects){
-  tmp <- 
-    as.matrix(fread(paste0(filepath_data, "ready_files/", subject,
-                      "_rarefied_18000_interpolated_pchip.tsv"),
-               header = T), rownames = 1) %>% 
+  tmp_dt <- 
+    fread(paste0(filepath_data, "ready_files/", subject,
+                 "_rarefied_18000_interpolated_pchip.tsv"),
+          header = T)
+  # write sample names in format "ID-001"
+  tmp_names <- 
+    sprintf("ID-%03d", as.numeric(colnames(tmp_dt)[2:length(tmp_dt)]))
+
+  # create sample info table with columns "SampleID" and "Time"
+  tmp_sample <-
+    data.table(SampleID = tmp_names,
+               Time = as.numeric(colnames(tmp_dt)[2:length(tmp_dt)]))
+  
+  # update sample names in otu table
+  colnames(tmp_dt)[2:length(tmp_dt)] <- tmp_names
+  tmp_otu <-
+    as.matrix(tmp_dt, rownames = 1) %>% 
     otu_table(taxa_are_rows = T)
   
   assign(paste0("otu_", subject),
-         tmp)
+         tmp_otu) 
+  assign(paste0("sample_", subject),
+         tmp_sample)
 }
 
 # read taxonomic tables
@@ -81,18 +97,33 @@ for(subject in four_subjects){
          tmp)
 }
 
-# read metadata
+# read additional metadata for donorA and donorB
 metadata <-
   fread(paste0(filepath_data, "raw_files/2202_metadata.tsv"))
 
-# # set time for sample data
-# for(subject in four_subjects){
-#   tmp <- colnames(get(paste0("otu_", subject))) %>% 
-#     data.frame(ID = ., Time = as.numeric(.)) %>% 
-#     tibble::column_to_rownames("ID")
-#   assign(paste0("sample_", subject),
-#          tmp)
-# }
+# 
+metadata_donorAStool <-
+  subset(metadata, description == "DonorA Stool") %>% 
+  .[!duplicated(collection_day)]
+metadata_donorBStool <-
+  subset(metadata, description == "DonorB Stool") %>% 
+  .[!duplicated(collection_day)]
+
+# add additional metadata for 
+sample_donorA <-
+  merge(sample_donorA, metadata_donorAStool,
+        by.x = "Time", by.y = "collection_day", all.x = T)
+sample_donorB <-
+  merge(sample_donorB, metadata_donorBStool,
+        by.x = "Time", by.y = "collection_day", all.x = T)
+
+# bring sample_data tables in the right format
+for(subject in four_subjects) {
+  tmp <- get(paste0("sample_", subject)) %>%
+    tibble::column_to_rownames("SampleID")
+  
+  assign(paste0("sample_", subject), sample_data(tmp))
+}
 
 ```
 
@@ -111,11 +142,34 @@ for(subject in four_subjects){
 
   assign(paste0("ps_", subject),
          phyloseq(get(paste0("otu_", subject)),
-                  tmp_tax))
+                  tmp_tax,
+                  get(paste0("sample_", subject))))
 }
 
 ```
 
+
+<!-- ```{r} -->
+<!-- # summarize number of unique levels are available for each taxonomic rank -->
+<!-- # (for overview table) -->
+
+<!-- for(subject in four_subjects){ -->
+<!--   cat("----------------------------------") -->
+<!--   cat("\n") -->
+<!--   cat(subject, "\n") -->
+<!--   cat("----------------------------------\n") -->
+<!--   for(tax_rank in c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")) { -->
+<!--     cat(tax_rank, ": \t") -->
+<!--     cat(" uniqueN:   ", tax_table(get(paste0("ps_", subject)))[, tax_rank] %>% uniqueN(), "\n") -->
+<!--     cat("\t\t NAs:       ", (sum(tax_table(get(paste0("ps_", subject)))[, tax_rank] == "unknown")), "\n") -->
+<!--   } -->
+<!--   cat("\n") -->
+<!-- } -->
+
+<!-- ``` -->
+
+
+## Overview Phyloseq Objects
 
 ```{r}
 ps_donorA
@@ -128,139 +182,73 @@ ps_female
 ## Transform counts to relative abundances
 
 ```{r}
-ps_donorA <-
+ps_donorA_rel_counts <-
   transform_sample_counts(ps_donorA, function(x) x / sum(x) )
 
-ps_donorB <-
+ps_donorB_rel_counts <-
   transform_sample_counts(ps_donorB, function(x) x / sum(x) )
 
-ps_male <-
+ps_male_rel_counts <-
   transform_sample_counts(ps_male, function(x) x / sum(x) )
 
-ps_female <-
+ps_female_rel_counts <-
   transform_sample_counts(ps_female, function(x) x / sum(x) )
 ```
 
 
-## Plot Phyloseq
+## Plot Phyloseq objects (relative counts)
 
-```{r plot}
-# bar plot phyloseq objects
+```{r}
+# plot all subjects on Family level
 for(subject in four_subjects){
   plt_tmp <-
-    ggplot(psmelt(get(paste0("ps_", subject))),
-           aes(as.numeric(Sample), Abundance, fill = Phylum)) +
-    geom_bar(stat = "identity")  +
-    # theme(legend.position = "none") +
-    labs(title = subject,
-         x = "time [days]")
-  print(plt_tmp)
-}
-
-```
-
-
-```{r}
-# # alternative way of plotting
-# for(subject in four_subjects){
-#   plt_tmp <-
-#     plot_bar(get(paste0("ps_", subject)), x = "as.numeric(Sample)", fill = "Family") +
-#     theme(legend.position = "none") +
-#     labs(title = subject,
-#          x = "Time [days]")
-#   print(plt_tmp)
-# }
-
-```
-
-
-## Summarize counts per taxonomic level
-
-Aggregate the timeseries by summarizing counts over a taxonomic level.
-
-### Pyhlum level
-
-```{r}
-tax_level = "Phylum"
-
-for(subject in four_subjects){
-  tmp_ps <-
-    get(paste0("ps_", subject)) %>%
-    # summarize over Phylum, include NAs
-    tax_glom(taxrank = tax_level, NArm = FALSE) %>% 
-    # tax_fix(sep = "_") %>% 
-    speedyseq::transmute_tax_table(Kingdom, Phylum, .otu = get(tax_level))
-  
-  assign(paste0("ps_", subject, "_", tax_level),
-         tmp_ps)
-}
-
-```
-
-```{r}
-# bar plot phyloseq objects
-for(subject in four_subjects){
-# subject = "female"
-  plt_tmp <-
-    plot_bar(get(paste0("ps_", subject, "_", tax_level)),
-             x = "as.numeric(Sample)",
-             fill = tax_level) +
+    plot_bar(get(paste0("ps_", subject, "_rel_counts")),
+             x = "Time", fill = "Family") +
     theme(legend.position = "none") +
     labs(title = subject,
-         x = "Time [days]")
+         x = "Time [days]") +
+    geom_bar(aes(color = Family, fill = Family),
+             stat = "identity",
+             position = "stack")
   print(plt_tmp)
 }
+
 ```
 
 
-```{r}
-ps_donorA_Phylum
-ps_donorB_Phylum
-ps_male_Phylum
-ps_female_Phylum
-```
-
-
-### Class level
+## Save Phyloseq Objects
 
 ```{r}
-tax_level = "Class"
-
 for(subject in four_subjects){
-  tmp_ps <-
-    get(paste0("ps_", subject)) %>%
-    # summarize over Phylum, include NAs
-    tax_glom(taxrank = tax_level, NArm = FALSE) %>% 
-    tax_fix(sep = "_") %>%
-    speedyseq::transmute_tax_table(Kingdom, Phylum, Class, .otu = get(tax_level))
-  
-  assign(paste0("ps_", subject, "_", tax_level),
-         tmp_ps)
+  # save ps with absolute counts
+  saveRDS(get(paste0("ps_", subject)),
+          path_target(paste0("ps_", subject, ".rds")))
 }
-
 ```
 
 
-## Save phyloseq objects as csv file
+## Check what the most abundant taxa are
 
 ```{r}
-for(subject in four_subjects) {
-  tmp_output <-
-    t(otu_table(get(paste0("ps_", subject, "_Phylum"))))
-  write.csv(
-    data.frame(Time = as.numeric(rownames(tmp_output)), tmp_output),
-    paste0(
-      path_target(),
-      "/ts_",
-      subject,
-      "_Phylumlevel_rel_count.csv"
-    ),
-    row.names = F
-  )
-}
+data <-
+  ps_donorA %>% 
+  psmelt() %>%
+  as_tibble()
 
+# highest abundance: all samples pooled together
+data %>%
+  group_by(Family) %>%
+  summarise(Abundance = max(Abundance)) %>%
+  arrange(-Abundance)
+
+# number of samples with abundance != 0
+data %>%
+  group_by(Order, Sample) %>%
+  summarise(Abundance = sum(Abundance)) %>% 
+  group_by(Order) %>% 
+  summarise(Abundance = sum(Abundance > 0.0001)) %>%
+  arrange(-Abundance)
 ```
-
 
 
 ## Files written
