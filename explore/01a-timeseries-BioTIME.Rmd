@@ -13,7 +13,7 @@ here::i_am(paste0(params$name, ".Rmd"), uuid = "964cf30c-e7ec-4fee-a704-f01c350f
 
 The purpose of this document is to analyse different time series from the BioTIME database that could be interesting for the further process.
 
-#### Packages
+## Packages
 
 ```{r packages}
 library("conflicted")
@@ -22,6 +22,7 @@ library(data.table)
 library(ggplot2)
 library(viridis) # for color palettes
 library(RColorBrewer)
+library(phyloseq)
 ```
 
 ```{r directories}
@@ -35,42 +36,53 @@ path_target <- projthis::proj_path_target(params$name)
 path_source <- projthis::proj_path_source(params$name)
 ```
 
-## BioTIME
 
-#### Read Data
+## Read Data
 
 ```{r}
 #### read the file
 dt_fullquery <- 
   fread("data/BioTIME/BioTIMEquery_24_06_2021.csv")
+colnames(dt_fullquery)[1] <- "ID_SAMPLE"
 
 #### read BioTIME Metadata
 dt_biotimeMeta <-
-  fread("data/00-import-BioTIME-database/BioTIME_Meta_reduced.csv")
+  # fread("data/00-import-BioTIME-database/BioTIME_Meta_reduced.csv")
+  fread("data/BioTIME/biotimeMetadata_24_06_2021.csv")
 
 ```
 
 
-#### Criteria to select a suitable study
+## Criteria to select a suitable study
 
  * there should be enough DATA_POINTS (>50)
  * certain Abundance Type ("Count") --> not so important
  * the samples should be taken from only one location
  * the intervals between the time steps should be equal (e.g. one year)
+ 
+```{r}
+# select possible IDs
+possible_IDs <-
+  dt_biotimeMeta[DATA_POINTS > 35 & NUMBER_LAT_LONG == 1 & AB_BIO %in% c("AB", "A")]$STUDY_ID
+```
+
 
 ```{r}
 # show available studies
-dt_biotimeMeta[DATA_POINTS > 35 & NUMBER_LAT_LONG == 1] %>%
-# dt_biotimeMeta[DATA_POINTS > 35 & NUMBER_LAT_LONG == 1 & AB_BIO %in% c("AB", "A")] %>%
+dt_biotimeMeta[DATA_POINTS > 35 & NUMBER_LAT_LONG == 1 & AB_BIO %in% c("AB", "A")] %>%
   .[, YEARS := paste0(START_YEAR, "-", END_YEAR)] %>% 
-  .[, c("TITLE", "AB_BIO", "REALM", "CLIMATE", "START_YEAR", "END_YEAR") := NULL]%>% 
+  # .[, c("TITLE", "AB_BIO", "REALM", "CLIMATE", "START_YEAR", "END_YEAR") := NULL]%>% 
+  .[, .(STUDY_ID, REALM, CLIMATE, TAXA, AB_BIO, DATA_POINTS, YEARS,
+        NUMBER_OF_SPECIES, NUMBER_OF_SAMPLES, NUMBER_LAT_LONG, TOTAL, 
+        ABUNDANCE_TYPE, BIOMASS_TYPE, TITLE)] %>% 
   .[order(-DATA_POINTS)] %>% 
   knitr::kable()
 ```
 
+ 
+## Function to extract one study 
 
-
-```{r, include=FALSE}
+```{r}
 # function to extract one study out of the full query with adjusted Time column
 extract_study <- function(data, ID) {
   
@@ -89,21 +101,121 @@ extract_study <- function(data, ID) {
 ```
 
 
-We need Time Series with at least 50 time steps.
+## Make phyloseq
 
-Further Criteria for useful time series:
+```{r}
+# make phyloseq object for each study in list
+for (study_id in possible_IDs) {
+  # extract data of the specific study
+  dt_study <-
+    extract_study(dt_fullquery, ID = study_id)
+  
+  # create taxonomic table
+  dt_tax_table <-
+    dt_study[, .(Species, Genus)] %>%
+    unique() %>%
+    .[, TAX_ID := sprintf("sp-%03d", as.numeric(rownames(.)))]
+  
+  dt_study <-
+    merge(dt_study, dt_tax_table,
+          by = c("Species", "Genus"))
+  
+  dt_tax_table <-
+    dt_tax_table %>%
+    tibble::column_to_rownames("TAX_ID") %>%
+    as.matrix()
+  
+  # extract sample information
+  dt_sample_info <-
+    dt_study[, .(Time)] %>%
+    unique() %>%
+    .[order(Time)] %>%
+    .[, SampleID := sprintf("ID-%02d", as.numeric(rownames(.)))]
+  
+  dt_study <-
+    merge(dt_study, dt_sample_info,
+          by = c("Time"))
+  
+  dt_sample_info <- dt_sample_info %>%
+    tibble::column_to_rownames("SampleID")
+  
+  # extract count table
+  dt_count_table <-
+    dt_study[, .(SampleID, TAX_ID, Abundance)]
+  dt_otu_table <-
+    dcast(dt_count_table, TAX_ID ~ SampleID, value.var = "Abundance") %>%
+    tibble::column_to_rownames("TAX_ID")
+  dt_otu_table[is.na(dt_otu_table)] <- 0
+  
+  # make phyloseq object and assign to ps_study_xy
+  assign(paste0("ps_study_", study_id),
+         phyloseq(
+           otu_table(dt_otu_table, taxa_are_rows = T),
+           tax_table(dt_tax_table),
+           sample_data(dt_sample_info)
+         ))
+}
 
- * >50 time points
- * time steps should be at equal intervals
- * location of sampling should be only one
-
- 
-## Data Preprocessing and Plotting
-
-Function to preprocess data given a study ID and plot abundances afterwards.
+```
 
 
-#### Preprocessing steps of the sample data for each study:
+## Overview over phyloseq objects
+
+```{r}
+ps_study_339
+ps_study_363
+ps_study_414
+ps_study_478
+ps_study_39
+ps_study_46
+ps_study_413
+```
+
+
+## Plot timeseries
+
+
+```{r}
+for (study_id in possible_IDs) {
+  plt_lines_Species <-
+    ggplot(psmelt(get(paste0("ps_study_", study_id))),
+           aes(x = Time, y = Abundance, col = Species)) +
+    geom_line() +
+    theme(legend.position = "none") +
+      labs(title = paste0("Study ", study_id, " (by Species)"))
+  
+  plt_bar_Genus <-
+    plot_bar(get(paste0("ps_study_", study_id)),
+             x = "Time", fill = "Genus") +
+    theme(legend.position = "none") +
+    geom_bar(aes(color = Genus, fill = Genus),
+             stat = "identity",
+             position = "stack") +
+    labs(title = paste0("Study ", study_id, " (by Genus)"))
+  
+  show(plt_lines_Species)
+  show(plt_bar_Genus)
+}
+
+```
+
+
+## Save Phyloseq Objects
+
+```{r}
+for (study_id in possible_IDs) {
+  saveRDS(get(paste0("ps_study_", study_id)),
+          path_target(paste0("ps_study_", study_id, ".rds")))
+}
+```
+
+
+<br>
+
+
+## OLD SECTION: Data Preprocessing and Plotting
+
+### Preprocessing steps of the sample data for each study:
 
 1. extracting the study ID from the whole dataset
 2. for Genus add Abundances at the same Date / same Genus
@@ -122,6 +234,7 @@ col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_co
 ```
 
 
+### Function to preprocess data given a study ID and plot abundances afterwards
 
 ```{r, function}
 
@@ -130,7 +243,8 @@ study_processing_bioTIME <-
     
     # Metadata (Information about this study)
     study_Meta <-
-      dt_biotimeMeta[STUDY_ID == study_id]
+      dt_biotimeMeta[STUDY_ID == study_id] %>% 
+      .[, METHODS := NULL]
     
     table_Meta <-
       data.table(Column = colnames(study_Meta),
@@ -217,6 +331,22 @@ study_processing_bioTIME <-
                          Abundance_rel = sum(Abundance_rel)),
         by = c("Time", "Genus_grouped")]
     
+    ### save timeseries
+    ## Genus
+    ts_study_genus <-
+      dcast(dt_study_genus, Time ~ Genus_grouped, 
+            value.var = "Abundance_sum")
+    write.csv(ts_study_genus,
+              path_target(paste0("ts_study_", study_id, "_Genus_grouped.csv")),
+              row.names = F)
+    ## Species
+    ts_study_species <-
+      dcast(dt_study_species, Time ~ Species_grouped, 
+            value.var = "Abundance")
+    write.csv(ts_study_species,
+              path_target(paste0("ts_study_", study_id,
+                                 "_Species_grouped.csv")),
+              row.names = F)
     
     ### plot timeseries
     
@@ -240,7 +370,8 @@ study_processing_bioTIME <-
     pl_species_total <-
       ggplot(dt_study_species, aes(Time, Abundance)) +
       geom_line(aes(col = Species_grouped))  +
-      labs(title = "by Species, total Abundances") +
+      labs(title = "by Species, total Abundances",
+           subtitle = paste0("Study ", study_id)) +
       theme(legend.position = legend_species) +
       scale_color_viridis(discrete = TRUE, option = "turbo")
       # scale_color_discrete(type = sample(col_vector, n_species))
@@ -249,7 +380,8 @@ study_processing_bioTIME <-
     pl_species_rel <-
       ggplot(dt_study_species, aes(Time, Abundance_rel)) +
       geom_bar(aes(fill = Species_grouped), stat = "identity") +
-      labs(title = "by Species, relative Abundances") +
+      labs(title = "by Species, relative Abundances",
+           subtitle = paste0("Study ", study_id)) +
       theme(legend.position = legend_species) +
       scale_fill_viridis(discrete = TRUE, option = "turbo")
       # scale_fill_discrete(type = sample(col_vector, n_species))
@@ -258,7 +390,8 @@ study_processing_bioTIME <-
     pl_genus_total <-
       ggplot(dt_study_genus, aes(Time, Abundance_sum)) +
       geom_line(aes(col = Genus_grouped))  +
-      labs(title = "by Genus, total Abundances") +
+      labs(title = "by Genus, total Abundances",
+           subtitle = paste0("Study ", study_id)) +
       theme(legend.position = legend_genus) +
       scale_color_viridis(discrete = TRUE, option = "turbo") 
     
@@ -266,7 +399,8 @@ study_processing_bioTIME <-
     pl_genus_rel <-
       ggplot(dt_study_genus, aes(Time, Abundance_rel)) +
       geom_bar(aes(fill = Genus_grouped), stat = "identity")  +
-      labs(title = "by Genus, relative Abundances") +
+      labs(title = "by Genus, relative Abundances",
+           subtitle = paste0("Study ", study_id)) +
       theme(legend.position = legend_genus) +
       scale_fill_viridis(discrete = TRUE, option = "turbo") 
     
@@ -279,9 +413,9 @@ study_processing_bioTIME <-
 ```
 
 
-# Examples
+## Examples
 
-## (1)
+### (1) 339
 
 ```{r}
 
@@ -292,7 +426,7 @@ study_processing_bioTIME(study_id = 339)
 
 <br>
 
-## (2)
+### (2) 478
 
 ```{r}
 
@@ -303,7 +437,7 @@ study_processing_bioTIME(study_id = 478)
 
 <br>
 
-## (3)
+### (3) 363
 
 ```{r}
 
@@ -315,7 +449,7 @@ study_processing_bioTIME(study_id = 363)
 <br>
 
 
-## other Examples
+### other Examples
 
 ```{r}
 study_processing_bioTIME(study_id = 414)
