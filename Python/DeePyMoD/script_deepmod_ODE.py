@@ -13,6 +13,7 @@ from tensorflow.core.util import event_pb2
 import shutil
 from datetime import datetime
 import argparse
+import seaborn as sns
 
 # DeepMoD functions
 from deepymod import DeepMoD
@@ -24,16 +25,12 @@ from deepymod.training import train
 from deepymod.training.sparsity_scheduler import TrainTestPeriodic
 from deepymod.model.libraryODE import LibraryODE
 
-# clv functions
-from compositional_lotka_volterra import choose_denom
-from compositional_lotka_volterra import construct_alr
-
 # # Settings for reproducibility
 # np.random.seed(30)
 # torch.manual_seed(0)
 
 # Configuring GPU or CPU
-if False: #torch.cuda.is_available():
+if False: # torch.cuda.is_available():
     device = "cuda"
 else:
     device = "cpu"
@@ -48,17 +45,16 @@ else:
 # -data_name "humanTS_male" -filename 'ts_male_Phylumlevel_rel_count.csv' -hl_number 15 -hl_size 60 -max_iterations 50000
 # -data_name "humanTS_female" -filename 'ts_female_Phylumlevel_rel_count.csv' -hl_number 15 -hl_size 60 -max_iterations 50000
 # # bucci
-# -data_name "ts_bucci_subject_1_run$i" -filename "ts_bucci_subject_1_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
-# -data_name "ts_bucci_subject_2_run$i" -filename "ts_bucci_subject_2_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
-# -data_name "ts_bucci_subject_3_run$i" -filename "ts_bucci_subject_3_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
-# -data_name "ts_bucci_subject_4_run$i" -filename "ts_bucci_subject_4_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
-# -data_name "ts_bucci_subject_5_run$i" -filename "ts_bucci_subject_5_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
+# -data_name "ts_bucci_subject_1_run" -filename "ts_bucci_subject_1_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
+# -data_name "ts_bucci_subject_2_run" -filename "ts_bucci_subject_2_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
+# -data_name "ts_bucci_subject_3_run" -filename "ts_bucci_subject_3_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
+# -data_name "ts_bucci_subject_4_run" -filename "ts_bucci_subject_4_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
+# -data_name "ts_bucci_subject_5_run" -filename "ts_bucci_subject_5_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
 # # miaSim S4
-# -data_name "ts_miaSim_S4_run$i" -filename "miaSim_GLV_4species_oscillating_zero.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
+# -data_name "ts_miaSim_S4_run" -filename "miaSim_GLV_4species_oscillating_zero.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
 
 
-# C:/Users/Maria/anaconda3/envs/DeePyMoD/python.exe c:/Users/Maria/Documents/Masterstudium/Masterarbeit/MScThesis/Python/DeePyMoD/script_deepmod_ODE.py -data_name "ts_miaSim_S4_test" -filename "miaSim_GLV_4species_oscillating_zero.csv" -hl_number 5 -hl_size 30 -max_iterations 100
-
+# C:/Users/Maria/anaconda3/envs/DeePyMoD/python.exe c:/Users/Maria/Documents/Masterstudium/Masterarbeit/MScThesis/Python/DeePyMoD/script_deepmod_ODE.py -data_name "humanTS_donorA_ALR" -filename 'ALR_denom5_ts_donorA_Phylumlevel_rel_count.csv' -hl_number 15 -hl_size 60 -max_iterations 50000
 
 ################################### Variables ######################################
 
@@ -71,17 +67,15 @@ def parse_args():
     parser.add_argument('-int_order', type = int, default = 2)
     parser.add_argument('-hl_number', type = int, default = 5)
     parser.add_argument('-hl_size', type = int, default = 40)
-    parser.add_argument('-add_alr', default = False)
     parser.add_argument('-threshold', type = float, default = 0.1)
     parser.add_argument('-max_iterations', type = int, default = 100000)
-    parser.add_argument('-n_runs', type = int, default = 1)
-    parser.add_argument('-set_threshold', default = True)
+    parser.add_argument('-set_threshold', action = 'store_true', default = False)
     
     args = parser.parse_args()
     return args
 
 def initialize_args(args):
-    global data_name, filename, max_samples, int_order, hl_number, hl_size, add_alr, threshold, max_iterations, n_runs, set_threshold
+    global data_name, filename, max_samples, int_order, hl_number, hl_size, threshold, max_iterations, set_threshold
     
     data_name = f"{args.data_name}_{datetime.now().strftime('%m-%d_%H-%M')}"
     filename = args.filename
@@ -89,31 +83,9 @@ def initialize_args(args):
     int_order = args.int_order
     hl_number = args.hl_number
     hl_size = args.hl_size
-    add_alr = args.add_alr
     threshold = args.threshold
     max_iterations = args.max_iterations
-    n_runs = args.n_runs
     set_threshold = args.set_threshold
-
-    # # some example files/names
-    # name = "ts_bucci_subject_1"
-    # filename = "ts_bucci_subject_1_rel_count.csv"
-    # name = "ts_miaSim_S4"
-    # filename = "miaSim_GLV_4species_oscillating_zero.csv"
-    # name = "humanTS_donorA"
-    # filename = "ts_donorA_Phylumlevel_rel_count.csv"
-
-    # name = "ts_bucci_subject_1"
-    # data_name = f"{name}_{datetime.now().strftime('%m-%d_%H-%M')}"
-    # filename = "ts_bucci_subject_1_rel_count.csv"
-    # # max_samples = 100
-    # int_order = 2
-    # hl_number = 10
-    # hl_size = 60
-    # add_alr = True
-    # threshold = 0.1
-    # max_iterations = 50000
-    # n_runs = 1
     
 # function to initialize all variables
 def set_variables():
@@ -126,7 +98,7 @@ def set_variables():
     write_iterations = 25
     
     # folderpaths for output
-    folderpath_out = f"../output/output_{data_name}"
+    folderpath_out = f"../../../deepmod_output/output_{data_name}"
     folderpath_plots = f'{folderpath_out}/Plots'
     folderpath_data = f'{folderpath_out}/Data'
 
@@ -143,37 +115,19 @@ def set_variables():
                         level=logging.INFO)
     
     # path of data file (input)
-    filepath = "../../data/" + filename
+    filepath = "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/MScThesis/data/" + filename
+    # filepath = "../../data/" + filename
     
     
     logging.info(f"""the parameters are initialized for {data_name}:\n
-                ALR transformation: {add_alr}\n
+                input file: {filename}\n
                 hidden layers: number={hl_number}, size={hl_size}\n
                 order of interactions: {int_order} \n
                 max. iterations: {max_iterations}\n
-                number of runs: {n_runs}\n
                 set_threshold: {set_threshold} \n
                 threshold: {threshold}\n
                 device = {device}""")
 
-
-# help function to add alr transformation
-def add_alr_transformation(T, P):
-    denom = choose_denom(P)
-
-    ALR = construct_alr(P, denom)
-    ALR
-
-    # plot alr
-    fig, ax = plt.subplots()
-    for i in np.arange(n_taxa-1):
-        ax.plot(T, ALR[0][:, i])  # , label = f"x{i+1}"
-    ax.set_title(f"chosen denominator is otu {denom+1}")
-    # ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.savefig(f'{folderpath_plots}/plot_dataset_alr.png', dpi = 200) #, bbox_inches='tight'
-    plt.close()
-
-    return ALR[0]
 
 # function to import the datafile and put it into the right format
 def create_data():
@@ -200,11 +154,6 @@ def create_data():
     plt.savefig(f'{folderpath_plots}/plot_dataset.png', 
                 bbox_inches='tight', dpi = 200)
     plt.close()
-
-    # include alr transformation (and save plot)
-    if add_alr:
-        data_y = add_alr_transformation(ts, [data_y])
-        n_taxa = n_taxa-1
 
     T = torch.from_numpy(ts.reshape(-1, 1)).float()
     Y = torch.from_numpy(data_y).float()
@@ -235,7 +184,7 @@ def access_TFRecordDataset(out_var, log_path):
     
     # save values
     df_tmp = pd.DataFrame({'Iteration': index, 'Value': out})
-    df_tmp.to_csv(f"{log_path}/data/{out_var}.csv", index=False)
+    df_tmp.to_csv(f"{log_path}/Data/{out_var}.csv", index=False)
     
     return [index, out]
 
@@ -277,7 +226,7 @@ def run_deepmod_and_save_results(dataset, network_shape):
 
     # log print output of train()
     old_stdout = sys.stdout
-    log_file = open(f"{folderpath_out}/log_iteration{iter}.log", "w")
+    log_file = open(f"{folderpath_out}/log_iterations.log", "w")
     sys.stdout = log_file
 
     train(
@@ -295,6 +244,8 @@ def run_deepmod_and_save_results(dataset, network_shape):
     # close log file again
     sys.stdout = old_stdout
     log_file.close()
+
+    logging.info("model training finsished, start saving plots/values.")
 
     ####################### save results ########################
 
@@ -334,9 +285,20 @@ def run_deepmod_and_save_results(dataset, network_shape):
         df_tmp = pd.DataFrame(ls)
         df_estimated_coeffs[f"x{idx+1}"] = df_tmp
         idx += 1
-
+    # change names of y axis
+    ylabels = [s.replace("x1*", "*") for s in library_values[0]]
+    df_estimated_coeffs = df_estimated_coeffs.set_axis(ylabels, axis=0)
+    # save table as csv
     df_estimated_coeffs.to_csv(
         f"{folderpath_data}/model_estimated_coeffs.csv")
+    # make heatmap and save as png
+    ax = sns.heatmap(df_estimated_coeffs, cmap="RdBu", center= 0, annot=True)
+    ax.xaxis.tick_top()
+    ax.tick_params(left=False, top=False)
+    plt.yticks(rotation=0)
+    plt.savefig(f'{folderpath_plots}/model_estimated_coeffs.png',
+                bbox_inches='tight', dpi = 200)
+    plt.close()
 
     # Analysis/Visualization of the loss
 
@@ -345,7 +307,7 @@ def run_deepmod_and_save_results(dataset, network_shape):
     # loss_vars = ["loss_mse_output_0", "remaining_MSE_test_val_0",
     #               "loss_l1_output_0", "loss_reg_output_0"]
 
-    for taxon_tmp in np.arange(n_otu):
+    for taxon_tmp in np.arange(n_taxa):
 
         loss_mse = access_TFRecordDataset(
             f"loss_mse_output_{taxon_tmp}", log_path)
@@ -391,6 +353,15 @@ def run_deepmod_and_save_results(dataset, network_shape):
             bbox_inches='tight', dpi = 200)
         plt.close()
 
+    # check how many iterations were needed for the training of the model
+    last_iteration = int(output[coef][0][-1])
+    if last_iteration==max_iterations:
+        logging.info(f"model reached max_iterations ({last_iteration}).")
+    elif last_iteration < max_iterations:
+        logging.info(f"model converged at iteration {last_iteration}.")
+    else:
+        logging.info(f"Error: last iteration is {last_iteration}.")
+
     
     # # move prediction plots and values to parent folder
     # shutil.move(f"{log_path}/Plots/",
@@ -424,9 +395,8 @@ if __name__ == "__main__":
         device=device,
     )
 
-    logging.info("preparation of the dataset is done")
+    logging.info("preparation of the dataset is done.")
 
     model = run_deepmod_and_save_results(dataset, network_shape=[hl_size, hl_number])
 
-    logging.info("run finished")
-
+    logging.info("run finished.")
