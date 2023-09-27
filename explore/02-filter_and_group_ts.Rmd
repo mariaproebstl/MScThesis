@@ -40,23 +40,27 @@ path_source <- projthis::proj_path_source(params$name)
 # data_name <- "study-339"
 
 # data_source <- "01b-timeseries-CLVpaper"
-# data_name <- "bucci_subject_1"
-# data_name <- "bucci_subject_2"
-# data_name <- "bucci_subject_3"
-# data_name <- "bucci_subject_4"
-# data_name <- "bucci_subject_5"
+# data_name <- "bucci_subject_1_rel_counts"
+# data_name <- "bucci_subject_2_rel_counts"
+# data_name <- "bucci_subject_3_rel_counts"
+# data_name <- "bucci_subject_4_rel_counts"
+# data_name <- "bucci_subject_5_rel_counts"
 
 # data_source <- "01c-timeseries-miaTIME"
-# data_name <- "ps_Silverman_V1"
-# data_name <- "ps_Silverman_V2"
-# data_name <- "ps_Silverman_V3"
-# data_name <- "ps_Silverman_V4"
+# data_name <- "Silverman_rel_counts"
+# data_name <- "Silverman_V1_rel_counts"
+# data_name <- "Silverman_V2_rel_counts"
+# data_name <- "Silverman_V3_rel_counts"
+# data_name <- "Silverman_V4_rel_counts"
+# data_name <- "Silverman_Vall_daily_rel_counts"
+# data_name <- "Silverman_Vall_hourly_rel_counts"
 
 data_source <- "01d-timeseries-HumanGutData-Karwowska-paper"
-data_name <- "donorA"
-# data_name <- "donorB"
-# data_name <- "female"
-# data_name <- "male"
+data_name_vec <- c("donorA_rel_counts", "donorB_rel_counts", 
+                   "female_rel_counts", "male_rel_counts")
+# data_name <- "donorB_rel_counts"
+# data_name <- "female_rel_counts"
+# data_name <- "male_rel_counts"
 
 # data_source <- "01e-timeseries-miaSim"
 # data_name <- "miaSim_GLV_4species_oscillating_zero"
@@ -76,97 +80,197 @@ data_name <- "donorA"
 ## Load phyloseq object
 
 ```{r}
-assign(paste0("ps_", data_name),
-       readRDS(path_source(data_source,
-                           paste0("ps_", data_name, ".rds"))))
-```
-
-
-## Transform counts to relative counts
-
-```{r}
-# calculate count/sum(count) for each sample
-assign(paste0("ps_", data_name, "_rel_counts"),
-       speedyseq::transform_sample_counts(get(paste0("ps_", data_name)),
-                               function(x) x / sum(x) ))
-# update data name
-data_name <-
-  paste0(data_name, "_rel_counts")
+for(data_name in data_name_vec) {
+  assign(paste0("ps_", data_name),
+         readRDS(path_source(data_source,
+                             paste0("ps_", data_name, ".rds"))))
+}
 ```
 
 
 ## Group dataset by taxonomic rank
 
-```{r}
+Aggregate the timeseries by summarizing counts over a taxonomic level.
+
+```{r, message=FALSE}
 tax_level = "Phylum"
 
-tmp_ps <-
-  get(paste0("ps_", data_name)) %>%
-  # summarize over tax level, include NAs
-  tax_glom(taxrank = tax_level, NArm = FALSE) %>% 
-  tax_fix(sep = "_") %>%
-  speedyseq::transmute_tax_table(Kingdom, Phylum, Class, Order, .otu = get(tax_level))
+for(data_name in data_name_vec) {
+  
+  tmp_ps <-
+    get(paste0("ps_", data_name)) %>%
+    tax_fix(sep = "_") %>%
+    # summarize over tax level, include NAs
+    tax_glom(taxrank = tax_level, NArm = FALSE)
+  
+  if(tax_level == "Phylum"){
+    tmp_ps <- tmp_ps %>%
+      speedyseq::transmute_tax_table(Kingdom, Phylum,
+                                     .otu = Phylum)
+  } else if (tax_level == "Class") {
+    tmp_ps <- tmp_ps %>%
+      speedyseq::transmute_tax_table(Kingdom, Phylum, Class,
+                                     .otu = Class)
+  } else if (tax_level == "Order") {
+    tmp_ps <- tmp_ps %>%
+      speedyseq::transmute_tax_table(Kingdom, Phylum, Class, Order,
+                                     .otu = Order)
+  } else if (tax_level == "Family") {
+    tmp_ps <- tmp_ps %>%
+      speedyseq::transmute_tax_table(Kingdom, Phylum, Class, Order, Family,
+                                     .otu = Family)
+  }else if (tax_level == "Genus") {
+    tmp_ps <- tmp_ps %>%
+      speedyseq::transmute_tax_table(Kingdom, Phylum, Class, Order, Family, Genus,
+                                     .otu = get(tax_level))
+  } else {
+    tmp_ps <- tmp_ps %>%
+      speedyseq::transmute_tax_table(Kingdom, Phylum, Class, Order,
+                                     Family, Genus, Species,
+                                     .otu = Species)
+  }
+  
+  assign(paste0("ps_", data_name, "_", tax_level, "Level"),
+         tmp_ps)
+}
 
-assign(paste0("ps_", data_name, "_", tax_level, "level"),
-       tmp_ps)
-
-# update data name
-data_name <-
-  paste0(data_name, "_", tax_level, "level")
+# update data names
+data_name_vec_changed <-
+  paste0(data_name_vec, "_", tax_level, "Level")
 
 ```
 
 
 ## Filter for most abundant taxa
 
-```{r}
-assign(
-  paste0("ps_", data_name, "_most_abundant"),
-  get(paste0("ps_", data_name)) %>%
-    filter_taxa(function(x)
-      mean(x) > 1e-5, TRUE)
-)
+### with mean count > 1e-5 over all samples
 
-# update data name
-data_name <-
-  paste0(data_name, "_most_abundant")
+Check for every taxon:
+
+  * if mean rel. count over all samples is higher than 0.0001 
+  (in detail: samples with mean count <= 1e-4 are removed) OR
+  * if the max rel. count of all samples is at least 0.005 
+  
+```{r, message=FALSE}
+for(data_name in data_name_vec_changed) {
+
+  assign(
+    paste0("ps_", data_name, "_most_abundant"),
+    get(paste0("ps_", data_name)) %>%
+      filter_taxa(function(x)
+        mean(x) > 1e-4 | max(x) > 0.005, TRUE)
+  )
+}
+
+# update data names
+data_name_vec_changed <-
+  paste0(data_name_vec_changed, "_most_abundant")
+
 ```
+
+
+### with count != 0 for at least 90% of all samples
+
+Check further for every taxon:
+
+  * if there are not more than 85% of the samples equal to zero 
+  (in detail: 15% of samples have a relative count > 1e-5) OR
+
+```{r}
+for(data_name in data_name_vec_changed) { 
+  assign(
+    paste0("ps_", data_name, "_only_relevant"),
+    get(paste0("ps_", data_name)) %>%
+      filter_taxa(function(x)
+        {sum(x > 1e-5) > (0.15 * nsamples(.))},
+        TRUE)
+  )
+}
+
+# update data names
+data_name_vec_changed <-
+  paste0(data_name_vec_changed, "_only_relevant")
+```
+
+
+<!-- ## Plot removed timeseries -->
+
+<!-- ```{r} -->
+<!-- dt_ps <- psmelt(get(paste0("ps_", data_name_vec_changed[1]))) -->
+<!-- otus <- dt_ps$OTU %>% unique() -->
+<!-- #  -->
+<!-- # for(otu in otus){ -->
+<!-- #   # plot included taxa -->
+<!-- #   plt_tmp <- ggplot(subset(dt_ps, OTU == otu), -->
+<!-- #          aes(x = Time, y = Abundance)) + -->
+<!-- #     geom_point() + -->
+<!-- #     geom_hline(yintercept = 1e-5) + -->
+<!-- #     labs(title = otu) -->
+<!-- #   print(plt_tmp) -->
+<!-- # } -->
+
+<!-- dt_ps <- psmelt(get(paste0("ps_", data_name_vec[1], "_", tax_level, "Level"))) -->
+<!-- otus_not_included <- -->
+<!--   dt_ps$OTU[!dt_ps$OTU %in% otus] %>% unique() -->
+
+<!-- plt_list = list() -->
+<!-- for(otu in otus_not_included){ -->
+<!--   # plot included taxa -->
+<!--   plt_tmp <- ggplot(subset(dt_ps, OTU == otu), -->
+<!--          aes(x = Time, y = Abundance)) + -->
+<!--     geom_point() + -->
+<!--     geom_hline(yintercept = 1e-5) + -->
+<!--     labs(title = otu) + -->
+<!--     ylim(0, 0.01) -->
+<!--   plt_list = c(plt_list, list(plt_tmp)) -->
+<!-- } -->
+<!-- cowplot::plot_grid(plotlist=plt_list, nrow=10) -->
+<!-- ``` -->
 
 
 ## Plot final dataset
 
 ```{r}
-plot_bar(get(paste0("ps_", data_name)),
-         x = "Time") +
-  # theme(legend.position = "none") +
-  labs(title = data_name,
-       x = "Time",
-       fill = tax_level) +
-  geom_bar(aes(color = get(tax_level), fill = get(tax_level)),
-           stat = "identity",
-           position = "stack") +
-  guides(color = "none")
+for(data_name in data_name_vec_changed) { 
+  
+  plt_tmp <- plot_bar(get(paste0("ps_", data_name)),
+           x = "Time") +
+    theme(legend.position = "none") +
+    labs(title = data_name,
+         x = "Time",
+         fill = tax_level) +
+    geom_bar(aes(color = get(tax_level), fill = get(tax_level)),
+             stat = "identity",
+             position = "stack") +
+    guides(color = "none")
+  
+  print(plt_tmp)
+}
 ```
 
 
 ## Save as csv file
 
 ```{r}
-# get the tmp phyloseq object
-ps_obj <- get(paste0("ps_", data_name))
-
-# combine count data with time information
-ts_obj <-
-  cbind(sample_data(ps_obj)[, "Time"],
-        t(otu_table(ps_obj)))
-
-# save time series as csv file
-write.csv(
-  ts_obj,
-  path_target(paste0("ts_", data_name, ".csv")),
-  row.names = F
-)
+for(data_name in data_name_vec_changed) { 
   
+  # get the tmp phyloseq object
+  ps_obj <- get(paste0("ps_", data_name))
+  
+  # combine count data with time information
+  ts_obj <-
+    cbind(sample_data(ps_obj)[, "Time"],
+          t(otu_table(ps_obj)))
+  print(head(ts_obj))
+  
+  # save time series as csv file
+  write.csv(
+    ts_obj,
+    path_target(paste0("ts_", data_name, ".csv")),
+    row.names = F
+  )
+    
+}
 ```
 
 
