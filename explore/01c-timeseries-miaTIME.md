@@ -1,6 +1,6 @@
 Time series (miaTime)
 ================
-Compiled at 2023-09-06 12:44:18 UTC
+Compiled at 2023-09-27 09:08:34 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "87d828ae-2f1b-40a8-b559-3784df62c78d")
@@ -11,27 +11,18 @@ here::i_am(paste0(params$name, ".Rmd"), uuid = "87d828ae-2f1b-40a8-b559-3784df62
 ``` r
 library("conflicted")
 library(data.table)
-library(tidyverse)
+library(dplyr)
+library(ggplot2)
 library(viridis) # for color palettes 
+library(stringr)
 
 library(miaTime)
 library(mia)
 
-# library(tidySingleCellExperiment)
-# library(lubridate)
-# library(TreeSummarizedExperiment)
-# library(tidySummarizedExperiment)
-
-# library(miaViz)
 library(phyloseq)
 library(microViz) # for ps_reorder()
 library(biomeUtils) # for removeZeros()
 library("xlsx")
-
-knitr::opts_chunk$set(message=FALSE)
-# options(getClass.msg=FALSE) # to not show the message:
-# >> Found more than one class "phylo" in cache; using the first, from namespace 'phyloseq'
-# Also defined by ‘tidytree’ <<
 ```
 
 ``` r
@@ -45,22 +36,12 @@ path_target <- projthis::proj_path_target(params$name)
 path_source <- projthis::proj_path_source(params$name)
 ```
 
-# SilvermanAGutData
+## Load dataset (SilvermanAGutData)
 
 ``` r
 # load the Silverman artificial gut data set from miaTIME
 
 data(SilvermanAGutData)
-
-# SilvermanAGutData@rowLinks
-# SilvermanAGutData@colLinks #empty
-# 
-# cols <- 
-#   colData(SilvermanAGutData)
-# 
-# metadata(SilvermanAGutData) #empty
-# 
-# referenceSeq(SilvermanAGutData)
 ```
 
 ## Make Phyloseq
@@ -70,116 +51,32 @@ data(SilvermanAGutData)
 ps_Silverman <- makePhyloseqFromTreeSE(SilvermanAGutData)
 ```
 
-``` r
-ntaxa(ps_Silverman)
-```
+### Remove zero samples
 
-    ## [1] 413
-
-``` r
-nsamples(ps_Silverman)
-```
-
-    ## [1] 639
+There are some samples with only 0 entries in the otu table. These
+samples are removed from the dataset.
 
 ``` r
-sample_names(ps_Silverman)[1:5]
+# print names of samples with zero counts over all otus (colSum == 0)
+zero_samples <-
+  otu_table(ps_Silverman)[,colSums(otu_table(ps_Silverman)) == 0] %>%
+  sample_names()
+zero_samples
 ```
 
-    ## [1] "T..0.V.2.Rep.1..set.3.91..Well.C12"   
-    ## [2] "T..0.V.3.Rep.1."                      
-    ## [3] "T..0.V.4.Rep.1..Set.4.77..WellE10"    
-    ## [4] "T..1.Days.V.1.Rep.1..Set.1.54.Well.F7"
-    ## [5] "T..1.Days.V.2.Rep.1."
+    ## [1] "T..19d.21h.00m.V2.Rep1.set.3.10..Well.B2"
+    ## [2] "T..20d.10h.00m.V4.Rep1.set.3.13..Well.E2"
+    ## [3] "T..20d.17h.00m.V2.Rep1.Set.4.86..WellF11"
+    ## [4] "T..22d.20h.00m.V1.Rep1.set.3.9..Well.A2" 
+    ## [5] "T..23d.10h.00m.V1.Rep1.set.3.48.Well.H6"
 
 ``` r
-rank_names(ps_Silverman)
+# remove above samples from the dataset
+ps_Silverman <- 
+  subset_samples(ps_Silverman, !(SampleID %in% zero_samples))
 ```
 
-    ## [1] "Kingdom" "Phylum"  "Class"   "Order"   "Family"  "Genus"   "Species"
-
-``` r
-sample_variables(ps_Silverman)
-```
-
-    ##  [1] "SampleID"             "BarcodeSequence"      "LinkerPrimerSequence"
-    ##  [4] "PrimerID"             "Project"              "DAY_ORDER"           
-    ##  [7] "Vessel"               "SampleType"           "Pre_Post_Challenge"  
-    ## [10] "Normal_Noise_Sample"  "Description"
-
-``` r
-otu_table(ps_Silverman)[1:5, 1:5]
-```
-
-    ## OTU Table:          [5 taxa and 5 samples]
-    ##                      taxa are rows
-    ##         T..0.V.2.Rep.1..set.3.91..Well.C12 T..0.V.3.Rep.1.
-    ## seq_230                                  0               0
-    ## seq_138                                  0               0
-    ## seq_69                                   0               0
-    ## seq_239                                  0               0
-    ## seq_122                                  0               0
-    ##         T..0.V.4.Rep.1..Set.4.77..WellE10 T..1.Days.V.1.Rep.1..Set.1.54.Well.F7
-    ## seq_230                                 0                                     0
-    ## seq_138                                 0                                     0
-    ## seq_69                                  0                                     0
-    ## seq_239                                 0                                     0
-    ## seq_122                                 0                                     0
-    ##         T..1.Days.V.2.Rep.1.
-    ## seq_230                    0
-    ## seq_138                    0
-    ## seq_69                     0
-    ## seq_239                    0
-    ## seq_122                    0
-
-``` r
-sample_data(ps_Silverman) %>% head()
-```
-
-    ##                                                                    SampleID
-    ## T..0.V.2.Rep.1..set.3.91..Well.C12       T..0.V.2.Rep.1..set.3.91..Well.C12
-    ## T..0.V.3.Rep.1.                                             T..0.V.3.Rep.1.
-    ## T..0.V.4.Rep.1..Set.4.77..WellE10         T..0.V.4.Rep.1..Set.4.77..WellE10
-    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7 T..1.Days.V.1.Rep.1..Set.1.54.Well.F7
-    ## T..1.Days.V.2.Rep.1.                                   T..1.Days.V.2.Rep.1.
-    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9 T..1.Days.V.3.Rep.1..Set.4.68..WellD9
-    ##                                       BarcodeSequence     LinkerPrimerSequence
-    ## T..0.V.2.Rep.1..set.3.91..Well.C12       TACGAGCCCTAA CAAGCAGAAGACGGCATACGAGAT
-    ## T..0.V.3.Rep.1.                          CGATTAGGAATC CAAGCAGAAGACGGCATACGAGAT
-    ## T..0.V.4.Rep.1..Set.4.77..WellE10        AACGTAGGCTCT CAAGCAGAAGACGGCATACGAGAT
-    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7    GCACTTCATTTC CAAGCAGAAGACGGCATACGAGAT
-    ## T..1.Days.V.2.Rep.1.                     TCTCGCACTGGA CAAGCAGAAGACGGCATACGAGAT
-    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9    TTAACCTTCCTG CAAGCAGAAGACGGCATACGAGAT
-    ##                                          PrimerID Project DAY_ORDER Vessel
-    ## T..0.V.2.Rep.1..set.3.91..Well.C12      806rcbc35   30BR2         0      2
-    ## T..0.V.3.Rep.1.                        806rcbc983   30BR2         0      3
-    ## T..0.V.4.Rep.1..Set.4.77..WellE10      806rcbc173   30BR2         0      4
-    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7  806rcbc930   30BR2         1      1
-    ## T..1.Days.V.2.Rep.1.                  806rcbc1011   30BR2         1      2
-    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9  806rcbc164   30BR2         1      3
-    ##                                       SampleType Pre_Post_Challenge
-    ## T..0.V.2.Rep.1..set.3.91..Well.C12         Daily      Pre_Challenge
-    ## T..0.V.3.Rep.1.                            Daily      Pre_Challenge
-    ## T..0.V.4.Rep.1..Set.4.77..WellE10          Daily      Pre_Challenge
-    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7      Daily      Pre_Challenge
-    ## T..1.Days.V.2.Rep.1.                       Daily      Pre_Challenge
-    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9      Daily      Pre_Challenge
-    ##                                       Normal_Noise_Sample
-    ## T..0.V.2.Rep.1..set.3.91..Well.C12                 Normal
-    ## T..0.V.3.Rep.1.                                    Normal
-    ## T..0.V.4.Rep.1..Set.4.77..WellE10                  Normal
-    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7              Normal
-    ## T..1.Days.V.2.Rep.1.                               Normal
-    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9              Normal
-    ##                                                                            Description
-    ## T..0.V.2.Rep.1..set.3.91..Well.C12                   T_0 V.2 Rep 1  set 3 -91 Well C12
-    ## T..0.V.3.Rep.1.                                                         T_0 V.3 Rep 1 
-    ## T..0.V.4.Rep.1..Set.4.77..WellE10                    T_0 V.4 Rep 1  Set 4 -77 Well-E10
-    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7 Wrong Tube T_7 Days V.1 Rep 1  Set 1 -54Well -F7
-    ## T..1.Days.V.2.Rep.1.                                    Wrong Tube T_7 Days V.2 Rep 1 
-    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9 Wrong Tube T_7 Days V.3 Rep 1  Set 4 -68 Well-D9
-
-### Remove NAs in tax_table
+### Rename NAs in tax_table to “unknown”
 
 ``` r
 tax_table(ps_Silverman)[is.na(tax_table(ps_Silverman))] <- 
@@ -215,58 +112,8 @@ rownames(sam.new) <- sample_cols$names
 sam.new <- sample_data(sam.new)
 
 ps_Silverman <- merge_phyloseq(ps_Silverman, sam.new)
-head(sample_data(ps_Silverman))
+# head(sample_data(ps_Silverman))
 ```
-
-    ##                                                                    SampleID
-    ## T..0.V.2.Rep.1..set.3.91..Well.C12       T..0.V.2.Rep.1..set.3.91..Well.C12
-    ## T..0.V.3.Rep.1.                                             T..0.V.3.Rep.1.
-    ## T..0.V.4.Rep.1..Set.4.77..WellE10         T..0.V.4.Rep.1..Set.4.77..WellE10
-    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7 T..1.Days.V.1.Rep.1..Set.1.54.Well.F7
-    ## T..1.Days.V.2.Rep.1.                                   T..1.Days.V.2.Rep.1.
-    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9 T..1.Days.V.3.Rep.1..Set.4.68..WellD9
-    ##                                       BarcodeSequence     LinkerPrimerSequence
-    ## T..0.V.2.Rep.1..set.3.91..Well.C12       TACGAGCCCTAA CAAGCAGAAGACGGCATACGAGAT
-    ## T..0.V.3.Rep.1.                          CGATTAGGAATC CAAGCAGAAGACGGCATACGAGAT
-    ## T..0.V.4.Rep.1..Set.4.77..WellE10        AACGTAGGCTCT CAAGCAGAAGACGGCATACGAGAT
-    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7    GCACTTCATTTC CAAGCAGAAGACGGCATACGAGAT
-    ## T..1.Days.V.2.Rep.1.                     TCTCGCACTGGA CAAGCAGAAGACGGCATACGAGAT
-    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9    TTAACCTTCCTG CAAGCAGAAGACGGCATACGAGAT
-    ##                                          PrimerID Project DAY_ORDER Vessel
-    ## T..0.V.2.Rep.1..set.3.91..Well.C12      806rcbc35   30BR2         0      2
-    ## T..0.V.3.Rep.1.                        806rcbc983   30BR2         0      3
-    ## T..0.V.4.Rep.1..Set.4.77..WellE10      806rcbc173   30BR2         0      4
-    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7  806rcbc930   30BR2         1      1
-    ## T..1.Days.V.2.Rep.1.                  806rcbc1011   30BR2         1      2
-    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9  806rcbc164   30BR2         1      3
-    ##                                       SampleType Pre_Post_Challenge
-    ## T..0.V.2.Rep.1..set.3.91..Well.C12         Daily      Pre_Challenge
-    ## T..0.V.3.Rep.1.                            Daily      Pre_Challenge
-    ## T..0.V.4.Rep.1..Set.4.77..WellE10          Daily      Pre_Challenge
-    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7      Daily      Pre_Challenge
-    ## T..1.Days.V.2.Rep.1.                       Daily      Pre_Challenge
-    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9      Daily      Pre_Challenge
-    ##                                       Normal_Noise_Sample
-    ## T..0.V.2.Rep.1..set.3.91..Well.C12                 Normal
-    ## T..0.V.3.Rep.1.                                    Normal
-    ## T..0.V.4.Rep.1..Set.4.77..WellE10                  Normal
-    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7              Normal
-    ## T..1.Days.V.2.Rep.1.                               Normal
-    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9              Normal
-    ##                                                                            Description
-    ## T..0.V.2.Rep.1..set.3.91..Well.C12                   T_0 V.2 Rep 1  set 3 -91 Well C12
-    ## T..0.V.3.Rep.1.                                                         T_0 V.3 Rep 1 
-    ## T..0.V.4.Rep.1..Set.4.77..WellE10                    T_0 V.4 Rep 1  Set 4 -77 Well-E10
-    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7 Wrong Tube T_7 Days V.1 Rep 1  Set 1 -54Well -F7
-    ## T..1.Days.V.2.Rep.1.                                    Wrong Tube T_7 Days V.2 Rep 1 
-    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9 Wrong Tube T_7 Days V.3 Rep 1  Set 4 -68 Well-D9
-    ##                                       Time
-    ## T..0.V.2.Rep.1..set.3.91..Well.C12       0
-    ## T..0.V.3.Rep.1.                          0
-    ## T..0.V.4.Rep.1..Set.4.77..WellE10        0
-    ## T..1.Days.V.1.Rep.1..Set.1.54.Well.F7    1
-    ## T..1.Days.V.2.Rep.1.                     1
-    ## T..1.Days.V.3.Rep.1..Set.4.68..WellD9    1
 
 ``` r
 # remove samples of day 28 from analysis
@@ -344,7 +191,7 @@ samples and for the duplicates the mean counts).
 
 ``` r
 # add group for merging
-# therefor only use first part of sampleID name which is the same for each duplicates
+# therefore only use first part of sampleID name which is the same for each duplicates
 sample_data(ps_Silverman_duplicates)$SampleID_new <-
   sample_data(ps_Silverman_duplicates)$SampleID %>%
   gsub("Rep1.*", "Rep1", .) %>%
@@ -395,19 +242,18 @@ sample_data(ps_Silverman)$Time_factor <-
 
 ### Subsets
 
-Create subsets for each vessel and for daily/hourly samples separately.
+Create subsets for each vessel and for daily/hourly samples.
 
 ``` r
 # transform counts to relative abundance
 ps_Silverman <-
   transform_sample_counts(ps_Silverman,
                           function(x) x / sum(x))
-# set resulting NAs to zero
-otu_table(ps_Silverman)[is.na(otu_table(ps_Silverman))] <- 0
 
-# # filter for taxa with abundance mean greater than 1e-3
-# ps_Silverman_mostAbundant = 
-#   filter_taxa(ps_Silverman, function(x) mean(x) > 1e-5, TRUE)
+# # set resulting NAs to zero
+# otu_table(ps_Silverman)[is.na(otu_table(ps_Silverman))] <- 0
+# # --> not needed since "Remove zero samples" was done previously
+
 
 # devide into daily and hourly samples
 
@@ -416,312 +262,100 @@ ps_Silverman_daily <-
   subset_samples(ps_Silverman, Time == as.integer(Time))
 
 ps_Silverman_hourly <- 
-  subset_samples(ps_Silverman, SampleType=="Hourly")
+  # subset_samples(ps_Silverman, SampleType=="Hourly")
+  subset_samples(ps_Silverman, Time > 19 & Time < 25)
 
 
 # devide by Vessels
-
 for(vessel in 1:4){
   assign(paste0("ps_Silverman_V", vessel),
          subset_samples(ps_Silverman, 
-                        Vessel == vessel & Time < 28))
+                        Vessel == vessel))
   assign(paste0("ps_Silverman_daily_V", vessel),
          subset_samples(ps_Silverman_daily, 
                         Vessel == vessel))
   assign(paste0("ps_Silverman_hourly_V", vessel),
          subset_samples(ps_Silverman_hourly, 
-                        Vessel == vessel & Time < 28))
+                        Vessel == vessel))
 }
 ```
 
-<!-- ### Mean subsets -->
-<!-- ```{r} -->
-<!-- ps_Silverman_mean <- -->
-<!--   merge_samples(ps_Silverman_rel, group = "Time", -->
-<!--                    fun = sum) -->
-<!-- # remove unnecessary columns -->
-<!-- sample_data(ps_Silverman_mean) <-  -->
-<!--   sample_data(ps_Silverman_mean)[, c("Project", "SampleType", "Pre_Post_Challenge", "Normal_Noise_Sample", "Time", "Time_factor")] -->
-<!-- ps_Silverman_mean_daily <- -->
-<!--   subset_samples(ps_Silverman_mean, SampleType == "Daily") -->
-<!-- ps_Silverman_mean_hourly <- -->
-<!--   subset_samples(ps_Silverman_mean, SampleType == "Hourly") -->
-<!-- ``` -->
+### Mean subsets
+
+``` r
+# Get a dataset, that contains mean over all vessels in one
+ps_Silverman_mean <- copy(ps_Silverman)
+sample_data(ps_Silverman_mean) <- 
+  sample_data(ps_Silverman_mean)[, c("Time", "Time_factor")]
+ps_Silverman_mean <-
+  merge_samples(ps_Silverman_mean, group = "Time") %>% 
+  transform_sample_counts(function(x) x / sum(x))
+
+# devide into daily and hourly samples
+ps_Silverman_mean_daily <- 
+  subset_samples(ps_Silverman_mean, Time == as.integer(Time))
+ps_Silverman_mean_hourly <- 
+  subset_samples(ps_Silverman_mean, Time > 19 & Time < 25)
+```
 
 ### Plots
 
 ``` r
 # whole daily dataset
-plot_bar(ps_Silverman_daily, x = "Time_factor", fill = "Family") +
-  theme(legend.position = "none")
+plot_bar(ps_Silverman_mean_daily, x = "Time", fill = "Family") +
+  theme(legend.position = "none") +
+  geom_bar(aes(color=Family, fill=Family), stat="identity", position="stack") +
+  labs(title = "Silverman daily (by Family)",
+       x = "Time [day]")
 ```
 
-![](01c-timeseries-miaTIME_files/figure-gfm/plots1-1.png)<!-- -->
+![](01c-timeseries-miaTIME_files/figure-gfm/plot_dayhour-1.png)<!-- -->
 
 ``` r
 # whole hourly dataset
-plot_bar(ps_Silverman_hourly, x = "Time_factor", fill = "Family") +
-  theme(legend.position = "none")
+plot_bar(ps_Silverman_mean_hourly, x = "Time", fill = "Family") +
+  theme(legend.position = "none") +
+  geom_bar(aes(color=Family, fill=Family), stat="identity", position="stack") +
+  labs(title = "Silverman hourly (by Family)",
+       x = "Time [day]")
 ```
 
-![](01c-timeseries-miaTIME_files/figure-gfm/plots1-2.png)<!-- -->
+![](01c-timeseries-miaTIME_files/figure-gfm/plot_dayhour-2.png)<!-- -->
 
 ``` r
-# plot whole dataset by taxonomic levels
-
-# Phylum
-plot_bar(ps_Silverman, fill = "Phylum") +
-  geom_bar(aes(color=Phylum, fill=Phylum), stat="identity", position="stack")
-```
-
-![](01c-timeseries-miaTIME_files/figure-gfm/plots2-1.png)<!-- -->
-
-``` r
-# plot_bar(ps_Silverman, x = "DAY_ORDER", fill = "Order", facet_grid=~SampleType)
-
-# Order
-plot_bar(ps_Silverman, fill = "Order") +
-  geom_bar(aes(color = Order, fill = Order), stat = "identity", position = "stack")
-```
-
-![](01c-timeseries-miaTIME_files/figure-gfm/plots2-2.png)<!-- -->
-
-``` r
-# daily and hourly data
-plot_bar(ps_Silverman_daily, x = "DAY_ORDER", fill = "Order",
-         facet_grid =  ~ Vessel, title = "Daily samples grouped by Vessel") +
-  geom_bar(aes(color=Order, fill=Order), stat="identity", position="stack")
-```
-
-![](01c-timeseries-miaTIME_files/figure-gfm/plots3-1.png)<!-- -->
-
-``` r
-plot_bar(ps_Silverman_hourly, x = "DAY_ORDER", fill = "Order",
-         facet_grid =  ~ Vessel, title = "Hourly samples grouped by Vessel")
-```
-
-![](01c-timeseries-miaTIME_files/figure-gfm/plots3-2.png)<!-- -->
-
-``` r
-# daily/hourly data for vessel 1
-plot_bar(ps_Silverman_daily_V1, x = "Time", fill = "Family",
-         title = "Daily samples of Vessel 1")
-```
-
-![](01c-timeseries-miaTIME_files/figure-gfm/plots4-1.png)<!-- -->
-
-``` r
-plot_bar(ps_Silverman_hourly_V1, x = "Time", fill = "Order",
-         title = "Hourly samples of Vessel 1")
-```
-
-![](01c-timeseries-miaTIME_files/figure-gfm/plots4-2.png)<!-- -->
-
-## Summarize counts per taxonomic level
-
-Aggregate the timeseries by summarizing counts over a taxonomic level.
-
-### Pyhlum level
-
-``` r
-tax_level = "Phylum"
-
-
-for(timetype in c("daily", "hourly")){
-  for(vessel in 1:4){
-    tmp_ps <-
-      get(paste0("ps_Silverman_", timetype, "_V", vessel)) %>%
-      # summarize over Phylum, include NAs
-      tax_glom(taxrank = tax_level, NArm = FALSE) %>% 
-      # tax_fix(sep = "_") %>% 
-      speedyseq::transmute_tax_table(Kingdom, Phylum, .otu = get(tax_level))
-    
-    assign(paste0("ps_Silverman_", timetype, "_V", vessel, "_", tax_level),
-           tmp_ps)
-  }
-}
-```
-
-``` r
-# bar plot phyloseq objects
-for(timetype in c("daily", "hourly")){
-  vessel = 1
+# plots for each vessel
+for (vessel in 1:4) {
   plt_tmp <-
-    plot_bar(get(paste0("ps_Silverman_", timetype, "_V", vessel, "_", tax_level)),
-             x = "Time",
-             fill = tax_level) +
-    geom_bar(aes(color = get(tax_level), fill = get(tax_level)), 
-             stat = "identity", position = "stack") +
+    plot_bar(get(paste0("ps_Silverman_V", vessel)),
+             x = "Time_factor", fill = "Genus",
+             title = paste("Samples of Vessel", vessel, " (on Genus level)")) +
     theme(legend.position = "none") +
-    labs(title = paste0("ps_Silverman_", timetype, "_V", vessel, "_", tax_level),
-         x = "Time [days]")
+    geom_bar(aes(color = Genus, fill = Genus),
+             stat = "identity",
+             position = "stack")
   print(plt_tmp)
 }
 ```
 
-![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-14-2.png)<!-- -->
-
-``` r
-ps_Silverman_daily_V1_Phylum
-```
-
-    ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:          [ 9 taxa and 25 samples ]:
-    ## sample_data() Sample Data:        [ 25 samples by 13 sample variables ]:
-    ## tax_table()   Taxonomy Table:     [ 9 taxa by 2 taxonomic ranks ]:
-    ## phy_tree()    Phylogenetic Tree:  [ 9 tips and 8 internal nodes ]:
-    ## refseq()      DNAStringSet:       [ 9 reference sequences ]
-    ## taxa are rows
-
-``` r
-ps_Silverman_hourly_V2_Phylum
-```
-
-    ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:          [ 9 taxa and 120 samples ]:
-    ## sample_data() Sample Data:        [ 120 samples by 13 sample variables ]:
-    ## tax_table()   Taxonomy Table:     [ 9 taxa by 2 taxonomic ranks ]:
-    ## phy_tree()    Phylogenetic Tree:  [ 9 tips and 8 internal nodes ]:
-    ## refseq()      DNAStringSet:       [ 9 reference sequences ]
-    ## taxa are rows
-
-### Class level
-
-``` r
-tax_level = "Class"
-
-for(timetype in c("daily", "hourly")) {
-  for (vessel in 1:4) {
-    tmp_ps <-
-      get(paste0("ps_Silverman_", timetype, "_V", vessel)) %>%
-      # summarize over Class, include NAs
-      tax_glom(taxrank = tax_level, NArm = FALSE) %>%
-      tax_fix(sep = "_") %>%
-      speedyseq::transmute_tax_table(Kingdom, Phylum, Class, .otu = get(tax_level))
-    
-    assign(paste0("ps_Silverman_", timetype, "_V", vessel, "_", tax_level),
-           tmp_ps)
-  }
-}
-```
-
-``` r
-ps_Silverman_daily_V1_Class
-```
-
-    ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:          [ 19 taxa and 25 samples ]:
-    ## sample_data() Sample Data:        [ 25 samples by 13 sample variables ]:
-    ## tax_table()   Taxonomy Table:     [ 19 taxa by 3 taxonomic ranks ]:
-    ## phy_tree()    Phylogenetic Tree:  [ 19 tips and 18 internal nodes ]:
-    ## refseq()      DNAStringSet:       [ 19 reference sequences ]
-    ## taxa are rows
-
-``` r
-ps_Silverman_hourly_V2_Class
-```
-
-    ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:          [ 19 taxa and 120 samples ]:
-    ## sample_data() Sample Data:        [ 120 samples by 13 sample variables ]:
-    ## tax_table()   Taxonomy Table:     [ 19 taxa by 3 taxonomic ranks ]:
-    ## phy_tree()    Phylogenetic Tree:  [ 19 tips and 18 internal nodes ]:
-    ## refseq()      DNAStringSet:       [ 19 reference sequences ]
-    ## taxa are rows
-
-### For all taxonomic levels
-
-``` r
-tax_levels = c("Phylum", "Class", "Order", "Family", "Genus")
-
-for(tax_level in tax_levels) {
-  for (vessel in 1:4) {
-    tmp_ps <-
-      get(paste0("ps_Silverman_V", vessel)) %>%
-      # summarize over Phylum, include NAs
-      tax_glom(taxrank = tax_level, NArm = FALSE) %>%
-      tax_fix(sep = "_")
-    
-    if (tax_level == "Phylum") {
-      tmp_ps <- speedyseq::transmute_tax_table(tmp_ps, Kingdom, Phylum,
-                                               .otu = get(tax_level))
-    } else if (tax_level == "Class") {
-      tmp_ps <- speedyseq::transmute_tax_table(tmp_ps,
-                                               Kingdom, Phylum, Class,
-                                               .otu = get(tax_level))
-    } else if (tax_level == "Order") {
-      tmp_ps <- speedyseq::transmute_tax_table(tmp_ps, Kingdom, Phylum,
-                                               Class, Order,
-                                               .otu = get(tax_level))
-    } else if (tax_level == "Family") {
-      tmp_ps <- speedyseq::transmute_tax_table(tmp_ps, Kingdom, Phylum,
-                                               Class, Order, Family,
-                                               .otu = get(tax_level))
-    } else if (tax_level == "Genus") {
-      tmp_ps <- speedyseq::transmute_tax_table(tmp_ps, Kingdom, Phylum, Class,
-                                               Order, Family, Genus,
-                                               .otu = get(tax_level))
-    } else {
-      tmp_ps <-
-        speedyseq::transmute_tax_table(tmp_ps, Kingdom, Phylum, Class, Order,
-                                       Family, Genus, Species,
-                                       .otu = Species)
-    }
-    
-    assign(paste0("ps_Silverman_V", vessel, "_", tax_level),
-           tmp_ps)
-  }
-}
-```
-
-### Devided by time type (daily and hourly)
-
-``` r
-tax_level = "Class"
-
-for(vessel in 1:4){
-  assign(paste0("ps_Silverman_daily_V", vessel, "_", tax_level),
-         subset_samples(get(paste0("ps_Silverman_V", vessel, "_", tax_level)), 
-                        Vessel == vessel))
-  assign(paste0("ps_Silverman_hourly_V", vessel, "_", tax_level),
-         subset_samples(get(paste0("ps_Silverman_V", vessel, "_", tax_level)), 
-                        Vessel == vessel & Time < 28))
-}
-```
+![](01c-timeseries-miaTIME_files/figure-gfm/plot_vessels-1.png)<!-- -->![](01c-timeseries-miaTIME_files/figure-gfm/plot_vessels-2.png)<!-- -->![](01c-timeseries-miaTIME_files/figure-gfm/plot_vessels-3.png)<!-- -->![](01c-timeseries-miaTIME_files/figure-gfm/plot_vessels-4.png)<!-- -->
 
 ## Save phyloseq objects as csv file
 
 ``` r
-tax_level = "Class"
+saveRDS(ps_Silverman,
+        path_target("ps_Silverman_rel_counts.rds"))
 
-for(timetype in c("daily", "hourly")) {
-  for (vessel in 1:4) {
-    # get time info
-    tmp_time <-
-      sample_data(get(paste0("ps_Silverman_", timetype, 
-                             "_V", vessel, "_", tax_level)))[,"Time"]
-    # get otu table
-    tmp_otu <-
-      t(otu_table(get(paste0("ps_Silverman_", timetype, 
-                             "_V", vessel, "_", tax_level))))
-    
-    # merge time column to otu table by sample name (row.names)
-    tmp_output <-
-      merge(tmp_time, tmp_otu, by = "row.names", all = T) %>% 
-      .[, !(names(.) %in% c("Row.names"))]
-    
-    # safe tmp_output as csv file
-    write.csv(
-      tmp_output,
-      paste0(
-        path_target(),
-        "/ts_Silverman_", timetype, "_V", vessel, 
-        "_", tax_level, "_rel_count.csv"
-      ),
-      row.names = F
-    )
-  }
+# data vessel wise
+for (vessel in c(1:4)) {
+  saveRDS(get(paste0("ps_Silverman_V", vessel)),
+          path_target(paste0("ps_Silverman_V", vessel, "_rel_counts.rds")))
 }
+
+# daily/hourly data (mean over all Vessels)
+saveRDS(ps_Silverman_mean_daily,
+        path_target("ps_Silverman_Vall_daily_rel_counts.rds"))
+saveRDS(ps_Silverman_mean_hourly,
+        path_target("ps_Silverman_Vall_hourly_rel_counts.rds"))
 ```
 
 ## Files written
@@ -733,15 +367,14 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 9 × 4
-    ##   path                                       type       size modification_time  
-    ##   <fs::path>                                 <fct> <fs::byt> <dttm>             
-    ## 1 duplicated_samples.xlsx                    file      13.8K 2023-09-06 12:46:18
-    ## 2 ts_Silverman_daily_V1_Class_rel_count.csv  file      28.4K 2023-09-06 12:48:16
-    ## 3 ts_Silverman_daily_V2_Class_rel_count.csv  file      29.5K 2023-09-06 12:48:16
-    ## 4 ts_Silverman_daily_V3_Class_rel_count.csv  file      29.3K 2023-09-06 12:48:16
-    ## 5 ts_Silverman_daily_V4_Class_rel_count.csv  file        30K 2023-09-06 12:48:16
-    ## 6 ts_Silverman_hourly_V1_Class_rel_count.csv file      28.4K 2023-09-06 12:48:16
-    ## 7 ts_Silverman_hourly_V2_Class_rel_count.csv file      29.5K 2023-09-06 12:48:16
-    ## 8 ts_Silverman_hourly_V3_Class_rel_count.csv file      29.3K 2023-09-06 12:48:16
-    ## 9 ts_Silverman_hourly_V4_Class_rel_count.csv file        30K 2023-09-06 12:48:16
+    ## # A tibble: 8 × 4
+    ##   path                                    type         size modification_time  
+    ##   <fs::path>                              <fct> <fs::bytes> <dttm>             
+    ## 1 duplicated_samples.xlsx                 file        13.8K 2023-09-27 09:08:47
+    ## 2 ps_Silverman_rel_counts.rds             file       364.1K 2023-09-27 09:09:45
+    ## 3 ps_Silverman_V1_rel_counts.rds          file       172.6K 2023-09-27 09:09:45
+    ## 4 ps_Silverman_V2_rel_counts.rds          file         177K 2023-09-27 09:09:45
+    ## 5 ps_Silverman_V3_rel_counts.rds          file       173.3K 2023-09-27 09:09:45
+    ## 6 ps_Silverman_V4_rel_counts.rds          file       177.4K 2023-09-27 09:09:45
+    ## 7 ps_Silverman_Vall_daily_rel_counts.rds  file        32.6K 2023-09-27 09:09:45
+    ## 8 ps_Silverman_Vall_hourly_rel_counts.rds file        91.1K 2023-09-27 09:09:45
