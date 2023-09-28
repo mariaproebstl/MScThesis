@@ -223,6 +223,9 @@ for(subject in four_subjects){
   # save ps with absolute counts
   saveRDS(get(paste0("ps_", subject)),
           path_target(paste0("ps_", subject, ".rds")))
+  # save ps with relative counts
+  saveRDS(get(paste0("ps_", subject, "_rel_counts")),
+          path_target(paste0("ps_", subject, "_rel_counts.rds")))
 }
 ```
 

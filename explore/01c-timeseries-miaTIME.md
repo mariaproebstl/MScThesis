@@ -1,6 +1,6 @@
 Time series (miaTime)
 ================
-Compiled at 2023-09-27 09:08:34 UTC
+Compiled at 2023-09-28 10:08:32 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "87d828ae-2f1b-40a8-b559-3784df62c78d")
@@ -351,11 +351,13 @@ for (vessel in c(1:4)) {
           path_target(paste0("ps_Silverman_V", vessel, "_rel_counts.rds")))
 }
 
-# daily/hourly data (mean over all Vessels)
+# daily/hourly and data over all time points (mean over all Vessels)
 saveRDS(ps_Silverman_mean_daily,
         path_target("ps_Silverman_Vall_daily_rel_counts.rds"))
 saveRDS(ps_Silverman_mean_hourly,
         path_target("ps_Silverman_Vall_hourly_rel_counts.rds"))
+saveRDS(ps_Silverman_mean,
+        path_target("ps_Silverman_Vall_all_rel_counts.rds"))
 ```
 
 ## Files written
@@ -367,14 +369,15 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 8 × 4
+    ## # A tibble: 9 × 4
     ##   path                                    type         size modification_time  
     ##   <fs::path>                              <fct> <fs::bytes> <dttm>             
-    ## 1 duplicated_samples.xlsx                 file        13.8K 2023-09-27 09:08:47
-    ## 2 ps_Silverman_rel_counts.rds             file       364.1K 2023-09-27 09:09:45
-    ## 3 ps_Silverman_V1_rel_counts.rds          file       172.6K 2023-09-27 09:09:45
-    ## 4 ps_Silverman_V2_rel_counts.rds          file         177K 2023-09-27 09:09:45
-    ## 5 ps_Silverman_V3_rel_counts.rds          file       173.3K 2023-09-27 09:09:45
-    ## 6 ps_Silverman_V4_rel_counts.rds          file       177.4K 2023-09-27 09:09:45
-    ## 7 ps_Silverman_Vall_daily_rel_counts.rds  file        32.6K 2023-09-27 09:09:45
-    ## 8 ps_Silverman_Vall_hourly_rel_counts.rds file        91.1K 2023-09-27 09:09:45
+    ## 1 duplicated_samples.xlsx                 file        13.8K 2023-09-28 10:08:45
+    ## 2 ps_Silverman_rel_counts.rds             file       364.1K 2023-09-28 10:09:45
+    ## 3 ps_Silverman_V1_rel_counts.rds          file       172.6K 2023-09-28 10:09:45
+    ## 4 ps_Silverman_V2_rel_counts.rds          file         177K 2023-09-28 10:09:45
+    ## 5 ps_Silverman_V3_rel_counts.rds          file       173.3K 2023-09-28 10:09:45
+    ## 6 ps_Silverman_V4_rel_counts.rds          file       177.4K 2023-09-28 10:09:45
+    ## 7 ps_Silverman_Vall_all_rel_counts.rds    file       106.1K 2023-09-28 10:09:45
+    ## 8 ps_Silverman_Vall_daily_rel_counts.rds  file        32.6K 2023-09-28 10:09:45
+    ## 9 ps_Silverman_Vall_hourly_rel_counts.rds file        91.1K 2023-09-28 10:09:45

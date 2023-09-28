@@ -230,7 +230,7 @@ for (id in 1:5) {
 ```{r}
 for (id in c(1:5, "mean")) {
   saveRDS(get(paste0("ps_bucci_", id)),
-          path_target(paste0("ps_bucci_subject_", id, "_rel_count.rds")))
+          path_target(paste0("ps_bucci_subject_", id, "_rel_counts.rds")))
 }
 ```
 

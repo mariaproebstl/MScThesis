@@ -37,42 +37,35 @@ path_source <- projthis::proj_path_source(params$name)
 
 ```{r}
 # data_source <- "01a-timeseries-BioTIME"
-# data_name <- "study-339"
+# data_name_vec <- c("study_339", "study_363", "study_414", "study_478")
 
 # data_source <- "01b-timeseries-CLVpaper"
-# data_name <- "bucci_subject_1_rel_counts"
+# data_name_vec <- c("bucci_subject_1_rel_counts")
 # data_name <- "bucci_subject_2_rel_counts"
 # data_name <- "bucci_subject_3_rel_counts"
 # data_name <- "bucci_subject_4_rel_counts"
 # data_name <- "bucci_subject_5_rel_counts"
 
-# data_source <- "01c-timeseries-miaTIME"
+data_source <- "01c-timeseries-miaTIME"
+data_name_vec <- c("Silverman_Vall_daily_rel_counts",
+                   "Silverman_Vall_hourly_rel_counts",
+                   "Silverman_Vall_all_rel_counts")
 # data_name <- "Silverman_rel_counts"
 # data_name <- "Silverman_V1_rel_counts"
 # data_name <- "Silverman_V2_rel_counts"
 # data_name <- "Silverman_V3_rel_counts"
 # data_name <- "Silverman_V4_rel_counts"
-# data_name <- "Silverman_Vall_daily_rel_counts"
-# data_name <- "Silverman_Vall_hourly_rel_counts"
 
-data_source <- "01d-timeseries-HumanGutData-Karwowska-paper"
-data_name_vec <- c("donorA_rel_counts", "donorB_rel_counts", 
-                   "female_rel_counts", "male_rel_counts")
-# data_name <- "donorB_rel_counts"
-# data_name <- "female_rel_counts"
-# data_name <- "male_rel_counts"
+# data_source <- "01d-timeseries-HumanGutData-Karwowska-paper"
+# data_name_vec <- c("donorA_rel_counts", "donorB_rel_counts", 
+#                    "female_rel_counts", "male_rel_counts")
 
 # data_source <- "01e-timeseries-miaSim"
 # data_name <- "miaSim_GLV_4species_oscillating_zero"
 
 # data_source <- "01f-timeseries-NODEBNGMpaper"
-# data_name <- "TS_3DLV"
-# data_name <- "TS_AFR1"
-# data_name <- "TS_AFR2"
-# data_name <- "TS_AFR3"
-# data_name <- "TS_HL"
-# data_name <- "TS_RPS"
-# data_name <- "TS_Ushio"
+# data_name_vec <- c("3DLV",  "AFR1", "AFR2", "AFR3", "HL", "RPS", "Ushio")
+# data_name_vec <- c("RPS_rel_counts")
 
 ```
 
@@ -93,7 +86,7 @@ for(data_name in data_name_vec) {
 Aggregate the timeseries by summarizing counts over a taxonomic level.
 
 ```{r, message=FALSE}
-tax_level = "Phylum"
+tax_level = "Order"
 
 for(data_name in data_name_vec) {
   
@@ -231,11 +224,30 @@ data_name_vec_changed <-
 ## Plot final dataset
 
 ```{r}
+for(data_name in data_name_vec) { 
+  
+  plt_tmp <- plot_bar(get(paste0("ps_", data_name)),
+           x = "Time") +
+    # theme(legend.position = "none") +
+    labs(title = data_name,
+         x = "Time",
+         fill = tax_level) +
+    geom_bar(aes(color = get(tax_level), fill = get(tax_level)),
+             stat = "identity",
+             position = "stack") +
+    guides(color = "none")
+  
+  print(plt_tmp)
+}
+```
+
+```{r}
+# plot original datasets
 for(data_name in data_name_vec_changed) { 
   
   plt_tmp <- plot_bar(get(paste0("ps_", data_name)),
            x = "Time") +
-    theme(legend.position = "none") +
+    # theme(legend.position = "none") +
     labs(title = data_name,
          x = "Time",
          fill = tax_level) +
@@ -257,10 +269,16 @@ for(data_name in data_name_vec_changed) {
   # get the tmp phyloseq object
   ps_obj <- get(paste0("ps_", data_name))
   
+  if(taxa_are_rows(ps_obj)) {
+    otu_tmp <- t(otu_table(ps_obj))
+  }
+  else {
+    otu_tmp <- otu_table(ps_obj)
+  }
   # combine count data with time information
   ts_obj <-
     cbind(sample_data(ps_obj)[, "Time"],
-          t(otu_table(ps_obj)))
+          otu_tmp)
   print(head(ts_obj))
   
   # save time series as csv file

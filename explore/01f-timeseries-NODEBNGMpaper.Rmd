@@ -38,15 +38,15 @@ path_source <- projthis::proj_path_source(params$name)
 folderpath_data <-
   "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/Literatur/Code/NODEBNGM/data/"
 
-files <- c("TS_3DLV",
-           "TS_AFR1",
-           "TS_AFR2",
-           "TS_AFR3",
-           "TS_RPS")
+files <- c("3DLV",
+           "AFR1",
+           "AFR2",
+           "AFR3",
+           "RPS")
 
 for(ts_name in files) {
   tmp <-
-    fread(paste0(folderpath_data, ts_name, ".csv"), header = T) %>%
+    fread(paste0(folderpath_data, "TS_", ts_name, ".csv"), header = T) %>%
     .[, SampleID := sprintf("ID-%03d", t)] %>%
     tibble::column_to_rownames("SampleID") %>%
     rename(Time = t)
@@ -55,13 +55,13 @@ for(ts_name in files) {
          tmp)
 }
 
-dt_TS_HL <-
+dt_HL <-
   fread(paste0(folderpath_data, "TS_HL.csv"), header = T) %>%
     .[, SampleID := sprintf("ID-%03d", as.numeric(row.names(.)))] %>%
     tibble::column_to_rownames("SampleID") %>%
     rename(Time = Year)
 
-files <- c(files, "TS_HL")
+files <- c(files, "HL")
 
 # convert to phyloseq after reading the data
 for(ts_name in files) {
@@ -85,14 +85,14 @@ rm(tmp, tmp_otu, tmp_sample)
 ```
 
 ```{r}
-# special case (including more sample info): TS_Ushio
-dt_TS_Ushio_raw <-
+# special case (including more sample info): Ushio
+dt_Ushio_raw <-
   fread(paste0(folderpath_data, "TS_Ushio.csv")) %>%
   .[, SampleID := sprintf("ID-%03d", time_step)] %>%
   tibble::column_to_rownames("SampleID")
 
-dt_TS_Ushio <-
-  dt_TS_Ushio_raw %>% select(
+dt_Ushio <-
+  dt_Ushio_raw %>% select(
     "Aurelia.sp",
     "Engraulis.japonicus",
     "Plotosus.lineatus",
@@ -110,23 +110,23 @@ dt_TS_Ushio <-
     "Rudarius.ercodes"
   )
 
-otu_TS_Ushio <-
-  copy(dt_TS_Ushio) %>% 
+otu_Ushio <-
+  copy(dt_Ushio) %>% 
   t() %>% 
   otu_table(taxa_are_rows = T)
 
-samples_TS_Ushio <-
-  dt_TS_Ushio_raw %>%
+samples_Ushio <-
+  dt_Ushio_raw %>%
   select("date_tag", "surf.t", "bot.t", "Y", "M", "D", "time_step")
-samples_TS_Ushio$Time <-
-  as.Date(paste0(samples_TS_Ushio$Y, "-", samples_TS_Ushio$M, "-", 
-                 samples_TS_Ushio$D), 
+samples_Ushio$Time <-
+  as.Date(paste0(samples_Ushio$Y, "-", samples_Ushio$M, "-", 
+                 samples_Ushio$D), 
           format = "%Y-%m-%d")
 
-ps_TS_Ushio <-
-  phyloseq(otu_TS_Ushio, sample_data(samples_TS_Ushio))
+ps_Ushio <-
+  phyloseq(otu_Ushio, sample_data(samples_Ushio))
 
-files <- c(files, "TS_Ushio")
+files <- c(files, "Ushio")
 ```
 
 
@@ -159,19 +159,22 @@ for(ts_name in files) {
 ```
 
 
-<!-- ### Plot relative abundances for TS_Ushio -->
+## Get relative abundances 
 
-<!-- ```{r} -->
-<!-- # calculcate relative abundances -->
-<!-- ps_TS_Ushio_rel <- -->
-<!--   transform_sample_counts(ps_TS_Ushio, function(x) x / sum(x)) -->
+### for TS_RPS
 
-<!-- # bar plot phyloseq objects -->
-<!-- plot_bar(ps_TS_Ushio_rel, x = "Time", fill = "OTU") + -->
-<!--   geom_bar(aes(color = OTU, fill = OTU), stat = "identity", position = "stack") + -->
-<!--   labs(title = "TS_Ushio relative Abundances", -->
-<!--        x = "Time") -->
-<!-- ``` -->
+```{r}
+# calculcate relative abundances
+ps_RPS_rel <-
+  transform_sample_counts(ps_RPS, function(x) x / sum(x))
+
+# bar plot phyloseq objects
+plot_bar(ps_RPS_rel, x = "Time", fill = "OTU") +
+  geom_bar(aes(color = OTU, fill = OTU), stat = "identity", position = "stack") +
+  labs(title = "Ushio relative Abundances",
+       x = "Time")
+
+```
 
 
 ## Save Phyloseq Objects
@@ -181,6 +184,10 @@ for (ts_name in files) {
   saveRDS(get(paste0("ps_", ts_name)),
           path_target(paste0("ps_", ts_name, ".rds")))
 }
+
+# save relative counts for RPS
+saveRDS(ps_RPS_rel,
+        path_target("ps_RPS_rel_counts.rds"))
 ```
 
 

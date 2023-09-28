@@ -1,6 +1,6 @@
 02 General Preprocessing (grouping and filtering) of the time series
 ================
-Compiled at 2023-09-27 15:46:13 UTC
+Compiled at 2023-09-28 10:19:09 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "b3a179f8-2944-4abb-be92-171ebdfd8e78")
@@ -34,42 +34,35 @@ path_source <- projthis::proj_path_source(params$name)
 
 ``` r
 # data_source <- "01a-timeseries-BioTIME"
-# data_name <- "study-339"
+# data_name_vec <- c("study_339", "study_363", "study_414", "study_478")
 
 # data_source <- "01b-timeseries-CLVpaper"
-# data_name <- "bucci_subject_1_rel_counts"
+# data_name_vec <- c("bucci_subject_1_rel_counts")
 # data_name <- "bucci_subject_2_rel_counts"
 # data_name <- "bucci_subject_3_rel_counts"
 # data_name <- "bucci_subject_4_rel_counts"
 # data_name <- "bucci_subject_5_rel_counts"
 
-# data_source <- "01c-timeseries-miaTIME"
+data_source <- "01c-timeseries-miaTIME"
+data_name_vec <- c("Silverman_Vall_daily_rel_counts",
+                   "Silverman_Vall_hourly_rel_counts",
+                   "Silverman_Vall_all_rel_counts")
 # data_name <- "Silverman_rel_counts"
 # data_name <- "Silverman_V1_rel_counts"
 # data_name <- "Silverman_V2_rel_counts"
 # data_name <- "Silverman_V3_rel_counts"
 # data_name <- "Silverman_V4_rel_counts"
-# data_name <- "Silverman_Vall_daily_rel_counts"
-# data_name <- "Silverman_Vall_hourly_rel_counts"
 
-data_source <- "01d-timeseries-HumanGutData-Karwowska-paper"
-data_name_vec <- c("donorA_rel_counts", "donorB_rel_counts", 
-                   "female_rel_counts", "male_rel_counts")
-# data_name <- "donorB_rel_counts"
-# data_name <- "female_rel_counts"
-# data_name <- "male_rel_counts"
+# data_source <- "01d-timeseries-HumanGutData-Karwowska-paper"
+# data_name_vec <- c("donorA_rel_counts", "donorB_rel_counts", 
+#                    "female_rel_counts", "male_rel_counts")
 
 # data_source <- "01e-timeseries-miaSim"
 # data_name <- "miaSim_GLV_4species_oscillating_zero"
 
 # data_source <- "01f-timeseries-NODEBNGMpaper"
-# data_name <- "TS_3DLV"
-# data_name <- "TS_AFR1"
-# data_name <- "TS_AFR2"
-# data_name <- "TS_AFR3"
-# data_name <- "TS_HL"
-# data_name <- "TS_RPS"
-# data_name <- "TS_Ushio"
+# data_name_vec <- c("3DLV",  "AFR1", "AFR2", "AFR3", "HL", "RPS", "Ushio")
+# data_name_vec <- c("RPS_rel_counts")
 ```
 
 ## Load phyloseq object
@@ -87,7 +80,7 @@ for(data_name in data_name_vec) {
 Aggregate the timeseries by summarizing counts over a taxonomic level.
 
 ``` r
-tax_level = "Class"
+tax_level = "Order"
 
 for(data_name in data_name_vec) {
   
@@ -216,11 +209,11 @@ data_name_vec_changed <-
 ## Plot final dataset
 
 ``` r
-for(data_name in data_name_vec_changed) { 
+for(data_name in data_name_vec) { 
   
   plt_tmp <- plot_bar(get(paste0("ps_", data_name)),
            x = "Time") +
-    theme(legend.position = "none") +
+    # theme(legend.position = "none") +
     labs(title = data_name,
          x = "Time",
          fill = tax_level) +
@@ -233,7 +226,28 @@ for(data_name in data_name_vec_changed) {
 }
 ```
 
-![](02-filter_and_group_ts_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->![](02-filter_and_group_ts_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->![](02-filter_and_group_ts_files/figure-gfm/unnamed-chunk-6-3.png)<!-- -->![](02-filter_and_group_ts_files/figure-gfm/unnamed-chunk-6-4.png)<!-- -->
+![](02-filter_and_group_ts_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->![](02-filter_and_group_ts_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->![](02-filter_and_group_ts_files/figure-gfm/unnamed-chunk-6-3.png)<!-- -->
+
+``` r
+# plot original datasets
+for(data_name in data_name_vec_changed) { 
+  
+  plt_tmp <- plot_bar(get(paste0("ps_", data_name)),
+           x = "Time") +
+    # theme(legend.position = "none") +
+    labs(title = data_name,
+         x = "Time",
+         fill = tax_level) +
+    geom_bar(aes(color = get(tax_level), fill = get(tax_level)),
+             stat = "identity",
+             position = "stack") +
+    guides(color = "none")
+  
+  print(plt_tmp)
+}
+```
+
+![](02-filter_and_group_ts_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->![](02-filter_and_group_ts_files/figure-gfm/unnamed-chunk-7-2.png)<!-- -->![](02-filter_and_group_ts_files/figure-gfm/unnamed-chunk-7-3.png)<!-- -->
 
 ## Save as csv file
 
@@ -243,10 +257,16 @@ for(data_name in data_name_vec_changed) {
   # get the tmp phyloseq object
   ps_obj <- get(paste0("ps_", data_name))
   
+  if(taxa_are_rows(ps_obj)) {
+    otu_tmp <- t(otu_table(ps_obj))
+  }
+  else {
+    otu_tmp <- otu_table(ps_obj)
+  }
   # combine count data with time information
   ts_obj <-
     cbind(sample_data(ps_obj)[, "Time"],
-          t(otu_table(ps_obj)))
+          otu_tmp)
   print(head(ts_obj))
   
   # save time series as csv file
@@ -259,90 +279,69 @@ for(data_name in data_name_vec_changed) {
 }
 ```
 
-    ##        Time Gammaproteobacteria Alphaproteobacteria Bacteroidia
-    ## ID-000    0        0.0070555556                   0   0.3640000
-    ## ID-001    1        0.0059444444                   0   0.3110000
-    ## ID-002    2        0.0057222222                   0   0.3402222
-    ## ID-003    3        0.0031007752                   0   0.3625692
-    ## ID-004    4        0.0007777778                   0   0.3693333
-    ## ID-005    5        0.0011111111                   0   0.3416111
-    ##        Clostridia_258483     Bacilli Negativicutes Coriobacteriia Actinomycetia
-    ## ID-000         0.5495000 0.032777778    0.03233333    0.009833333   0.001611111
-    ## ID-001         0.5995556 0.052500000    0.01772222    0.007555556   0.004444444
-    ## ID-002         0.5904444 0.039500000    0.01566667    0.003388889   0.004500000
-    ## ID-003         0.5882614 0.019767442    0.01683278    0.003266888   0.005924695
-    ## ID-004         0.5917778 0.007888889    0.01855556    0.004000000   0.007388889
-    ## ID-005         0.5790556 0.020166667    0.01266667    0.038944444   0.004777778
-    ##        Desulfovibrionia Bacteria_Kingdom Campylobacteria Fusobacteriia
-    ## ID-000     2.111111e-03     0.0007777778    0.000000e+00             0
-    ## ID-001     3.333333e-04     0.0008333333    5.555556e-05             0
-    ## ID-002     2.777778e-04     0.0002222222    5.555556e-05             0
-    ## ID-003     1.107420e-04     0.0001661130    0.000000e+00             0
-    ## ID-004     5.555556e-05     0.0002222222    0.000000e+00             0
-    ## ID-005     8.888889e-04     0.0005000000    0.000000e+00             0
-    ##        Time Gammaproteobacteria Alphaproteobacteria Bacteroidia
-    ## ID-000    0        1.666667e-04                   0   0.5262778
-    ## ID-001    1        5.555556e-05                   0   0.5957222
-    ## ID-002    2        2.777778e-04                   0   0.6987778
-    ## ID-003    3        5.555556e-05                   0   0.5987222
-    ## ID-004    4        2.777778e-04                   0   0.6754444
-    ## ID-005    5        6.111111e-04                   0   0.5530556
-    ##        Clostridia_258483     Bacilli Negativicutes Coriobacteriia Actinomycetia
-    ## ID-000         0.4081667 0.034222222    0.02205556   0.0035000000  0.000000e+00
-    ## ID-001         0.3505556 0.012666667    0.03116667   0.0028888889  0.000000e+00
-    ## ID-002         0.2647222 0.008555556    0.02216667   0.0021111111  5.555556e-05
-    ## ID-003         0.3570556 0.017111111    0.02188889   0.0018888889  0.000000e+00
-    ## ID-004         0.2841111 0.010777778    0.02561111   0.0008888889  0.000000e+00
-    ## ID-005         0.3760000 0.036722222    0.02711111   0.0025555556  5.555556e-05
-    ##        Verrucomicrobiae Bacteria_Kingdom
-    ## ID-000     2.222222e-04      0.005111111
-    ## ID-001     0.000000e+00      0.006888889
-    ## ID-002     0.000000e+00      0.003277778
-    ## ID-003     5.555556e-05      0.003166667
-    ## ID-004     0.000000e+00      0.002833333
-    ## ID-005     5.555556e-05      0.003555556
-    ##        Time Bacteroidia Clostridia_258483 Negativicutes Gammaproteobacteria
-    ## ID-001    1   0.8014444        0.07011111  0.0003333333        1.666667e-04
-    ## ID-002    2   0.6778512        0.12777280  0.0085144522        5.601613e-05
-    ## ID-003    3   0.5958399        0.16373838  0.0185898889        0.000000e+00
-    ## ID-004    4   0.5595000        0.17355556  0.0293888889        0.000000e+00
-    ## ID-005    5   0.5808058        0.14910339  0.0458268762        5.534647e-05
-    ## ID-006    6   0.6366365        0.11387316  0.0659116648        1.132503e-04
-    ##             Bacilli Desulfovibrionia Fusobacteriia Verrucomicrobiae
-    ## ID-001 0.0002777778      0.006444444             0      0.001722222
-    ## ID-002 0.0005601613      0.006721936             0      0.019101501
-    ## ID-003 0.0007367944      0.007141238             0      0.036613013
-    ## ID-004 0.0008333333      0.007333333             0      0.052555556
-    ## ID-005 0.0013836617      0.007637813             0      0.072061103
-    ## ID-006 0.0026047565      0.008267271             0      0.093657984
-    ##        Bacteria_Kingdom Coriobacteriia
-    ## ID-001       0.11950000              0
-    ## ID-002       0.15942191              0
-    ## ID-003       0.17734074              0
-    ## ID-004       0.17683333              0
-    ## ID-005       0.14312597              0
-    ## ID-006       0.07893545              0
-    ##        Time Bacteroidia Clostridia_258483 Negativicutes Gammaproteobacteria
-    ## ID-000    0   0.7271111         0.1946111    0.01122222        0.000000e+00
-    ## ID-001    1   0.6435556         0.3089444    0.01472222        1.333333e-03
-    ## ID-002    2   0.6752222         0.2169444    0.01294444        0.000000e+00
-    ## ID-003    3   0.7075556         0.2434444    0.03161111        1.611111e-03
-    ## ID-004    4   0.4489444         0.4543889    0.03805556        7.777778e-04
-    ## ID-005    5   0.5860556         0.2895000    0.05950000        5.555556e-05
-    ##             Bacilli Desulfovibrionia Actinomycetia Verrucomicrobiae
-    ## ID-000 0.0002777778      0.013444444   0.000000000     0.0003333333
-    ## ID-001 0.0016111111      0.011388889   0.001222222     0.0000000000
-    ## ID-002 0.0001111111      0.011444444   0.001333333     0.0000000000
-    ## ID-003 0.0007777778      0.007222222   0.000000000     0.0000000000
-    ## ID-004 0.0038333333      0.005444444   0.006111111     0.0000000000
-    ## ID-005 0.0037222222      0.004333333   0.002555556     0.0000000000
-    ##        Coriobacteriia Campylobacteria Bacteria_Kingdom Fusobacteriia
-    ## ID-000   0.0000000000    0.0001111111      0.052888889             0
-    ## ID-001   0.0000000000    0.0001111111      0.017111111             0
-    ## ID-002   0.0000000000    0.0000000000      0.082000000             0
-    ## ID-003   0.0000000000    0.0000000000      0.007777778             0
-    ## ID-004   0.0022222222    0.0001666667      0.040055556             0
-    ## ID-005   0.0005555556    0.0001666667      0.053555556             0
+    ##   Time Fusobacteriales Enterobacteriales Burkholderiales Bifidobacteriales
+    ## 0    0    1.000119e-02       0.008229677     0.010144695       0.003229146
+    ## 1    1    9.594198e-04       0.035887770     0.014289142       0.025757684
+    ## 2    2    2.108183e-04       0.011391839     0.031388219       0.012894194
+    ## 3    3    4.774485e-05       0.010499131     0.029123037       0.016294127
+    ## 6    6    6.014314e-05       0.026399276     0.010892885       0.028349513
+    ## 7    7    3.118612e-03       0.030368792     0.006656115       0.009164558
+    ##   Coriobacteriales Erysipelotrichales   Bacillales Synergistales Clostridiales
+    ## 0     4.442445e-03       0.0342314470 0.0008923146  7.881456e-03     0.4025193
+    ## 1     4.702534e-04       0.2931944068 0.0000000000  5.204117e-04     0.3205117
+    ## 2     2.656313e-04       0.0255293293 0.0000000000  8.599931e-05     0.3373852
+    ## 3     7.216396e-05       0.0045849093 0.0000000000  4.774485e-05     0.2612810
+    ## 6     0.000000e+00       0.0011508880 0.0050062953  5.535458e-04     0.2663864
+    ## 7     3.413901e-05       0.0002461782 0.0026151743  1.061412e-02     0.2540700
+    ##   Selenomonadales Desulfovibrionales Bacteroidales
+    ## 0     0.007639614        0.002343574     0.5047212
+    ## 1     0.020130941        0.010201596     0.2773909
+    ## 2     0.030190783        0.010966895     0.5396481
+    ## 3     0.020773419        0.012552669     0.6447241
+    ## 6     0.022305534        0.010597393     0.6282982
+    ## 7     0.028792173        0.015713479     0.6386066
+    ##                      Time Fusobacteriales Enterobacteriales Burkholderiales
+    ## 19.8333333333333 19.83333      0.05813287        0.04792072     0.003461994
+    ## 19.875           19.87500      0.05505526        0.06772592     0.002918104
+    ## 19.9166666666667 19.91667      0.05411754        0.02299551     0.003581674
+    ## 19.9583333333333 19.95833      0.05277920        0.01711122     0.002802555
+    ## 20               20.00000      0.05367244        0.02107201     0.003066328
+    ## 20.0416666666667 20.04167      0.05588967        0.01908019     0.002846610
+    ##                  Erysipelotrichales  Bacillales Synergistales Clostridiales
+    ## 19.8333333333333        0.002028498 0.006131365    0.02642881     0.1576297
+    ## 19.875                  0.001947249 0.005270338    0.02874181     0.1479719
+    ## 19.9166666666667        0.002445699 0.004590675    0.02415529     0.1665257
+    ## 19.9583333333333        0.002434425 0.003767064    0.02386123     0.1628700
+    ## 20                      0.001979591 0.002517627    0.02370928     0.1482135
+    ## 20.0416666666667        0.001619030 0.003489659    0.03343938     0.1580550
+    ##                  Selenomonadales Desulfovibrionales Bacteroidales
+    ## 19.8333333333333     0.016851559        0.007136154     0.6742783
+    ## 19.875               0.009682145        0.005676849     0.6749840
+    ## 19.9166666666667     0.017923639        0.008239615     0.6954247
+    ## 19.9583333333333     0.013333415        0.008129392     0.7129115
+    ## 20                   0.013898181        0.007127004     0.7246461
+    ## 20.0416666666667     0.018419923        0.006022948     0.7011376
+    ##   Time Fusobacteriales Enterobacteriales Burkholderiales Erysipelotrichales
+    ## 0    0    1.000119e-02       0.008229677     0.010144695       0.0342314470
+    ## 1    1    9.594198e-04       0.035887770     0.014289142       0.2931944068
+    ## 2    2    2.108183e-04       0.011391839     0.031388219       0.0255293293
+    ## 3    3    4.774485e-05       0.010499131     0.029123037       0.0045849093
+    ## 6    6    6.014314e-05       0.026399276     0.010892885       0.0011508880
+    ## 7    7    3.118612e-03       0.030368792     0.006656115       0.0002461782
+    ##     Bacillales Synergistales Clostridiales Selenomonadales Desulfovibrionales
+    ## 0 0.0008923146  7.881456e-03     0.4025193     0.007639614        0.002343574
+    ## 1 0.0000000000  5.204117e-04     0.3205117     0.020130941        0.010201596
+    ## 2 0.0000000000  8.599931e-05     0.3373852     0.030190783        0.010966895
+    ## 3 0.0000000000  4.774485e-05     0.2612810     0.020773419        0.012552669
+    ## 6 0.0050062953  5.535458e-04     0.2663864     0.022305534        0.010597393
+    ## 7 0.0026151743  1.061412e-02     0.2540700     0.028792173        0.015713479
+    ##   Bacteroidales
+    ## 0     0.5047212
+    ## 1     0.2773909
+    ## 2     0.5396481
+    ## 3     0.6447241
+    ## 6     0.6282982
+    ## 7     0.6386066
 
 ## Files written
 
@@ -353,10 +352,9 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 4 × 4
-    ##   path                                           type   size modification_time  
-    ##   <fs::path>                                     <fct> <fs:> <dttm>             
-    ## 1 …ts_ClassLevel_most_abundant_only_relevant.csv file  65.3K 2023-09-27 15:46:28
-    ## 2 …ts_ClassLevel_most_abundant_only_relevant.csv file  39.4K 2023-09-27 15:46:28
-    ## 3 …ts_ClassLevel_most_abundant_only_relevant.csv file  29.9K 2023-09-27 15:46:28
-    ## 4 …ts_ClassLevel_most_abundant_only_relevant.csv file  82.8K 2023-09-27 15:46:28
+    ## # A tibble: 3 × 4
+    ##   path                                          type    size modification_time  
+    ##   <fs::path>                                    <fct> <fs::> <dttm>             
+    ## 1 …s_OrderLevel_most_abundant_only_relevant.csv file   27.5K 2023-09-28 10:19:43
+    ## 2 …s_OrderLevel_most_abundant_only_relevant.csv file   5.33K 2023-09-28 10:19:43
+    ## 3 …s_OrderLevel_most_abundant_only_relevant.csv file  23.76K 2023-09-28 10:19:43

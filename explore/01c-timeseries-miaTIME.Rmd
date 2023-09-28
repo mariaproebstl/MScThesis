@@ -245,7 +245,6 @@ sample_data(ps_Silverman)$Time_factor <-
 ```
 
 
-
 ### Subsets
 
 Create subsets for each vessel and for daily/hourly samples.
@@ -358,12 +357,13 @@ for (vessel in c(1:4)) {
           path_target(paste0("ps_Silverman_V", vessel, "_rel_counts.rds")))
 }
 
-# daily/hourly data (mean over all Vessels)
+# daily/hourly and data over all time points (mean over all Vessels)
 saveRDS(ps_Silverman_mean_daily,
         path_target("ps_Silverman_Vall_daily_rel_counts.rds"))
 saveRDS(ps_Silverman_mean_hourly,
         path_target("ps_Silverman_Vall_hourly_rel_counts.rds"))
-
+saveRDS(ps_Silverman_mean,
+        path_target("ps_Silverman_Vall_all_rel_counts.rds"))
 
 ```
 
