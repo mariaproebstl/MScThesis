@@ -1,5 +1,6 @@
 import numpy as np
 import sys
+import math
 from scipy.special import logsumexp
 from scipy.stats import linregress
 from scipy.integrate import RK45, solve_ivp
@@ -45,11 +46,16 @@ def choose_denom(P):
         else:
             log_change = np.vstack((log_change, deltas))
     np.seterr(divide="warn", invalid="warn")
+    # only choose from taxa that are not zero in 95% of the samples
+    n_samples = p.shape[0]
+    s = (p < 1e-4).sum(axis=0, keepdims = True) 
+    taxa_list = np.where(s < 0.95*n_samples)
     # pick taxon with smallest change in log proportion
     min_idx = -1
     min_var = np.inf
-    ntaxa = log_change.shape[1]
-    for i in range(ntaxa):
+    # ntaxa = log_change.shape[1]
+    # for i in range(ntaxa):
+    for i in taxa_list[1]:
         if not np.all(np.isfinite(log_change[:,i])):
             continue
         var = np.var(log_change[:,i])
@@ -382,13 +388,8 @@ def ridge_regression_clv(X, P, U, T, r_A=0, r_g=0, r_B=0):
 
 
 
-def estimate_elastic_net_regularizers_cv(X, P, U, T, denom, folds, no_effects=False, verbose=False):
-    if len(X) == 1:
-        print("Error: cannot estimate regularization parameters from single sample", file=sys.stderr)
-        exit(1)
-    elif len(X) < folds:
-        folds = len(X)
-
+def estimate_elastic_net_regularizers_cv(X, P, U, T, denom, folds, no_effects=False, verbose=False, train_len = 25):
+    
     rs = [0.1, 0.5, 0.7, 0.9, 1]
     alphas = [0.1, 1, 10]
 
@@ -408,37 +409,58 @@ def estimate_elastic_net_regularizers_cv(X, P, U, T, denom, folds, no_effects=Fa
     for i, (alpha, r_A, r_g, r_B) in enumerate(alpha_rA_rg_rB):
         #print("\tTesting regularization parameter set", i+1, "of", len(alpha_rA_rg_rB), file=sys.stderr)
         sqr_err = 0
-        for fold in range(folds):
-            train_X = []
-            train_P = []
-            train_U = []
-            train_T = []
+        
+        if len(X) == 1:
+            folds = math.floor(len(X[0]) / train_len)
+            for fold in range(folds):
+                train_X = [X[0][0:(fold+1)*train_len]]
+                train_P = [P[0][0:(fold+1)*train_len]]
+                train_U = [U[0][0:(fold+1)*train_len]]
+                train_T = [T[0][0:(fold+1)*train_len]]
 
-            test_X = []
-            test_P = []
-            test_U = []
-            test_T = []
-            for i in range(len(X)):
-                if i % folds == fold:
-                    test_X.append(X[i])
-                    test_P.append(P[i])
-                    test_U.append(U[i])
-                    test_T.append(T[i])
+                test_X = [X[0][(fold+1)*train_len:(fold+2)*train_len]]
+                test_P = [P[0][(fold+1)*train_len:(fold+2)*train_len]]
+                test_U = [U[0][(fold+1)*train_len:(fold+2)*train_len]]
+                test_T = [T[0][(fold+1)*train_len:(fold+2)*train_len]]
 
-                else:
-                    train_X.append(X[i])
-                    train_P.append(P[i])
-                    train_U.append(U[i])
-                    train_T.append(T[i])
+                Q_inv = np.eye(train_X[0].shape[1])
+                A, g, B = elastic_net_clv(train_X, train_P, train_U, train_T, Q_inv, alpha, r_A, r_g, r_B, tol=1e-3)
+                sqr_err += compute_prediction_error(test_X, test_P, test_U, test_T, A, g, B, denom)
 
-            Q_inv = np.eye(train_X[0].shape[1])
-            A, g, B = elastic_net_clv(train_X, train_P, train_U, train_T, Q_inv, alpha, r_A, r_g, r_B, tol=1e-3)
-            sqr_err += compute_prediction_error(test_X, test_P, test_U, test_T, A, g, B, denom)
+        elif len(X) < folds:
+            folds = len(X)
+            for fold in range(folds):
+                train_X = []
+                train_P = []
+                train_U = []
+                train_T = []
+
+                test_X = []
+                test_P = []
+                test_U = []
+                test_T = []
+                for i in range(len(X)):
+                    if i % folds == fold:
+                        test_X.append(X[i])
+                        test_P.append(P[i])
+                        test_U.append(U[i])
+                        test_T.append(T[i])
+
+                    else:
+                        train_X.append(X[i])
+                        train_P.append(P[i])
+                        train_U.append(U[i])
+                        train_T.append(T[i])
+
+                Q_inv = np.eye(train_X[0].shape[1])
+                A, g, B = elastic_net_clv(train_X, train_P, train_U, train_T, Q_inv, alpha, r_A, r_g, r_B, tol=1e-3)
+                sqr_err += compute_prediction_error(test_X, test_P, test_U, test_T, A, g, B, denom)
 
         if sqr_err < best_sqr_err:
             best_r = (alpha, r_A, r_g, r_B)
             best_sqr_err = sqr_err
             print("\tr", (alpha, r_A, r_g, r_B), "sqr error", sqr_err)
+
     np.set_printoptions(suppress=False)
     return best_r
 
@@ -514,7 +536,7 @@ def compute_rel_abun(x, denom):
     return p
 
 
-@timeout(5)
+# @timeout(5)
 def predict(x, p, u, times, A, g, B, denom):
     """Make predictions from initial conditions
     """
@@ -546,9 +568,11 @@ def compute_prediction_error(X, P, U, T, A, g, B, denom_ids):
         return err/ntaxa
     err = 0
     for x, p, u, t in zip(X, P, U, T):
-        try:
-            p_pred = predict(x, p, u, t, A, g, B, denom_ids)
-            err += compute_err(p, p_pred)
-        except TimeoutError:
-            err += np.inf
+        p_pred = predict(x, p, u, t, A, g, B, denom_ids)
+        err += compute_err(p, p_pred)
+        # try:
+        #     p_pred = predict(x, p, u, t, A, g, B, denom_ids)
+        #     err += compute_err(p, p_pred)
+        # except TimeoutError:
+        #     err += np.inf
     return err/len(X)
