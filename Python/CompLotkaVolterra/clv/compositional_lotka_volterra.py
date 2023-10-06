@@ -4,7 +4,7 @@ import math
 from scipy.special import logsumexp
 from scipy.stats import linregress
 from scipy.integrate import RK45, solve_ivp
-from timeout import *
+from .timeout import *
 
 
 def estimate_relative_abundances(Y, pseudo_count=1e-3):
@@ -576,3 +576,19 @@ def compute_prediction_error(X, P, U, T, A, g, B, denom_ids):
         # except TimeoutError:
         #     err += np.inf
     return err/len(X)
+
+
+def adjust_concentrations(Y):
+    """Change the scale of observed concentrations.
+    """
+    con =  []
+    for y in Y:
+        con += y.sum(axis=1).tolist()
+    con = np.array(con)
+    C = 1 / np.mean(con)
+
+    Y_adjusted = []
+    for y in Y:
+        Y_adjusted.append(y)
+
+    return Y_adjusted
