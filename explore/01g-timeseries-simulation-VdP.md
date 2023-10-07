@@ -1,6 +1,6 @@
 Simulation of the Van der Pol oscillator
 ================
-Compiled at 2023-10-06 13:24:36 UTC
+Compiled at 2023-10-07 09:34:57 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "ed3de31b-cc20-4300-90cc-e98faa8c0c62")
@@ -31,78 +31,50 @@ path_target <- projthis::proj_path_target(params$name)
 path_source <- projthis::proj_path_source(params$name)
 ```
 
-## Simulate Van der Pol ODE
-
-### RK4 Solver
-
-``` r
-# Define the RK4 solver function
-rk4 <- function(f, g, x1_0, x2_0, t0, tf, h) {
-  n <- round((tf - t0) / h)  # Number of time steps
-  t <- seq(t0, tf, by = h)  # Time points
-  x1 <- numeric(n + 1)
-  x2 <- numeric(n + 1)
-  
-  x1[1] <- x1_0
-  x2[1] <- x2_0
-  
-  for (i in 1:n) {
-    k1_x1 <- h * f(x1[i], x2[i])
-    k1_x2 <- h * g(x1[i], x2[i])
-    
-    k2_x1 <- h * f(x1[i] + 0.5 * k1_x1, x2[i] + 0.5 * k1_x2)
-    k2_x2 <- h * g(x1[i] + 0.5 * k1_x1, x2[i] + 0.5 * k1_x2)
-    
-    k3_x1 <- h * f(x1[i] + 0.5 * k2_x1, x2[i] + 0.5 * k2_x2)
-    k3_x2 <- h * g(x1[i] + 0.5 * k2_x1, x2[i] + 0.5 * k2_x2)
-    
-    k4_x1 <- h * f(x1[i] + k3_x1, x2[i] + k3_x2)
-    k4_x2 <- h * g(x1[i] + k3_x1, x2[i] + k3_x2)
-    
-    x1[i + 1] <- x1[i] + (k1_x1 + 2 * k2_x1 + 2 * k3_x1 + k4_x1) / 6
-    x2[i + 1] <- x2[i] + (k1_x2 + 2 * k2_x2 + 2 * k3_x2 + k4_x2) / 6
-  }
-  
-  return(data.frame(t, x1, x2))
-}
-```
+## Simulation of the Van der Pol oscillator
 
 ### Van der Pol ODE system
 
 ``` r
 # Define the system of differential equations
-f <- function(x1, x2) {
-  return(x2)
+f <- function(t, x, mu) {
+  dx1dt <- x[2]
+  dx2dt <- mu * (1 - x[1]^2) * x[2] - x[1]
+  
+  return(list(c(dx1dt, dx2dt)))
 }
+```
 
-g <- function(x1, x2) {
-  return(x1 + mu * (1 - x1^2) * x2)
-}
+### Set parameters
 
-# Set initial conditions and time span
-mu = 2
-x1_0 <- 1.0
-x2_0 <- 0.0
+``` r
+# Specify parameters
+mu <- 2
+x0 <- c(1.0, 0.0)
 t_start <- 0
 t_end <- 15
 h <- 0.05  # Step size
+time_span <- seq(t_start, t_end, h)
 ```
 
-### Solve the ODE
+### Solve the ODE system
 
 ``` r
-# Solve the system using RK4
-solution <- rk4(f, g, x1_0, x2_0, t_start, t_end, h)
+# Solve the ODE system using the RK4 method
+solution <- 
+  ode(y = x0, times = time_span, func = f, parms = mu,
+      method = "rk4")
+
+# Create a data frame for plotting
+data <- as.data.frame(solution)
+colnames(data) <- c("time", "x1", "x2")
 ```
 
 ### Plot the time series
 
 ``` r
-# Create a data frame for plotting
-data <- data.frame(t = solution$t, x1 = solution$x1, x2 = solution$x2)
-
 # Plot the time series
-ggplot(data, aes(x = t)) +
+ggplot(data, aes(x = time)) +
   geom_line(aes(y = x1, color = "x1(t)")) +
   geom_line(aes(y = x2, color = "x2(t)")) +
   labs(x = "Time", y = "Value", color = "Variable") +
@@ -118,7 +90,7 @@ ggplot(data, aes(x = t)) +
 # save time series as csv file
 write.csv(
   solution,
-  path_target(paste0("ts_VanderPol.csv")),
+  path_target(paste0("ts_VanderPol_R.csv")),
   row.names = F
 )
 ```
@@ -133,6 +105,6 @@ projthis::proj_dir_info(path_target())
 ```
 
     ## # A tibble: 1 × 4
-    ##   path             type         size modification_time  
-    ##   <fs::path>       <fct> <fs::bytes> <dttm>             
-    ## 1 ts_VanderPol.csv file        11.9K 2023-10-06 13:24:41
+    ##   path               type         size modification_time  
+    ##   <fs::path>         <fct> <fs::bytes> <dttm>             
+    ## 1 ts_VanderPol_R.csv file        12.2K 2023-10-07 09:35:02
