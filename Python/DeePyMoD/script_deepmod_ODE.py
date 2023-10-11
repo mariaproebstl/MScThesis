@@ -18,7 +18,7 @@ import seaborn as sns
 # DeepMoD functions
 from deepymod import DeepMoD
 from deepymod.data import Dataset, get_train_test_loader
-from deepymod.model.func_approx import NN
+from deepymod.model.func_approx import *
 from deepymod.model.constraint import LeastSquares
 from deepymod.model.sparse_estimators import Threshold, PDEFIND
 from deepymod.training import train
@@ -37,7 +37,7 @@ else:
 
 ################################## Commands #######################################
 
-# C:/Users/Maria/anaconda3/envs/DeePyMoD/python.exe c:/Users/Maria/Documents/Masterstudium/Masterarbeit/MScThesis/Python/DeePyMoD/script_deepmod_ODE.py 
+# C:/Users/Maria/anaconda3/envs/DeePyMoD/python.exe c:/Users/Maria/Documents/Masterstudium/Masterarbeit/MScThesis/Python/DeePyMoD/script_deepmod_ODE.py -data_name 'batch_09-27_Silverman_run04_Vall_daily_20_50_th0.001' -filename 'ALR_denom0_ts_Silverman_Vall_daily_rel_counts_FamilyLevel_most_abundant_only_relevant.csv' -hl_number 20 -hl_size 50 -max_iterations 100000 -threshold 0.001 -set_threshold
 # +
 # # human ts 
 # -data_name "humanTS_donorA" -filename 'ts_donorA_Phylumlevel_rel_count.csv' -hl_number 15 -hl_size 60 -max_iterations 50000
@@ -52,9 +52,12 @@ else:
 # -data_name "ts_bucci_subject_5_run" -filename "ts_bucci_subject_5_rel_count.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
 # # miaSim S4
 # -data_name "ts_miaSim_S4_run" -filename "miaSim_GLV_4species_oscillating_zero.csv" -hl_number 10 -hl_size 60 -max_iterations 50000
+# -data_name "Silverman_daily_Order_ALR" -filename 'ALR_denom9_ts_Silverman_Vall_daily_rel_counts_OrderLevel_most_abundant_only_relevant.csv' -hl_number 15 -hl_size 60 -max_iterations 50000
 
 
-# C:/Users/Maria/anaconda3/envs/DeePyMoD/python.exe c:/Users/Maria/Documents/Masterstudium/Masterarbeit/MScThesis/Python/DeePyMoD/script_deepmod_ODE.py -data_name "humanTS_donorA_ALR" -filename 'ALR_denom5_ts_donorA_Phylumlevel_rel_count.csv' -hl_number 15 -hl_size 60 -max_iterations 50000
+# -data_name "humanTS_male_ALR_Genus_10_most_abundant" -filename 'ALR_denom-5-other_ts_male_Genus_10_most_abundant_rel_counts.csv' -hl_number 15 -hl_size 60 -max_iterations 50000 -set_threshold -only_fitting
+
+# C:/Users/Maria/anaconda3/envs/DeePyMoD/python.exe c:/Users/Maria/Documents/Masterstudium/Masterarbeit/MScThesis/Python/DeePyMoD/script_deepmod_ODE.py -data_name "Silverman_daily_Order_ALR" -filename 'ALR_denom9_ts_Silverman_Vall_daily_rel_counts_OrderLevel_most_abundant_only_relevant.csv' -hl_number 15 -hl_size 60 -max_iterations 50000
 
 ################################### Variables ######################################
 
@@ -70,12 +73,14 @@ def parse_args():
     parser.add_argument('-threshold', type = float, default = 0.1)
     parser.add_argument('-max_iterations', type = int, default = 100000)
     parser.add_argument('-set_threshold', action = 'store_true', default = False)
+    parser.add_argument('-only_fitting', action = 'store_true', default = False)
+    parser.add_argument('-network', type = str, default = "NN")
     
     args = parser.parse_args()
     return args
 
 def initialize_args(args):
-    global data_name, filename, max_samples, int_order, hl_number, hl_size, threshold, max_iterations, set_threshold
+    global data_name, filename, max_samples, int_order, hl_number, hl_size, threshold, max_iterations, set_threshold, only_fitting, network_type
     
     data_name = f"{args.data_name}_{datetime.now().strftime('%m-%d_%H-%M')}"
     filename = args.filename
@@ -86,6 +91,8 @@ def initialize_args(args):
     threshold = args.threshold
     max_iterations = args.max_iterations
     set_threshold = args.set_threshold
+    only_fitting = args.only_fitting
+    network_type = args.network
     
 # function to initialize all variables
 def set_variables():
@@ -98,14 +105,15 @@ def set_variables():
     write_iterations = 25
     
     # folderpaths for output
-    folderpath_out = f"../../../deepmod_output/output_{data_name}"
+    folderpath_out = f"C:/Users/Maria/Documents/Masterstudium/Masterarbeit/deepmod_output/output_{data_name}"
     folderpath_plots = f'{folderpath_out}/Plots'
     folderpath_data = f'{folderpath_out}/Data'
 
     # create output folder
-    os.makedirs(folderpath_out)
-    os.makedirs(folderpath_plots)
-    os.makedirs(folderpath_data)
+    if not os.path.exists(folderpath_out):
+        os.makedirs(folderpath_out)
+        os.makedirs(folderpath_plots)
+        os.makedirs(folderpath_data)
     
     # initialize log file
     log_filename = f'{folderpath_out}/log_{data_name}.log'
@@ -126,7 +134,9 @@ def set_variables():
                 max. iterations: {max_iterations}\n
                 set_threshold: {set_threshold} \n
                 threshold: {threshold}\n
-                device = {device}""")
+                device = {device}\n
+                only_fitting = {only_fitting}\n
+                network = {network_type}""")
 
 
 # function to import the datafile and put it into the right format
@@ -197,7 +207,10 @@ def run_deepmod_and_save_results(dataset, network_shape):
 
     # network
     hidden_layer = list(np.repeat(network_shape[0], network_shape[1]))
-    network = NN(1, hidden_layer, n_taxa)
+    if network_type == "NN":
+        network = NN(1, hidden_layer, n_taxa)
+    elif network_type == "Siren":
+        network = Siren(1, hidden_layer, n_taxa) #, first_omega_0 = 10, hidden_omega_0 = 10
 
     # library function
     library = LibraryODE(int_order=int_order, intercept=False)
@@ -229,6 +242,12 @@ def run_deepmod_and_save_results(dataset, network_shape):
     log_file = open(f"{folderpath_out}/log_iterations.log", "w")
     sys.stdout = log_file
 
+    # try_again = True
+    # count = 0
+    # while try_again and count < 100:
+    #     print(count)
+    #     count += 1
+    #     try:
     train(
         model,
         train_dataloader,
@@ -237,9 +256,15 @@ def run_deepmod_and_save_results(dataset, network_shape):
         sparsity_scheduler,
         log_dir=log_path,
         max_iterations=max_iterations,
-        delta=1e-2,
-        sparsity_update = False
+        sparsity_update=set_threshold,
+        only_fitting=only_fitting,
+        delta=1e-5
     )
+        #     try_again = False
+        # except torch._C._LinAlgError:
+        #     # Split dataset again
+        #     train_dataloader, test_dataloader = get_train_test_loader(
+        #         dataset, train_test_split=0.8)
 
     # close log file again
     sys.stdout = old_stdout
@@ -286,7 +311,7 @@ def run_deepmod_and_save_results(dataset, network_shape):
         df_estimated_coeffs[f"x{idx+1}"] = df_tmp
         idx += 1
     # change names of y axis
-    ylabels = [s.replace("x1*", "*") for s in library_values[0]]
+    ylabels = library_values[0]
     df_estimated_coeffs = df_estimated_coeffs.set_axis(ylabels, axis=0)
     # save table as csv
     df_estimated_coeffs.to_csv(
@@ -381,7 +406,8 @@ def run_deepmod_and_save_results(dataset, network_shape):
         destination = folderpath_data + "/" + file_name
         shutil.move(source, destination)
     
-    # remove log folder with all training output
+    # # remove log folder with all training output
+    # if not try_again:
     shutil.rmtree(log_path)
 
 
