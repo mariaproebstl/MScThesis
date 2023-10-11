@@ -316,8 +316,16 @@ def run_deepmod_and_save_results(dataset, network_shape):
     # save table as csv
     df_estimated_coeffs.to_csv(
         f"{folderpath_data}/model_estimated_coeffs.csv")
+       
+    # define labels for heatmap
+    results = np.asarray(df_estimated_coeffs)
+    strings = np.asarray(df_library_values)
+    labels = (np.asarray(["{0}\n{1:.2f}".format(string, value)
+                        for string, value in zip(strings.flatten(),
+                                                results.flatten())])
+            ).reshape(df_library_values.shape[0], n_taxa)
     # make heatmap and save as png
-    ax = sns.heatmap(df_estimated_coeffs, cmap="RdBu", center= 0, annot=True)
+    ax = sns.heatmap(df_estimated_coeffs, cmap="RdBu", center= 0, annot=labels, fmt="", yticklabels=False)
     ax.xaxis.tick_top()
     ax.tick_params(left=False, top=False)
     plt.yticks(rotation=0)
