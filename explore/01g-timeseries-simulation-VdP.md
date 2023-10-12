@@ -1,6 +1,6 @@
 Simulation of the Van der Pol oscillator
 ================
-Compiled at 2023-10-07 09:34:57 UTC
+Compiled at 2023-10-12 11:45:29 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "ed3de31b-cc20-4300-90cc-e98faa8c0c62")
@@ -15,9 +15,9 @@ library("conflicted")
 library(data.table)
 library(dplyr)
 library(ggplot2)
-library(phyloseq)
 
 library(deSolve)
+library(ggfortify) # to autoplot time series
 ```
 
 ``` r
@@ -53,7 +53,7 @@ mu <- 2
 x0 <- c(1.0, 0.0)
 t_start <- 0
 t_end <- 15
-h <- 0.05  # Step size
+h <- 0.05  # Step size default = 0.05 (0.4 or smaller)
 time_span <- seq(t_start, t_end, h)
 ```
 
@@ -66,34 +66,76 @@ solution <-
       method = "rk4")
 
 # Create a data frame for plotting
-data <- as.data.frame(solution)
-colnames(data) <- c("time", "x1", "x2")
+df_VdP <- as.data.frame(solution)
+colnames(df_VdP) <- c("Time", "x1", "x2")
 ```
 
 ### Plot the time series
 
 ``` r
 # Plot the time series
-ggplot(data, aes(x = time)) +
+ggplot(df_VdP, aes(x = Time)) +
   geom_line(aes(y = x1, color = "x1(t)")) +
   geom_line(aes(y = x2, color = "x2(t)")) +
-  labs(x = "Time", y = "Value", color = "Variable") +
+  labs(title = "Van der Pol", 
+       subtitle = paste0(length(time_span), " time steps"), 
+       y = "", color = "") +
   scale_color_manual(values = c("x1(t)" = "blue", "x2(t)" = "red")) +
   theme_minimal()
 ```
 
 ![](01g-timeseries-simulation-VdP_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
-## Directly save simulated ODE
+### Save simulated ODE
 
 ``` r
 # save time series as csv file
-write.csv(
-  solution,
-  path_target(paste0("ts_VanderPol_R.csv")),
-  row.names = F
-)
+write.csv(solution,
+          path_target(paste0("ts_VanderPol_R.csv")),
+          row.names = F)
 ```
+
+## add noise
+
+``` r
+set.seed(123)
+
+# convert data to time series
+ts_data <- ts(df_VdP[, 2:3])
+
+n <- dim(ts_data)[1]
+m <- dim(ts_data)[2]
+
+variances <- apply(ts_data, MARGIN = 2, FUN = var)
+
+# Standard deviation of the noise
+# noise_sd_vec <- mean(variances) * c(0.1, 0.5, 1)
+noise_sd_vec <- c(0.2, 1, 5)
+print(noise_sd_vec)
+```
+
+    ## [1] 0.2 1.0 5.0
+
+``` r
+# add gaussian noise, plot and save file
+for(noise_sd in noise_sd_vec){
+  ts_noisy <- 
+    ts_data + matrix(rnorm(n * m, mean = 0, sd = noise_sd), nrow = n, ncol = m)
+  
+  # show plot
+  print(autoplot(ts_noisy, facets = F))
+  
+  # save noisy time series as csv file
+  write.csv(
+    data.frame(df_VdP["Time"], ts_noisy),
+    path_target(paste0("ts_VanderPol_noise_", 
+                       gsub("\\.", "-", as.character(noise_sd)), ".csv")),
+    row.names = F
+  )
+}
+```
+
+![](01g-timeseries-simulation-VdP_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->![](01g-timeseries-simulation-VdP_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->![](01g-timeseries-simulation-VdP_files/figure-gfm/unnamed-chunk-6-3.png)<!-- -->
 
 ## Files written
 
@@ -104,7 +146,10 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 1 × 4
-    ##   path               type         size modification_time  
-    ##   <fs::path>         <fct> <fs::bytes> <dttm>             
-    ## 1 ts_VanderPol_R.csv file        12.2K 2023-10-07 09:35:02
+    ## # A tibble: 4 × 4
+    ##   path                       type         size modification_time  
+    ##   <fs::path>                 <fct> <fs::bytes> <dttm>             
+    ## 1 ts_VanderPol_noise_0-2.csv file        12.2K 2023-10-12 11:45:31
+    ## 2 ts_VanderPol_noise_1.csv   file        12.2K 2023-10-12 11:45:31
+    ## 3 ts_VanderPol_noise_5.csv   file          12K 2023-10-12 11:45:31
+    ## 4 ts_VanderPol_R.csv         file        12.2K 2023-10-12 11:45:31
