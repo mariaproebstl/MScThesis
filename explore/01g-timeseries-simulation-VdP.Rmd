@@ -115,8 +115,8 @@ m <- dim(ts_data)[2]
 variances <- apply(ts_data, MARGIN = 2, FUN = var)
 
 # Standard deviation of the noise
-# noise_sd_vec <- mean(variances) * c(0.1, 0.5, 1)
-noise_sd_vec <- c(0.2, 1, 5)
+noise_sd_vec <- mean(variances) * c(0.05, 0.1, 0.5)
+# noise_sd_vec <- c(0.1, 0.5, 1)
 print(noise_sd_vec)
 
 # add gaussian noise, plot and save file
@@ -125,7 +125,7 @@ for(noise_sd in noise_sd_vec){
     ts_data + matrix(rnorm(n * m, mean = 0, sd = noise_sd), nrow = n, ncol = m)
   
   # show plot
-  print(autoplot(ts_noisy, facets = F))
+  print(autoplot(ts_noisy, facets = F) + ggtitle(paste("Noise level", round(noise_sd, 1))))
   
   # save noisy time series as csv file
   write.csv(
