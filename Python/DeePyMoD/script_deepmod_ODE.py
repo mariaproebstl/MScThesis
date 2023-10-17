@@ -141,8 +141,8 @@ def set_variables():
 
 # function to import the datafile and put it into the right format
 def create_data():
-    data = np.genfromtxt(filepath, delimiter=",")
-    usol = data[1:, :]  # removes header
+    data = pd.read_csv(filepath, sep=",", header=0)
+    usol = data.to_numpy()
     if "max_samples" in globals():
         ts = usol[0:max_samples, 0]
         data_y = usol[0:max_samples, 1:]
@@ -167,6 +167,12 @@ def create_data():
 
     T = torch.from_numpy(ts.reshape(-1, 1)).float()
     Y = torch.from_numpy(data_y).float()
+
+    # save names of all taxa in csv file
+    names = list(data.columns)[1:]
+    x_i = [f"x{i+1}" for i in np.arange(n_taxa)]
+    df_names = pd.DataFrame({'x_i':x_i, 'Names':names})
+    df_names.to_csv(f"{folderpath_data}/Names.csv", index=False)
 
     return T, Y
 
@@ -325,6 +331,7 @@ def run_deepmod_and_save_results(dataset, network_shape):
                                                 results.flatten())])
             ).reshape(df_library_values.shape[0], n_taxa)
     # make heatmap and save as png
+    sns.set(font_scale= (1 / n_taxa * 5))
     ax = sns.heatmap(df_estimated_coeffs, cmap="RdBu", center= 0, annot=labels, fmt="", yticklabels=False)
     ax.xaxis.tick_top()
     ax.tick_params(left=False, top=False)
