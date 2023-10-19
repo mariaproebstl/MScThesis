@@ -1,9 +1,10 @@
 import numpy as np
 import sys
+import math
 from scipy.special import logsumexp
 from scipy.stats import linregress
 from scipy.integrate import RK45, solve_ivp
-from timeout import *
+from .timeout import *
 
 
 def add_pseudo_counts(Y, pseudo_count=1e-3):
@@ -351,12 +352,9 @@ def ridge_regression_glv(X, U, T, r_A, r_g, r_B):
     return A, g, B
 
 
-def estimate_elastic_net_regularizers_cv(X, U, T, folds, no_effects=False, verbose=False):
-    if len(X) == 1:
-        print("Error: cannot estimate regularization parameters from single sample", file=sys.stderr)
-        exit(1)
-    elif len(X) < folds:
-        folds = len(X)
+def estimate_elastic_net_regularizers_cv(X, U, T, folds, no_effects=False, verbose=False, train_len = 25):
+
+    # train_len: defines the length of the interval for the training set in the cross validation
 
     rs = [0.1, 0.5, 0.7, 0.9, 1]
     alphas = [0.1, 1, 10]
@@ -377,28 +375,46 @@ def estimate_elastic_net_regularizers_cv(X, U, T, folds, no_effects=False, verbo
     for i, (alpha, r_A, r_g, r_B) in enumerate(alpha_rA_rg_rB):
         #print("\tTesting regularization parameter set", i+1, "of", len(alpha_rA_rg_rB), file=sys.stderr)
         sqr_err = 0
-        for fold in range(folds):
-            train_X = []
-            train_U = []
-            train_T = []
 
-            test_X = []
-            test_U = []
-            test_T = []
-            for i in range(len(X)):
-                if i % folds == fold:
-                    test_X.append(X[i])
-                    test_U.append(U[i])
-                    test_T.append(T[i])
+        if len(X) == 1:
+            folds = math.floor(len(X[0]) / train_len)
+            for fold in range(folds):
+                train_X = [X[0][0:(fold+1)*train_len]]
+                train_U = [U[0][0:(fold+1)*train_len]]
+                train_T = [T[0][0:(fold+1)*train_len]]
 
-                else:
-                    train_X.append(X[i])
-                    train_U.append(U[i])
-                    train_T.append(T[i])
+                test_X = [X[0][(fold+1)*train_len:(fold+2)*train_len]]
+                test_U = [U[0][(fold+1)*train_len:(fold+2)*train_len]]
+                test_T = [T[0][(fold+1)*train_len:(fold+2)*train_len]]
 
-            Q_inv = np.eye(train_X[0].shape[1])
-            A, g, B = elastic_net_glv(train_X, train_U, train_T, Q_inv, alpha, r_A, r_g, r_B, tol=1e-3)
-            sqr_err += compute_prediction_error(test_X, test_U, test_T, A, g, B)
+                Q_inv = np.eye(train_X[0].shape[1])
+                A, g, B = elastic_net_glv(train_X, train_U, train_T, Q_inv, alpha, r_A, r_g, r_B, tol=1e-3)
+                sqr_err += compute_prediction_error(test_X, test_U, test_T, A, g, B)
+
+        elif len(X) < folds:
+            folds = len(X)
+            for fold in range(folds):
+                train_X = []
+                train_U = []
+                train_T = []
+
+                test_X = []
+                test_U = []
+                test_T = []
+                for i in range(len(X)):
+                    if i % folds == fold:
+                        test_X.append(X[i])
+                        test_U.append(U[i])
+                        test_T.append(T[i])
+
+                    else:
+                        train_X.append(X[i])
+                        train_U.append(U[i])
+                        train_T.append(T[i])
+
+                Q_inv = np.eye(train_X[0].shape[1])
+                A, g, B = elastic_net_glv(train_X, train_U, train_T, Q_inv, alpha, r_A, r_g, r_B, tol=1e-3)
+                sqr_err += compute_prediction_error(test_X, test_U, test_T, A, g, B)
 
         if sqr_err < best_sqr_err:
             best_r = (alpha, r_A, r_g, r_B)
@@ -408,12 +424,9 @@ def estimate_elastic_net_regularizers_cv(X, U, T, folds, no_effects=False, verbo
     return best_r
 
 
-def estimate_ridge_regularizers_cv(X, U, T, folds, no_effects=False, verbose=False):
-    if len(X) == 1:
-        print("Error: cannot estimate regularization parameters from single sample", file=sys.stderr)
-        exit(1)
-    elif len(X) < folds:
-        folds = len(X)
+def estimate_ridge_regularizers_cv(X, U, T, folds, no_effects=False, verbose=False, train_len = 25):
+
+    # train_len: defines the length of the interval for the training set in the cross validation
 
     rs = [0.125, 0.25, 0.5, 1, 2, 4, 8]
     rA_rg_rB = []
@@ -431,28 +444,46 @@ def estimate_ridge_regularizers_cv(X, U, T, folds, no_effects=False, verbose=Fal
     for i, (r_A, r_g, r_B) in enumerate(rA_rg_rB):
         print("\tTesting regularization parameter set", i+1, "of", len(rA_rg_rB), file=sys.stderr)
         sqr_err = 0
-        for fold in range(folds):
-            train_X = []
-            train_U = []
-            train_T = []
 
-            test_X = []
-            test_U = []
-            test_T = []
-            for i in range(len(X)):
-                if i % folds == fold:
-                    test_X.append(X[i])
-                    test_U.append(U[i])
-                    test_T.append(T[i])
+        if len(X) == 1:
+            folds = math.floor(len(X[0]) / train_len)
+            for fold in range(folds):
+                train_X = [X[0][0:(fold+1)*train_len]]
+                train_U = [U[0][0:(fold+1)*train_len]]
+                train_T = [T[0][0:(fold+1)*train_len]]
 
-                else:
-                    train_X.append(X[i])
-                    train_U.append(U[i])
-                    train_T.append(T[i])
+                test_X = [X[0][(fold+1)*train_len:(fold+2)*train_len]]
+                test_U = [U[0][(fold+1)*train_len:(fold+2)*train_len]]
+                test_T = [T[0][(fold+1)*train_len:(fold+2)*train_len]]
 
-            Q_inv = np.eye(train_X[0].shape[1])
-            A, g, B = ridge_regression_glv(train_X, train_U, train_T, r_A, r_g, r_B)
-            sqr_err += compute_prediction_error(test_X, test_U, test_T, A, g, B)
+                Q_inv = np.eye(train_X[0].shape[1])
+                A, g, B = ridge_regression_glv(train_X, train_U, train_T, r_A, r_g, r_B)
+                sqr_err += compute_prediction_error(test_X, test_U, test_T, A, g, B)
+        
+        elif len(X) < folds:
+            folds = len(X)
+            for fold in range(folds):
+                train_X = []
+                train_U = []
+                train_T = []
+
+                test_X = []
+                test_U = []
+                test_T = []
+                for i in range(len(X)):
+                    if i % folds == fold:
+                        test_X.append(X[i])
+                        test_U.append(U[i])
+                        test_T.append(T[i])
+
+                    else:
+                        train_X.append(X[i])
+                        train_U.append(U[i])
+                        train_T.append(T[i])
+
+                Q_inv = np.eye(train_X[0].shape[1])
+                A, g, B = ridge_regression_glv(train_X, train_U, train_T, r_A, r_g, r_B)
+                sqr_err += compute_prediction_error(test_X, test_U, test_T, A, g, B)
 
         if sqr_err < best_sqr_err:
             best_r = (r_A, r_g, r_B)
@@ -469,7 +500,7 @@ def compute_rel_abun(x):
     return p
 
 
-@timeout(5)
+# @timeout(5)
 def predict(x, u, times, A, g, B):
     """Make predictions from initial conditions
     """
