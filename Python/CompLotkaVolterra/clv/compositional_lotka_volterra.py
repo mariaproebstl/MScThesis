@@ -388,7 +388,7 @@ def ridge_regression_clv(X, P, U, T, r_A=0, r_g=0, r_B=0):
 
 
 
-def estimate_elastic_net_regularizers_cv(X, P, U, T, denom, folds, no_effects=False, verbose=False, train_len = 25):
+def estimate_elastic_net_regularizers_clv(X, P, U, T, denom, folds, no_effects=False, verbose=False, train_len = 25):
     
     # train_len: defines the length of the interval for the training set in the cross validation
     
@@ -467,7 +467,7 @@ def estimate_elastic_net_regularizers_cv(X, P, U, T, denom, folds, no_effects=Fa
     return best_r
 
 
-def estimate_ridge_regularizers_cv(X, P, U, T, denom, folds, no_effects=False, verbose=False, train_len = 25):
+def estimate_ridge_regularizers_clv(X, P, U, T, denom, folds, no_effects=False, verbose=False, train_len = 25):
 
     # train_len: defines the length of the interval for the training set in the cross validation
 

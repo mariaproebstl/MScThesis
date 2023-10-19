@@ -352,7 +352,7 @@ def ridge_regression_glv(X, U, T, r_A, r_g, r_B):
     return A, g, B
 
 
-def estimate_elastic_net_regularizers_cv(X, U, T, folds, no_effects=False, verbose=False, train_len = 25):
+def estimate_elastic_net_regularizers_glv(X, U, T, folds, no_effects=False, verbose=False, train_len = 25):
 
     # train_len: defines the length of the interval for the training set in the cross validation
 
@@ -424,7 +424,7 @@ def estimate_elastic_net_regularizers_cv(X, U, T, folds, no_effects=False, verbo
     return best_r
 
 
-def estimate_ridge_regularizers_cv(X, U, T, folds, no_effects=False, verbose=False, train_len = 25):
+def estimate_ridge_regularizers_glv(X, U, T, folds, no_effects=False, verbose=False, train_len = 25):
 
     # train_len: defines the length of the interval for the training set in the cross validation
 
@@ -442,7 +442,7 @@ def estimate_ridge_regularizers_cv(X, U, T, folds, no_effects=False, verbose=Fal
     best_r = 0
     best_sqr_err = np.inf
     for i, (r_A, r_g, r_B) in enumerate(rA_rg_rB):
-        print("\tTesting regularization parameter set", i+1, "of", len(rA_rg_rB), file=sys.stderr)
+        # print("\tTesting regularization parameter set", i+1, "of", len(rA_rg_rB), file=sys.stderr)
         sqr_err = 0
 
         if len(X) == 1:
