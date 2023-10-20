@@ -84,6 +84,9 @@ rm(tmp, tmp_otu, tmp_sample)
 
 ```
 
+
+### Ushio Dataset
+
 ```{r}
 # special case (including more sample info): Ushio
 dt_Ushio_raw <-
@@ -91,6 +94,7 @@ dt_Ushio_raw <-
   .[, SampleID := sprintf("ID-%03d", time_step)] %>%
   tibble::column_to_rownames("SampleID")
 
+# otu table
 dt_Ushio <-
   dt_Ushio_raw %>% select(
     "Aurelia.sp",
@@ -115,18 +119,42 @@ otu_Ushio <-
   t() %>% 
   otu_table(taxa_are_rows = T)
 
+# sample info
 samples_Ushio <-
   dt_Ushio_raw %>%
   select("date_tag", "surf.t", "bot.t", "Y", "M", "D", "time_step")
-samples_Ushio$Time <-
+samples_Ushio$Day <-
   as.Date(paste0(samples_Ushio$Y, "-", samples_Ushio$M, "-", 
                  samples_Ushio$D), 
           format = "%Y-%m-%d")
+# Mutate the Time column to be the integer day starting with 1
+samples_Ushio <- samples_Ushio %>% 
+  mutate(Time = as.numeric(difftime(Day, min(Day), units = "days")) + 1)
 
+# taxonomic table
+tax_Ushio <- 
+  fread(paste0(folderpath_data, "tax_table_Ushio.csv")) %>% 
+  as.matrix()
+rownames(tax_Ushio) <- tax_Ushio[, "Species"]
+
+
+# make phyloseq object
 ps_Ushio <-
-  phyloseq(otu_Ushio, sample_data(samples_Ushio))
+  phyloseq(otu_Ushio, 
+           tax_table(tax_Ushio),
+           sample_data(samples_Ushio))
 
+# add Ushio to list of files
 files <- c(files, "Ushio")
+```
+
+
+### 3DLV Data
+
+Only keep values in the interval [0, 60].
+
+```{r}
+ps_3DLV <- subset_samples(ps_3DLV, Time <= 60)
 ```
 
 
@@ -165,11 +193,11 @@ for(ts_name in files) {
 
 ```{r}
 # calculcate relative abundances
-ps_RPS_rel <-
+ps_RPS_rel_counts <-
   transform_sample_counts(ps_RPS, function(x) x / sum(x))
 
 # bar plot phyloseq objects
-plot_bar(ps_RPS_rel, x = "Time", fill = "OTU") +
+plot_bar(ps_RPS_rel_counts, x = "Time", fill = "OTU") +
   geom_bar(aes(color = OTU, fill = OTU), stat = "identity", position = "stack") +
   labs(title = "Ushio relative Abundances",
        x = "Time")
@@ -180,14 +208,42 @@ plot_bar(ps_RPS_rel, x = "Time", fill = "OTU") +
 ## Save Phyloseq Objects
 
 ```{r}
-for (ts_name in files) {
+for (ts_name in c(files, "RPS_rel_counts")) {
   saveRDS(get(paste0("ps_", ts_name)),
           path_target(paste0("ps_", ts_name, ".rds")))
 }
+```
 
-# save relative counts for RPS
-saveRDS(ps_RPS_rel,
-        path_target("ps_RPS_rel_counts.rds"))
+
+
+## Save TS as csv file
+
+```{r}
+for (ts_name in c(files, "RPS_rel_counts")) {
+  
+  # get the tmp phyloseq object
+  ps_obj <- get(paste0("ps_", ts_name))
+  
+  if(taxa_are_rows(ps_obj)) {
+    otu_tmp <- t(otu_table(ps_obj))
+  } else {
+    otu_tmp <- otu_table(ps_obj)
+  }
+  # combine count data with time information
+  ts_obj <-
+    cbind(sample_data(ps_obj)[, "Time"],
+          otu_tmp)
+  # print(head(ts_obj))
+  
+  # save time series as csv file
+  write.csv(
+    ts_obj,
+    path_target(paste0("ts_", ts_name, ".csv")),
+    row.names = F
+  )
+    
+}
+
 ```
 
 

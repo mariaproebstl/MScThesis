@@ -80,7 +80,7 @@ def parse_args():
 def initialize_args(args):
     global data_name, filename, max_samples, int_order, hl_number, hl_size, threshold, max_iterations, set_threshold, only_fitting
     
-    data_name = f"{args.data_name}_{datetime.now().strftime('%m-%d_%H-%M')}"
+    data_name = f"{args.data_name}"
     filename = args.filename
     max_samples = args.max_samples
     int_order = args.int_order
@@ -102,7 +102,7 @@ def set_variables():
     write_iterations = 25
     
     # folderpaths for output
-    folderpath_out = f"C:/Users/Maria/Documents/Masterstudium/Masterarbeit/deepmod_output/output_{data_name}"
+    folderpath_out = f"../output/output_{data_name}"
     folderpath_plots = f'{folderpath_out}/Plots'
     folderpath_data = f'{folderpath_out}/Data'
 
@@ -120,8 +120,7 @@ def set_variables():
                         level=logging.INFO)
     
     # path of data file (input)
-    filepath = "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/MScThesis/data/" + filename
-    # filepath = "../../data/" + filename    
+    filepath = "/dss/dsshome1/0E/di35ger/python/data/" + filename 
     
     logging.info(f"""the parameters are initialized for {data_name}:\n
                 input file: {filename}\n
@@ -265,7 +264,7 @@ def run_deepmod_and_save_results(dataset, network_shape):
         max_iterations=max_iterations,
         sparsity_update=set_threshold,
         only_fitting=only_fitting,
-        delta=1e-5
+        delta=1e-4
     )
         #     try_again = False
         # except torch._C._LinAlgError:
@@ -433,6 +432,7 @@ def run_deepmod_and_save_results(dataset, network_shape):
 if __name__ == "__main__":
         
     set_variables()
+    print(data_name)
     
     # load dataset
     dataset = Dataset(

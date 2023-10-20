@@ -1,6 +1,6 @@
 01f-timeseries-NODEBNGMpaper
 ================
-Compiled at 2023-09-28 10:04:33 UTC
+Compiled at 2023-10-20 20:55:21 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "9506fa44-f8a3-401c-aa4c-950659e05f3f")
@@ -78,6 +78,8 @@ for(ts_name in files) {
 rm(tmp, tmp_otu, tmp_sample)
 ```
 
+### Ushio Dataset
+
 ``` r
 # special case (including more sample info): Ushio
 dt_Ushio_raw <-
@@ -85,6 +87,7 @@ dt_Ushio_raw <-
   .[, SampleID := sprintf("ID-%03d", time_step)] %>%
   tibble::column_to_rownames("SampleID")
 
+# otu table
 dt_Ushio <-
   dt_Ushio_raw %>% select(
     "Aurelia.sp",
@@ -109,18 +112,41 @@ otu_Ushio <-
   t() %>% 
   otu_table(taxa_are_rows = T)
 
+# sample info
 samples_Ushio <-
   dt_Ushio_raw %>%
   select("date_tag", "surf.t", "bot.t", "Y", "M", "D", "time_step")
-samples_Ushio$Time <-
+samples_Ushio$Day <-
   as.Date(paste0(samples_Ushio$Y, "-", samples_Ushio$M, "-", 
                  samples_Ushio$D), 
           format = "%Y-%m-%d")
+# Mutate the Time column to be the integer day starting with 1
+samples_Ushio <- samples_Ushio %>% 
+  mutate(Time = as.numeric(difftime(Day, min(Day), units = "days")) + 1)
 
+# taxonomic table
+tax_Ushio <- 
+  fread(paste0(folderpath_data, "tax_table_Ushio.csv")) %>% 
+  as.matrix()
+rownames(tax_Ushio) <- tax_Ushio[, "Species"]
+
+
+# make phyloseq object
 ps_Ushio <-
-  phyloseq(otu_Ushio, sample_data(samples_Ushio))
+  phyloseq(otu_Ushio, 
+           tax_table(tax_Ushio),
+           sample_data(samples_Ushio))
 
+# add Ushio to list of files
 files <- c(files, "Ushio")
+```
+
+### 3DLV Data
+
+Only keep values in the interval \[0, 60\].
+
+``` r
+ps_3DLV <- subset_samples(ps_3DLV, Time <= 60)
 ```
 
 ### Overview over the phyloseq objects
@@ -135,8 +161,8 @@ for(ts_name in files) {
 
     ## 3DLV 
     ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:         [ 3 taxa and 101 samples ]
-    ## sample_data() Sample Data:       [ 101 samples by 1 sample variables ]
+    ## otu_table()   OTU Table:         [ 3 taxa and 61 samples ]
+    ## sample_data() Sample Data:       [ 61 samples by 1 sample variables ]
     ## 
     ## AFR1 
     ## phyloseq-class experiment-level object
@@ -166,7 +192,8 @@ for(ts_name in files) {
     ## Ushio 
     ## phyloseq-class experiment-level object
     ## otu_table()   OTU Table:         [ 15 taxa and 285 samples ]
-    ## sample_data() Sample Data:       [ 285 samples by 8 sample variables ]
+    ## sample_data() Sample Data:       [ 285 samples by 9 sample variables ]
+    ## tax_table()   Taxonomy Table:    [ 15 taxa by 7 taxonomic ranks ]
 
 ## Plot Datasets
 
@@ -184,7 +211,7 @@ for(ts_name in files) {
 }
 ```
 
-![](01f-timeseries-NODEBNGMpaper_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->![](01f-timeseries-NODEBNGMpaper_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->![](01f-timeseries-NODEBNGMpaper_files/figure-gfm/unnamed-chunk-4-3.png)<!-- -->![](01f-timeseries-NODEBNGMpaper_files/figure-gfm/unnamed-chunk-4-4.png)<!-- -->![](01f-timeseries-NODEBNGMpaper_files/figure-gfm/unnamed-chunk-4-5.png)<!-- -->![](01f-timeseries-NODEBNGMpaper_files/figure-gfm/unnamed-chunk-4-6.png)<!-- -->![](01f-timeseries-NODEBNGMpaper_files/figure-gfm/unnamed-chunk-4-7.png)<!-- -->
+![](01f-timeseries-NODEBNGMpaper_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->![](01f-timeseries-NODEBNGMpaper_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->![](01f-timeseries-NODEBNGMpaper_files/figure-gfm/unnamed-chunk-5-3.png)<!-- -->![](01f-timeseries-NODEBNGMpaper_files/figure-gfm/unnamed-chunk-5-4.png)<!-- -->![](01f-timeseries-NODEBNGMpaper_files/figure-gfm/unnamed-chunk-5-5.png)<!-- -->![](01f-timeseries-NODEBNGMpaper_files/figure-gfm/unnamed-chunk-5-6.png)<!-- -->![](01f-timeseries-NODEBNGMpaper_files/figure-gfm/unnamed-chunk-5-7.png)<!-- -->
 
 ## Get relative abundances
 
@@ -192,29 +219,54 @@ for(ts_name in files) {
 
 ``` r
 # calculcate relative abundances
-ps_RPS_rel <-
+ps_RPS_rel_counts <-
   transform_sample_counts(ps_RPS, function(x) x / sum(x))
 
 # bar plot phyloseq objects
-plot_bar(ps_RPS_rel, x = "Time", fill = "OTU") +
+plot_bar(ps_RPS_rel_counts, x = "Time", fill = "OTU") +
   geom_bar(aes(color = OTU, fill = OTU), stat = "identity", position = "stack") +
   labs(title = "Ushio relative Abundances",
        x = "Time")
 ```
 
-![](01f-timeseries-NODEBNGMpaper_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](01f-timeseries-NODEBNGMpaper_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 ## Save Phyloseq Objects
 
 ``` r
-for (ts_name in files) {
+for (ts_name in c(files, "RPS_rel_counts")) {
   saveRDS(get(paste0("ps_", ts_name)),
           path_target(paste0("ps_", ts_name, ".rds")))
 }
+```
 
-# save relative counts for RPS
-saveRDS(ps_RPS_rel,
-        path_target("ps_RPS_rel_counts.rds"))
+## Save TS as csv file
+
+``` r
+for (ts_name in c(files, "RPS_rel_counts")) {
+  
+  # get the tmp phyloseq object
+  ps_obj <- get(paste0("ps_", ts_name))
+  
+  if(taxa_are_rows(ps_obj)) {
+    otu_tmp <- t(otu_table(ps_obj))
+  } else {
+    otu_tmp <- otu_table(ps_obj)
+  }
+  # combine count data with time information
+  ts_obj <-
+    cbind(sample_data(ps_obj)[, "Time"],
+          otu_tmp)
+  # print(head(ts_obj))
+  
+  # save time series as csv file
+  write.csv(
+    ts_obj,
+    path_target(paste0("ts_", ts_name, ".csv")),
+    row.names = F
+  )
+    
+}
 ```
 
 ## Files written
@@ -226,14 +278,22 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 8 × 4
-    ##   path                  type         size modification_time  
-    ##   <fs::path>            <fct> <fs::bytes> <dttm>             
-    ## 1 ps_3DLV.rds           file        3.12K 2023-09-28 10:04:42
-    ## 2 ps_AFR1.rds           file         2.2K 2023-09-28 10:04:42
-    ## 3 ps_AFR2.rds           file        1.63K 2023-09-28 10:04:42
-    ## 4 ps_AFR3.rds           file        1.49K 2023-09-28 10:04:42
-    ## 5 ps_HL.rds             file        1.44K 2023-09-28 10:04:42
-    ## 6 ps_RPS.rds            file        7.99K 2023-09-28 10:04:42
-    ## 7 ps_RPS_rel_counts.rds file       18.22K 2023-09-28 10:04:42
-    ## 8 ps_Ushio.rds          file       11.06K 2023-09-28 10:04:42
+    ## # A tibble: 16 × 4
+    ##    path                  type         size modification_time  
+    ##    <fs::path>            <fct> <fs::bytes> <dttm>             
+    ##  1 ps_3DLV.rds           file        2.04K 2023-10-20 20:55:30
+    ##  2 ps_AFR1.rds           file         2.2K 2023-10-20 20:55:30
+    ##  3 ps_AFR2.rds           file        1.63K 2023-10-20 20:55:30
+    ##  4 ps_AFR3.rds           file        1.49K 2023-10-20 20:55:30
+    ##  5 ps_HL.rds             file        1.44K 2023-10-20 20:55:30
+    ##  6 ps_RPS.rds            file        7.99K 2023-10-20 20:55:30
+    ##  7 ps_RPS_rel_counts.rds file       18.22K 2023-10-20 20:55:30
+    ##  8 ps_Ushio.rds          file       12.23K 2023-10-20 20:55:30
+    ##  9 ts_3DLV.csv           file        3.41K 2023-10-20 20:55:30
+    ## 10 ts_AFR1.csv           file        3.91K 2023-10-20 20:55:30
+    ## 11 ts_AFR2.csv           file        3.81K 2023-10-20 20:55:30
+    ## 12 ts_AFR3.csv           file        2.37K 2023-10-20 20:55:30
+    ## 13 ts_HL.csv             file        1.56K 2023-10-20 20:55:30
+    ## 14 ts_RPS.csv            file       12.57K 2023-10-20 20:55:30
+    ## 15 ts_RPS_rel_counts.csv file       36.97K 2023-10-20 20:55:30
+    ## 16 ts_Ushio.csv          file       13.14K 2023-10-20 20:55:30
