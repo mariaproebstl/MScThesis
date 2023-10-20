@@ -14,6 +14,7 @@ import shutil
 from datetime import datetime
 import argparse
 import seaborn as sns
+import time
 
 # DeepMoD functions
 from deepymod import DeepMoD
@@ -25,8 +26,6 @@ from deepymod.training import train
 from deepymod.training.sparsity_scheduler import TrainTestPeriodic
 from deepymod.model.libraryODE import LibraryODE
 
-# # Settings for reproducibility
-# np.random.seed(30)
 # torch.manual_seed(0)
 
 # Configuring GPU or CPU
@@ -74,13 +73,12 @@ def parse_args():
     parser.add_argument('-max_iterations', type = int, default = 100000)
     parser.add_argument('-set_threshold', action = 'store_true', default = False)
     parser.add_argument('-only_fitting', action = 'store_true', default = False)
-    parser.add_argument('-network', type = str, default = "NN")
     
     args = parser.parse_args()
     return args
 
 def initialize_args(args):
-    global data_name, filename, max_samples, int_order, hl_number, hl_size, threshold, max_iterations, set_threshold, only_fitting, network_type
+    global data_name, filename, max_samples, int_order, hl_number, hl_size, threshold, max_iterations, set_threshold, only_fitting
     
     data_name = f"{args.data_name}_{datetime.now().strftime('%m-%d_%H-%M')}"
     filename = args.filename
@@ -92,7 +90,6 @@ def initialize_args(args):
     max_iterations = args.max_iterations
     set_threshold = args.set_threshold
     only_fitting = args.only_fitting
-    network_type = args.network
     
 # function to initialize all variables
 def set_variables():
@@ -124,8 +121,7 @@ def set_variables():
     
     # path of data file (input)
     filepath = "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/MScThesis/data/" + filename
-    # filepath = "../../data/" + filename
-    
+    # filepath = "../../data/" + filename    
     
     logging.info(f"""the parameters are initialized for {data_name}:\n
                 input file: {filename}\n
@@ -135,8 +131,7 @@ def set_variables():
                 set_threshold: {set_threshold} \n
                 threshold: {threshold}\n
                 device = {device}\n
-                only_fitting = {only_fitting}\n
-                network = {network_type}""")
+                only_fitting = {only_fitting}""")
 
 
 # function to import the datafile and put it into the right format
@@ -206,6 +201,11 @@ def access_TFRecordDataset(out_var, log_path):
 
 
 def run_deepmod_and_save_results(dataset, network_shape):
+    
+    # Settings for reproducibility
+    seed_value = int(time.time())
+    np.random.seed(seed_value)
+    logging.info(f"seed = {seed_value}")
 
     # Split dataset
     train_dataloader, test_dataloader = get_train_test_loader(
@@ -213,10 +213,7 @@ def run_deepmod_and_save_results(dataset, network_shape):
 
     # network
     hidden_layer = list(np.repeat(network_shape[0], network_shape[1]))
-    if network_type == "NN":
-        network = NN(1, hidden_layer, n_taxa)
-    elif network_type == "Siren":
-        network = Siren(1, hidden_layer, n_taxa) #, first_omega_0 = 10, hidden_omega_0 = 10
+    network = NN(1, hidden_layer, n_taxa)
 
     # library function
     library = LibraryODE(int_order=int_order, intercept=False)
@@ -254,6 +251,10 @@ def run_deepmod_and_save_results(dataset, network_shape):
     #     print(count)
     #     count += 1
     #     try:
+
+    # Settings for reproducibility
+    np.random.seed(seed_value)
+
     train(
         model,
         train_dataloader,
@@ -324,17 +325,20 @@ def run_deepmod_and_save_results(dataset, network_shape):
         f"{folderpath_data}/model_estimated_coeffs.csv")
        
     # define labels for heatmap
-    results = np.asarray(df_estimated_coeffs)
-    strings = np.asarray(df_library_values)
+    results = np.asarray(df_estimated_coeffs.transpose())
+    strings = np.asarray(df_library_values.transpose())
     labels = (np.asarray(["{0}\n{1:.2f}".format(string, value)
                         for string, value in zip(strings.flatten(),
                                                 results.flatten())])
-            ).reshape(df_library_values.shape[0], n_taxa)
+            ).reshape(n_taxa, df_library_values.shape[0])
     # make heatmap and save as png
-    sns.set(font_scale= (1 / n_taxa * 5))
-    ax = sns.heatmap(df_estimated_coeffs, cmap="RdBu", center= 0, annot=labels, fmt="", yticklabels=False)
-    ax.xaxis.tick_top()
-    ax.tick_params(left=False, top=False)
+    fig, ax = plt.subplots()
+    fig.set_figwidth(1.5*df_library_values.shape[0])
+    fig.set_figheight(n_taxa)
+    # sns.set(font_scale= max(1, (1 / n_taxa * 5)))
+    ax = sns.heatmap(df_estimated_coeffs.transpose(), cmap="RdBu", center= 0, annot=labels, fmt="", xticklabels=False)
+    # ax.xaxis.tick_top()
+    ax.tick_params(top=False) # left=False, 
     plt.yticks(rotation=0)
     plt.savefig(f'{folderpath_plots}/model_estimated_coeffs.png',
                 bbox_inches='tight', dpi = 200)
