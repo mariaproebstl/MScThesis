@@ -23,6 +23,7 @@ library(ggplot2)
 library(viridis) # for color palettes
 library(RColorBrewer)
 library(phyloseq)
+library(microViz)
 ```
 
 ```{r directories}
@@ -63,7 +64,9 @@ dt_biotimeMeta <-
 ```{r}
 # select possible IDs
 possible_IDs <-
-  dt_biotimeMeta[DATA_POINTS > 35 & NUMBER_LAT_LONG == 1 & AB_BIO %in% c("AB", "A")]$STUDY_ID
+  # dt_biotimeMeta[DATA_POINTS > 35 & NUMBER_LAT_LONG == 1 & AB_BIO %in% c("AB", "A")]$STUDY_ID
+  # c(339, 363, 414, 478, 39, 46, 413)
+  c(339, 363, 478, 39)
 ```
 
 
@@ -95,8 +98,8 @@ extract_study <- function(data, ID) {
     tmp[, Time := YEAR]
   }
   
-  tmp[, .(Time, Abundance = sum.allrawdata.ABUNDANCE,
-          Species = GENUS_SPECIES, Genus = GENUS)]
+  tmp[, .(Time, Abundance = sum.allrawdata.ABUNDANCE, 
+          Genus = GENUS, Species = GENUS_SPECIES)]
 }
 ```
 
@@ -112,13 +115,13 @@ for (study_id in possible_IDs) {
   
   # create taxonomic table
   dt_tax_table <-
-    dt_study[, .(Species, Genus)] %>%
+    dt_study[, .(Genus, Species)] %>%
     unique() %>%
     .[, TAX_ID := sprintf("sp-%03d", as.numeric(rownames(.)))]
   
   dt_study <-
     merge(dt_study, dt_tax_table,
-          by = c("Species", "Genus"))
+          by = c("Genus", "Species"))
   
   dt_tax_table <-
     dt_tax_table %>%
@@ -164,21 +167,151 @@ for (study_id in possible_IDs) {
 ```{r}
 ps_study_339
 ps_study_363
-ps_study_414
+# ps_study_414
 ps_study_478
 ps_study_39
-ps_study_46
-ps_study_413
+# ps_study_46
+# ps_study_413
 ```
+
+## Available Species per time point
+
+```{r}
+# for study 39
+n_species_notZero <- psmelt(ps_study_478) %>% 
+  as.data.table() %>% 
+  .[, .(count = .N - sum(Abundance == 0)), by = Time]
+
+n_species_notZero$count %>% min()
+n_species_notZero$count %>% max()
+n_species_notZero$count %>% mean()
+
+# most frequently occuring species
+occuring_freq <-
+  psmelt(ps_study_478) %>% 
+  as.data.table() %>% 
+  .[, .(Abundance = sum(Abundance!= 0)), by = Species] %>% 
+  .[order(-Abundance)]
+(occuring_freq)
+
+```
+
+
+## Transform densities to relative abundances for study 39
+
+```{r}
+# transform counts to relative abundance
+ps_study_39_rel_counts <-
+  transform_sample_counts(ps_study_39,
+                          function(x) x / sum(x))
+```
+
+
+## Group dataset by Genus
+
+Aggregate the timeseries by summarizing counts over Genus level.
+
+```{r, message=FALSE}
+for(study_id in possible_IDs) {
+  tmp_ps <-
+    get(paste0("ps_study_", study_id)) %>%
+    # tax_fix(sep = "_") %>%
+    # summarize over tax level, include NAs
+    tax_glom(taxrank = "Genus", NArm = FALSE) %>%
+    speedyseq::transmute_tax_table(Genus, .otu = Genus)
+  
+  assign(paste0("ps_study_", study_id, "_GenusLevel"),
+         tmp_ps)
+}
+```
+
+
+
+## Summarize over 10 most abundant Genera
+
+
+### Get the 10 most abundant genera and 15 most abundant species
+
+```{r}
+for(study_id in possible_IDs){
+  ps_raw <- get(paste0("ps_study_", study_id))
+  
+  data <-
+    ps_raw %>% 
+    psmelt() %>%
+    as_tibble()
+  
+  # get Genera with highest abundance (sum over all Counts for each Genus)
+  most_abundant_genera <-
+    data %>%
+      group_by(Genus) %>%
+      summarise(Sum_Abundance = sum(Abundance)) %>% # another possible criteria would be mean(Abundance)
+      arrange(-Sum_Abundance) %>%
+      .[1:10, "Genus"] %>% 
+    as.vector()
+
+  # Rename genera that are not in most_abundant_genera to "other"
+  ps_tmp <- ps_raw %>%
+    tax_mutate(Genus = if_else(
+      Genus %in% most_abundant_genera$Genus,
+      as.character(Genus),
+      "other"
+    ))
+  
+  # select only Genus and Species column of tax_table
+  tax_table(ps_tmp) <- tax_table(ps_tmp)[, c("Genus", "Species")]
+  
+  ps_tmp <- ps_tmp %>%
+    # summarize over tax level, include NAs
+    tax_glom(taxrank = "Genus", NArm = FALSE) %>%
+    speedyseq::transmute_tax_table(Genus, .otu = Genus)
+
+  assign(paste0("ps_study_", study_id, "_Genus_10_most_abundant"),
+         ps_tmp)
+  
+  #### 15 most abundant Species
+   # get Species with highest abundance (sum over all Counts for each Species)
+  most_abundant_species <-
+    data %>%
+      group_by(Species) %>%
+      summarise(Sum_Abundance = sum(Abundance)) %>% # another possible criteria would be mean(Abundance)
+      arrange(-Sum_Abundance) %>%
+      .[1:15, "Species"] %>% 
+    as.vector()
+
+  # Rename species that are not in most_abundant_species to "other"
+  ps_tmp <- ps_raw %>%
+    tax_mutate(Species_grouped = if_else(
+      Species %in% most_abundant_species$Species,
+      as.character(Species),
+      "other"
+    )) %>%
+    tax_mutate(Species = Species_grouped)
+  
+  # select only Genus and Species column of tax_table
+  tax_table(ps_tmp) <- tax_table(ps_tmp)[, c("Species", "Species_grouped")]
+  
+  ps_tmp <- ps_tmp %>%
+    # summarize over tax level, include NAs
+    tax_glom(taxrank = "Species", NArm = FALSE)
+  
+  # select only Genus and Species column of tax_table
+  tax_table(ps_tmp) <- tax_table(ps_tmp)[, c("Species")]
+
+  assign(paste0("ps_study_", study_id, "_Species_15_most_abundant"),
+         ps_tmp)
+}
+```
+
+
 
 
 ## Plot timeseries
 
-
 ```{r}
 for (study_id in possible_IDs) {
   plt_lines_Species <-
-    ggplot(psmelt(get(paste0("ps_study_", study_id))),
+    ggplot(psmelt(get(paste0("ps_study_", study_id, "_Species_15_most_abundant"))),
            aes(x = Time, y = Abundance, col = Species)) +
     geom_line() +
     theme(legend.position = "none") +
@@ -187,14 +320,24 @@ for (study_id in possible_IDs) {
   plt_bar_Genus <-
     plot_bar(get(paste0("ps_study_", study_id)),
              x = "Time", fill = "Genus") +
-    theme(legend.position = "none") +
+    # theme(legend.position = "none") +
     geom_bar(aes(color = Genus, fill = Genus),
              stat = "identity",
              position = "stack") +
     labs(title = paste0("Study ", study_id, " (by Genus)"))
   
+  plt_bar_Genus_ma <-
+    plot_bar(get(paste0("ps_study_", study_id, "_Genus_10_most_abundant")),
+             x = "Time", fill = "Genus") +
+    # theme(legend.position = "none") +
+    geom_bar(aes(color = Genus, fill = Genus),
+             stat = "identity",
+             position = "stack") +
+    labs(title = paste0("Study ", study_id, " (only most abundant Genera)"))
+  
   show(plt_lines_Species)
   show(plt_bar_Genus)
+  show(plt_bar_Genus_ma)
 }
 
 ```
@@ -204,10 +347,81 @@ for (study_id in possible_IDs) {
 
 ```{r}
 for (study_id in possible_IDs) {
+  # ps on Species level
   saveRDS(get(paste0("ps_study_", study_id)),
-          path_target(paste0("ps_study_", study_id, ".rds")))
+          path_target(paste0("ps_study_", study_id, "_SpeciesLevel.rds")))
+  # ps on Genus level
+  saveRDS(get(paste0("ps_study_", study_id, "_GenusLevel")),
+          path_target(paste0("ps_study_", study_id, "_GenusLevel.rds")))
+  
+  # save most abundant
+  # ps on Species level
+  saveRDS(get(paste0("ps_study_", study_id, "_Species_15_most_abundant")),
+          path_target(paste0("ps_study_", study_id, "_Species_15_most_abundant.rds")))
+  # ps on Genus level
+  saveRDS(get(paste0("ps_study_", study_id, "_Genus_10_most_abundant")),
+          path_target(paste0("ps_study_", study_id, "_Genus_10_most_abundant.rds")))
+}
+
+saveRDS(ps_study_39_rel_counts,
+        path_target(paste0("ps_study_39_rel_counts.rds")))
+```
+
+
+## Save time series as csv files
+
+```{r}
+
+for(study_id in possible_IDs) {
+  
+  # get the tmp phyloseq object
+  ps_obj <- get(paste0("ps_study_", study_id, "_Species_15_most_abundant"))
+  
+  if(taxa_are_rows(ps_obj)) {
+    otu_tmp <- t(otu_table(ps_obj))
+  } else {
+    otu_tmp <- otu_table(ps_obj)
+  }
+  # combine count data with time information
+  ts_obj <-
+    cbind(sample_data(ps_obj)[, "Time"],
+          otu_tmp)
+  # print(head(ts_obj))
+  
+  # save time series as csv file
+  write.csv(
+    ts_obj,
+    path_target(paste0("ts_study_", study_id, "_Species_15_most_abundant.csv")),
+    row.names = F
+  )
+    
+}
+for(study_id in possible_IDs) {
+  
+  # get the tmp phyloseq object
+  ps_obj <- get(paste0("ps_study_", study_id, "_Genus_10_most_abundant"))
+  
+  if(taxa_are_rows(ps_obj)) {
+    otu_tmp <- t(otu_table(ps_obj))
+  } else {
+    otu_tmp <- otu_table(ps_obj)
+  }
+  # combine count data with time information
+  ts_obj <-
+    cbind(sample_data(ps_obj)[, "Time"],
+          otu_tmp)
+  # print(head(ts_obj))
+  
+  # save time series as csv file
+  write.csv(
+    ts_obj,
+    path_target(paste0("ts_study_", study_id, "_Genus_10_most_abundant.csv")),
+    row.names = F
+  )
+    
 }
 ```
+
 
 
 <br>

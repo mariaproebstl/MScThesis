@@ -23,7 +23,13 @@ library(viridis) # for color palettes
 ``` r
 library(RColorBrewer)
 library(phyloseq)
+library(microViz)
 ```
+
+    ## microViz version 0.10.10 - Copyright (C) 2023 David Barnett
+    ## ! Website: https://david-barnett.github.io/microViz
+    ## ✔ Useful?  For citation details, run: `citation("microViz")`
+    ## ✖ Silence? `suppressPackageStartupMessages(library(microViz))`
 
 ``` r
 # create or *empty* the target directory, used to write this file's data: 
@@ -60,7 +66,9 @@ dt_biotimeMeta <-
 ``` r
 # select possible IDs
 possible_IDs <-
-  dt_biotimeMeta[DATA_POINTS > 35 & NUMBER_LAT_LONG == 1 & AB_BIO %in% c("AB", "A")]$STUDY_ID
+  # dt_biotimeMeta[DATA_POINTS > 35 & NUMBER_LAT_LONG == 1 & AB_BIO %in% c("AB", "A")]$STUDY_ID
+  # c(339, 363, 414, 478, 39, 46, 413)
+  c(339, 363, 478, 39)
 ```
 
 ``` r
@@ -100,8 +108,8 @@ extract_study <- function(data, ID) {
     tmp[, Time := YEAR]
   }
   
-  tmp[, .(Time, Abundance = sum.allrawdata.ABUNDANCE,
-          Species = GENUS_SPECIES, Genus = GENUS)]
+  tmp[, .(Time, Abundance = sum.allrawdata.ABUNDANCE, 
+          Genus = GENUS, Species = GENUS_SPECIES)]
 }
 ```
 
@@ -116,13 +124,13 @@ for (study_id in possible_IDs) {
   
   # create taxonomic table
   dt_tax_table <-
-    dt_study[, .(Species, Genus)] %>%
+    dt_study[, .(Genus, Species)] %>%
     unique() %>%
     .[, TAX_ID := sprintf("sp-%03d", as.numeric(rownames(.)))]
   
   dt_study <-
     merge(dt_study, dt_tax_table,
-          by = c("Species", "Genus"))
+          by = c("Genus", "Species"))
   
   dt_tax_table <-
     dt_tax_table %>%
@@ -182,15 +190,7 @@ ps_study_363
     ## tax_table()   Taxonomy Table:    [ 35 taxa by 2 taxonomic ranks ]
 
 ``` r
-ps_study_414
-```
-
-    ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:         [ 48 taxa and 48 samples ]
-    ## sample_data() Sample Data:       [ 48 samples by 1 sample variables ]
-    ## tax_table()   Taxonomy Table:    [ 48 taxa by 2 taxonomic ranks ]
-
-``` r
+# ps_study_414
 ps_study_478
 ```
 
@@ -209,29 +209,246 @@ ps_study_39
     ## tax_table()   Taxonomy Table:    [ 52 taxa by 2 taxonomic ranks ]
 
 ``` r
-ps_study_46
+# ps_study_46
+# ps_study_413
 ```
 
-    ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:         [ 29 taxa and 47 samples ]
-    ## sample_data() Sample Data:       [ 47 samples by 1 sample variables ]
-    ## tax_table()   Taxonomy Table:    [ 29 taxa by 2 taxonomic ranks ]
+## Available Species per time point
 
 ``` r
-ps_study_413
+# for study 39
+n_species_notZero <- psmelt(ps_study_478) %>% 
+  as.data.table() %>% 
+  .[, .(count = .N - sum(Abundance == 0)), by = Time]
+
+n_species_notZero$count %>% min()
 ```
 
-    ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:         [ 60 taxa and 44 samples ]
-    ## sample_data() Sample Data:       [ 44 samples by 1 sample variables ]
-    ## tax_table()   Taxonomy Table:    [ 60 taxa by 2 taxonomic ranks ]
+    ## [1] 34
+
+``` r
+n_species_notZero$count %>% max()
+```
+
+    ## [1] 50
+
+``` r
+n_species_notZero$count %>% mean()
+```
+
+    ## [1] 41.54054
+
+``` r
+# most frequently occuring species
+occuring_freq <-
+  psmelt(ps_study_478) %>% 
+  as.data.table() %>% 
+  .[, .(Abundance = sum(Abundance!= 0)), by = Species] %>% 
+  .[order(-Abundance)]
+(occuring_freq)
+```
+
+    ##                           Species Abundance
+    ##  1:             Agapetus fuscipes        37
+    ##  2:                 Leuctra nigra        37
+    ##  3:                Baetis rhodani        37
+    ##  4:         Protonemura intricata        37
+    ##  5:              Leuctra digitata        37
+    ##  6:        Amphinemura standfussi        37
+    ##  7:              Nemoura cambrica        37
+    ##  8:       Siphonoperla torrentium        37
+    ##  9:          Chaetopteryx villosa        37
+    ## 10:                 Leuctra prima        37
+    ## 11:           Protonemura auberti        37
+    ## 12:            Nemurella pictetii        37
+    ## 13:        Sericostoma personatum        37
+    ## 14:              Isoperla goertzi        37
+    ## 15:       Plectrocnemia conspersa        37
+    ## 16:              Drusus annulatus        37
+    ## 17:                 Baetis vernus        36
+    ## 18:              Tinodes rostocki        36
+    ## 19:            Protonemura meyeri        36
+    ## 20:            Apatania fimbriata        36
+    ## 21:             Nemoura marginata        36
+    ## 22:          Rhyacophila fasciata        36
+    ## 23:                 Silo pallipes        36
+    ## 24:       Potamophylax cingulatus        36
+    ## 25:         Ephemerella mucronata        35
+    ## 26:        Potamophylax luctuosus        34
+    ## 27:         Wormaldia occipitalis        32
+    ## 28:              Adicella reducta        32
+    ## 29: Paraleptophlebia submarginata        31
+    ## 30:            Ephemerella ignita        30
+    ## 31:         Centroptilum luteolum        27
+    ## 32:             Halesus digitatus        26
+    ## 33:              Nemoura flexuosa        23
+    ## 34:               Nemoura cinerea        22
+    ## 35:         Limnephilus rhombicus        22
+    ## 36:            Micrasema longulum        20
+    ## 37:           Limnephilus sparsus        20
+    ## 38:              Brachyptera risi        19
+    ## 39:          Hydropsyche saxonica        19
+    ## 40:                 Nemoura spec.        18
+    ## 41:            Habrophlebia lauta        16
+    ## 42:                  Baetis spec.        15
+    ## 43:            Habrophlebia fusca        15
+    ## 44:            Protonemura nitida        13
+    ## 45:              Ecdyonurus spec.        13
+    ## 46:                 Epeorus spec.        13
+    ## 47:         Limnephilus centralis        13
+    ## 48:        Hydropsyche instabilis        12
+    ## 49:            Micropterna sequax        12
+    ## 50:                  Lype reducta        10
+    ## 51:         Stenophylax permistus         8
+    ## 52:           Isoperla grammatica         7
+    ## 53:         Odontocerum albicorne         6
+    ## 54:        Brachyptera seticornis         6
+    ## 55:           Limnephilus lunatus         6
+    ## 56:      Potamophylax nigricornis         6
+    ## 57:               Ephemera danica         5
+    ## 58:        Limnephilus extricatus         5
+    ## 59:               Leuctra inermis         4
+    ## 60:          Hydropsyche siltalai         4
+    ## 61:              Anabolia nervosa         4
+    ## 62:             Hydropsyche spec.         4
+    ## 63:           Cyrnus trimaculatus         4
+    ## 64:              Halesus radiatus         3
+    ## 65:         Micropterna lateralis         3
+    ## 66:                 Leuctra fusca         3
+    ## 67:                Beraea pullata         3
+    ## 68:            Rhyacophila nubila         3
+    ## 69:        Perlodes microcephalus         3
+    ## 70:                Baetis muticus         2
+    ## 71:            Halesus tesselatus         2
+    ## 72:       Amphinemura sulcicollis         2
+    ## 73:          Limnephilus auricula         2
+    ## 74:       Ptilocolepus granulatus         2
+    ## 75:       Hydropsyche pellucidula         2
+    ## 76:      Glyphotaelius pellucidus         2
+    ## 77:              Tinodes pallidus         1
+    ## 78:        Sericostoma flavicorne         1
+    ## 79:           Annitella obscurata         1
+    ## 80:               Baetis fuscatus         1
+    ## 81:           Limnephilus ignavus         1
+    ## 82:         Athripsodes aterrimus         1
+    ## 83:     Hydropsyche angustipennis         1
+    ## 84:              Beraeodes eideli         1
+    ## 85:             Drusus biguttatus         1
+    ## 86:             Hydroptila sparsa         1
+    ## 87:           Adicella filicornis         1
+    ## 88:             Diplectrona felix         1
+    ## 89:        Mystacides longicornis         1
+    ## 90:                 Leuctra spec.         1
+    ##                           Species Abundance
+
+## Transform densities to relative abundances for study 39
+
+``` r
+# transform counts to relative abundance
+ps_study_39_rel_counts <-
+  transform_sample_counts(ps_study_39,
+                          function(x) x / sum(x))
+```
+
+## Group dataset by Genus
+
+Aggregate the timeseries by summarizing counts over Genus level.
+
+``` r
+for(study_id in possible_IDs) {
+  tmp_ps <-
+    get(paste0("ps_study_", study_id)) %>%
+    # tax_fix(sep = "_") %>%
+    # summarize over tax level, include NAs
+    tax_glom(taxrank = "Genus", NArm = FALSE) %>%
+    speedyseq::transmute_tax_table(Genus, .otu = Genus)
+  
+  assign(paste0("ps_study_", study_id, "_GenusLevel"),
+         tmp_ps)
+}
+```
+
+## Summarize over 10 most abundant Genera
+
+### Get the 10 most abundant genera and 15 most abundant species
+
+``` r
+for(study_id in possible_IDs){
+  ps_raw <- get(paste0("ps_study_", study_id))
+  
+  data <-
+    ps_raw %>% 
+    psmelt() %>%
+    as_tibble()
+  
+  # get Genera with highest abundance (sum over all Counts for each Genus)
+  most_abundant_genera <-
+    data %>%
+      group_by(Genus) %>%
+      summarise(Sum_Abundance = sum(Abundance)) %>% # another possible criteria would be mean(Abundance)
+      arrange(-Sum_Abundance) %>%
+      .[1:10, "Genus"] %>% 
+    as.vector()
+
+  # Rename genera that are not in most_abundant_genera to "other"
+  ps_tmp <- ps_raw %>%
+    tax_mutate(Genus = if_else(
+      Genus %in% most_abundant_genera$Genus,
+      as.character(Genus),
+      "other"
+    ))
+  
+  # select only Genus and Species column of tax_table
+  tax_table(ps_tmp) <- tax_table(ps_tmp)[, c("Genus", "Species")]
+  
+  ps_tmp <- ps_tmp %>%
+    # summarize over tax level, include NAs
+    tax_glom(taxrank = "Genus", NArm = FALSE) %>%
+    speedyseq::transmute_tax_table(Genus, .otu = Genus)
+
+  assign(paste0("ps_study_", study_id, "_Genus_10_most_abundant"),
+         ps_tmp)
+  
+  #### 15 most abundant Species
+   # get Species with highest abundance (sum over all Counts for each Species)
+  most_abundant_species <-
+    data %>%
+      group_by(Species) %>%
+      summarise(Sum_Abundance = sum(Abundance)) %>% # another possible criteria would be mean(Abundance)
+      arrange(-Sum_Abundance) %>%
+      .[1:15, "Species"] %>% 
+    as.vector()
+
+  # Rename species that are not in most_abundant_species to "other"
+  ps_tmp <- ps_raw %>%
+    tax_mutate(Species_grouped = if_else(
+      Species %in% most_abundant_species$Species,
+      as.character(Species),
+      "other"
+    )) %>%
+    tax_mutate(Species = Species_grouped)
+  
+  # select only Genus and Species column of tax_table
+  tax_table(ps_tmp) <- tax_table(ps_tmp)[, c("Species", "Species_grouped")]
+  
+  ps_tmp <- ps_tmp %>%
+    # summarize over tax level, include NAs
+    tax_glom(taxrank = "Species", NArm = FALSE)
+  
+  # select only Genus and Species column of tax_table
+  tax_table(ps_tmp) <- tax_table(ps_tmp)[, c("Species")]
+
+  assign(paste0("ps_study_", study_id, "_Species_15_most_abundant"),
+         ps_tmp)
+}
+```
 
 ## Plot timeseries
 
 ``` r
 for (study_id in possible_IDs) {
   plt_lines_Species <-
-    ggplot(psmelt(get(paste0("ps_study_", study_id))),
+    ggplot(psmelt(get(paste0("ps_study_", study_id, "_Species_15_most_abundant"))),
            aes(x = Time, y = Abundance, col = Species)) +
     geom_line() +
     theme(legend.position = "none") +
@@ -240,25 +457,103 @@ for (study_id in possible_IDs) {
   plt_bar_Genus <-
     plot_bar(get(paste0("ps_study_", study_id)),
              x = "Time", fill = "Genus") +
-    theme(legend.position = "none") +
+    # theme(legend.position = "none") +
     geom_bar(aes(color = Genus, fill = Genus),
              stat = "identity",
              position = "stack") +
     labs(title = paste0("Study ", study_id, " (by Genus)"))
   
+  plt_bar_Genus_ma <-
+    plot_bar(get(paste0("ps_study_", study_id, "_Genus_10_most_abundant")),
+             x = "Time", fill = "Genus") +
+    # theme(legend.position = "none") +
+    geom_bar(aes(color = Genus, fill = Genus),
+             stat = "identity",
+             position = "stack") +
+    labs(title = paste0("Study ", study_id, " (only most abundant Genera)"))
+  
   show(plt_lines_Species)
   show(plt_bar_Genus)
+  show(plt_bar_Genus_ma)
 }
 ```
 
-![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-7-2.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-7-3.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-7-4.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-7-5.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-7-6.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-7-7.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-7-8.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-7-9.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-7-10.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-7-11.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-7-12.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-7-13.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-7-14.png)<!-- -->
+![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-11-2.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-11-3.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-11-4.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-11-5.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-11-6.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-11-7.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-11-8.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-11-9.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-11-10.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-11-11.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-11-12.png)<!-- -->
 
 ## Save Phyloseq Objects
 
 ``` r
 for (study_id in possible_IDs) {
+  # ps on Species level
   saveRDS(get(paste0("ps_study_", study_id)),
-          path_target(paste0("ps_study_", study_id, ".rds")))
+          path_target(paste0("ps_study_", study_id, "_SpeciesLevel.rds")))
+  # ps on Genus level
+  saveRDS(get(paste0("ps_study_", study_id, "_GenusLevel")),
+          path_target(paste0("ps_study_", study_id, "_GenusLevel.rds")))
+  
+  # save most abundant
+  # ps on Species level
+  saveRDS(get(paste0("ps_study_", study_id, "_Species_15_most_abundant")),
+          path_target(paste0("ps_study_", study_id, "_Species_15_most_abundant.rds")))
+  # ps on Genus level
+  saveRDS(get(paste0("ps_study_", study_id, "_Genus_10_most_abundant")),
+          path_target(paste0("ps_study_", study_id, "_Genus_10_most_abundant.rds")))
+}
+
+saveRDS(ps_study_39_rel_counts,
+        path_target(paste0("ps_study_39_rel_counts.rds")))
+```
+
+## Save time series as csv files
+
+``` r
+for(study_id in possible_IDs) {
+  
+  # get the tmp phyloseq object
+  ps_obj <- get(paste0("ps_study_", study_id, "_Species_15_most_abundant"))
+  
+  if(taxa_are_rows(ps_obj)) {
+    otu_tmp <- t(otu_table(ps_obj))
+  } else {
+    otu_tmp <- otu_table(ps_obj)
+  }
+  # combine count data with time information
+  ts_obj <-
+    cbind(sample_data(ps_obj)[, "Time"],
+          otu_tmp)
+  # print(head(ts_obj))
+  
+  # save time series as csv file
+  write.csv(
+    ts_obj,
+    path_target(paste0("ts_study_", study_id, "_Species_15_most_abundant.csv")),
+    row.names = F
+  )
+    
+}
+for(study_id in possible_IDs) {
+  
+  # get the tmp phyloseq object
+  ps_obj <- get(paste0("ps_study_", study_id, "_Genus_10_most_abundant"))
+  
+  if(taxa_are_rows(ps_obj)) {
+    otu_tmp <- t(otu_table(ps_obj))
+  } else {
+    otu_tmp <- otu_table(ps_obj)
+  }
+  # combine count data with time information
+  ts_obj <-
+    cbind(sample_data(ps_obj)[, "Time"],
+          otu_tmp)
+  # print(head(ts_obj))
+  
+  # save time series as csv file
+  write.csv(
+    ts_obj,
+    path_target(paste0("ts_study_", study_id, "_Genus_10_most_abundant.csv")),
+    row.names = F
+  )
+    
 }
 ```
 
@@ -513,7 +808,7 @@ study_processing_bioTIME(study_id = 339)
     ## |BIOMASS_TYPE      |NA                                                                                                                                        |
     ## |SAMPLE_DESC_NAME  |lat_long_year                                                                                                                             |
 
-![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-10-2.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-10-3.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-10-4.png)<!-- -->
+![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-15-2.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-15-3.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-15-4.png)<!-- -->
 
 <br>
 
@@ -569,7 +864,7 @@ study_processing_bioTIME(study_id = 478)
     ## |BIOMASS_TYPE      |NA                                                          |
     ## |SAMPLE_DESC_NAME  |lat_long_year_plotID                                        |
 
-![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-11-2.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-11-3.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-11-4.png)<!-- -->
+![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-16-2.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-16-3.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-16-4.png)<!-- -->
 
 <br>
 
@@ -625,7 +920,7 @@ study_processing_bioTIME(study_id = 363)
     ## |BIOMASS_TYPE      |NA                                                                                                                                                    |
     ## |SAMPLE_DESC_NAME  |lat_long_year                                                                                                                                         |
 
-![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-12-2.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-12-3.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-12-4.png)<!-- -->
+![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-17-2.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-17-3.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-17-4.png)<!-- -->
 
 <br>
 
@@ -681,7 +976,7 @@ study_processing_bioTIME(study_id = 414)
     ## |BIOMASS_TYPE      |NA                                                                                                     |
     ## |SAMPLE_DESC_NAME  |lat_long_year                                                                                          |
 
-![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-13-2.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-13-3.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-13-4.png)<!-- -->
+![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-18-2.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-18-3.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-18-4.png)<!-- -->
 
 ``` r
 study_processing_bioTIME(study_id = 46, th_species = 0.01, th_genus = 0.01)
@@ -733,7 +1028,7 @@ study_processing_bioTIME(study_id = 46, th_species = 0.01, th_genus = 0.01)
     ## |BIOMASS_TYPE      |NA                                                       |
     ## |SAMPLE_DESC_NAME  |lat_long_year                                            |
 
-![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-13-5.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-13-6.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-13-7.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-13-8.png)<!-- -->
+![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-18-5.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-18-6.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-18-7.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-18-8.png)<!-- -->
 
 ``` r
 study_processing_bioTIME(study_id = 39)
@@ -785,7 +1080,7 @@ study_processing_bioTIME(study_id = 39)
     ## |BIOMASS_TYPE      |NA                                                                                                                                                                                                                                                                                                                                                                             |
     ## |SAMPLE_DESC_NAME  |lat_long_timeTransect_year                                                                                                                                                                                                                                                                                                                                                     |
 
-![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-13-9.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-13-10.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-13-11.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-13-12.png)<!-- -->
+![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-18-9.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-18-10.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-18-11.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-18-12.png)<!-- -->
 
 ``` r
 study_processing_bioTIME(study_id = 413, th_species = 0.08, th_genus = 0.08)
@@ -837,7 +1132,7 @@ study_processing_bioTIME(study_id = 413, th_species = 0.08, th_genus = 0.08)
     ## |BIOMASS_TYPE      |NA                                                                                                     |
     ## |SAMPLE_DESC_NAME  |lat_long_year_plotID                                                                                   |
 
-![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-13-13.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-13-14.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-13-15.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-13-16.png)<!-- -->
+![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-18-13.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-18-14.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-18-15.png)<!-- -->![](01a-timeseries-BioTIME_files/figure-gfm/unnamed-chunk-18-16.png)<!-- -->
 
 ## Files written
 
@@ -848,17 +1143,17 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 21 × 4
-    ##    path                             type         size modification_time  
-    ##    <fs::path>                       <fct> <fs::bytes> <dttm>             
-    ##  1 ps_study_339.rds                 file        3.14K 2023-09-25 09:00:25
-    ##  2 ps_study_363.rds                 file        2.58K 2023-09-25 09:00:25
-    ##  3 ps_study_39.rds                  file        3.37K 2023-09-25 09:00:25
-    ##  4 ps_study_413.rds                 file        3.73K 2023-09-25 09:00:25
-    ##  5 ps_study_414.rds                 file        3.18K 2023-09-25 09:00:25
-    ##  6 ps_study_46.rds                  file        2.25K 2023-09-25 09:00:25
-    ##  7 ps_study_478.rds                 file        6.16K 2023-09-25 09:00:25
-    ##  8 ts_study_339_Genus_grouped.csv   file        2.71K 2023-09-25 09:00:25
-    ##  9 ts_study_339_Species_grouped.csv file        3.25K 2023-09-25 09:00:25
-    ## 10 ts_study_363_Genus_grouped.csv   file         2.7K 2023-09-25 09:00:31
-    ## # ℹ 11 more rows
+    ## # A tibble: 39 × 4
+    ##    path                                      type       size modification_time  
+    ##    <fs::path>                                <fct> <fs::byt> <dttm>             
+    ##  1 ps_study_339_GenusLevel.rds               file      2.22K 2023-10-22 19:03:53
+    ##  2 ps_study_339_Genus_10_most_abundant.rds   file       1.5K 2023-10-22 19:03:53
+    ##  3 ps_study_339_SpeciesLevel.rds             file      3.13K 2023-10-22 19:03:53
+    ##  4 ps_study_339_Species_15_most_abundant.rds file      1.93K 2023-10-22 19:03:53
+    ##  5 ps_study_363_GenusLevel.rds               file      1.85K 2023-10-22 19:03:53
+    ##  6 ps_study_363_Genus_10_most_abundant.rds   file      1.48K 2023-10-22 19:03:53
+    ##  7 ps_study_363_SpeciesLevel.rds             file      2.57K 2023-10-22 19:03:53
+    ##  8 ps_study_363_Species_15_most_abundant.rds file      1.85K 2023-10-22 19:03:53
+    ##  9 ps_study_39_GenusLevel.rds                file      2.49K 2023-10-22 19:03:54
+    ## 10 ps_study_39_Genus_10_most_abundant.rds    file      1.41K 2023-10-22 19:03:54
+    ## # ℹ 29 more rows
