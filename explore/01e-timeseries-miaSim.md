@@ -1,7 +1,7 @@
 Simulation of synthetic time series with second order interactions
 (miaSim)
 ================
-Compiled at 2023-10-07 13:02:38 UTC
+Compiled at 2023-10-24 13:04:19 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "097d888c-3dd7-4302-ad02-3bed36ed3cfe")
@@ -70,7 +70,7 @@ A_matrix <- matrix(c(-0.5, 30, 0, 0,
 # specify growth rates or use rep(1, n) by default
 growth_rates = c(2/3, -1, 0.7, -3)
 
-# instead of setting a seed we generate a x0 by ourselfe
+# instead of setting a seed we generate a x0 by our self
 x0 = c(0.3,0.32,0.2,0.45)
 
 # simulate GLV
@@ -112,7 +112,7 @@ A_matrix <- matrix(c(-0.5, 10, 0, 0,
 # specify growth rates or use rep(1, n) by default
 growth_rates = c(2/3, -1, 0.7, -3)
 
-# instead of setting a seed we generate a x0 by ourselfe
+# instead of setting a seed we generate a x0 by ourself
 x0 = c(0.1, 0.15, 0.35, 0.4)
 
 # simulate GLV
@@ -130,7 +130,7 @@ glv_tmp <-
 glv_tmp_mat <- data.matrix(cbind(1:1000, t(glv_tmp[,1:1000])))
 colnames(glv_tmp_mat) <- c("t", paste0("x_",1:n_species))
 # write csv
-write.csv(glv_tmp_mat[50:250],
+write.csv(glv_tmp_mat[100:250,],
           paste0(path_target(),"/miaSim_GLV_4species_new.csv"),
           row.names = F)
 
@@ -140,10 +140,48 @@ autoplot(ts(glv_tmp_mat[, 1:n_species+1]), facets = F)
 ![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 ``` r
-autoplot(ts(glv_tmp_mat[50:250, 1:n_species+1]), facets = F)
+autoplot(ts(glv_tmp_mat[100:250, 1:n_species+1]), facets = F)
 ```
 
 ![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->
+
+#### add noise
+
+``` r
+set.seed(123)
+
+# Simulated data without noise
+ts_data <- glv_tmp_mat[100:250, 1:n_species+1]
+# normalise = function(x) (x-min(x))/(max(x)-min(x)) * 10
+# ts_data = apply(ts_data, 2, normalise)
+ts_data = ts(ts_data)
+
+n <- dim(ts_data)[1]
+m <- dim(ts_data)[2]
+
+# Standard deviation of the noise
+noise_sd_vec <- c(0.005, 0.01, 0.02, 0.04)
+
+# add gaussian noise, plot and save file
+for(noise_sd in noise_sd_vec){
+  ts_noisy <- 
+    ts_data + matrix(rnorm(n * m, mean = 0, sd = noise_sd), nrow = n, ncol = m)
+  
+  # show plot
+  print(autoplot(ts_noisy, facets = F) +
+          ggtitle(paste("noise level", noise_sd)))
+  
+  # save noisy time series as csv file
+  write.csv(
+    data.frame(ts_noisy),
+    path_target(paste0("ts_miaSim_GLV_4species_new_noise_", 
+                       gsub("\\.", "-", as.character(noise_sd)), ".csv")),
+    row.names = F
+  )
+}
+```
+
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-5-3.png)<!-- -->![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-5-4.png)<!-- -->
 
 ## Further Examples
 
@@ -180,14 +218,14 @@ glv_tmp_mat <- data.matrix(cbind(1:500, t(glv_tmp[,1:500])))
 colnames(glv_tmp_mat) <- c("t", paste0("x_",1:n_species))
 
 # write csv
-write.csv(glv_tmp_mat,
-          paste0(path_target(),"/miaSim_GLV_", n_species, "species.csv"),
+write.csv(glv_tmp_mat[25:75,],
+          paste0(path_target(),"/miaSim_GLV_", n_species, "species_25-75.csv"),
           row.names = F)
 
 autoplot(ts(glv_tmp_mat[25:75, 1:n_species+1]), facets = F)
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 #### b) 5 Species
 
@@ -225,7 +263,7 @@ sim_and_plot_glv(n_species = n, A_matrix, growth_rates,
                   sim_name = "_manyInteractions")
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 #### c) 4 Species
 
@@ -255,7 +293,7 @@ sim_and_plot_glv(n_species = n, A_matrix, growth_rates,
                   sim_name = "_oscillating_three")
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 #### d) 4 Species
 
@@ -289,7 +327,7 @@ sim_and_plot_glv(n_species = n,
                   sim_name = "_higherX0")
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 ### Large Example for simulating GLV
 
@@ -306,7 +344,7 @@ A_matrix <- randomA(n_species = 30)
 sim_and_plot_glv(n_species = n, A_matrix)
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 #### b) with 10 Species
 
@@ -353,7 +391,7 @@ growth_rates
 sim_and_plot_glv(n_species = n, A_matrix, growth_rates)
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 # Files written
 
@@ -364,9 +402,13 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 3 × 4
-    ##   path                                     type         size modification_time  
-    ##   <fs::path>                               <fct> <fs::bytes> <dttm>             
-    ## 1 miaSim_GLV_4species_new.csv              file          960 2023-10-07 13:02:50
-    ## 2 miaSim_GLV_4species_oscillating_zero.csv file        11.6K 2023-10-07 13:02:49
-    ## 3 miaSim_GLV_5species.csv                  file        46.6K 2023-10-07 13:02:51
+    ## # A tibble: 7 × 4
+    ##   path                                       type       size modification_time  
+    ##   <fs::path>                                 <fct> <fs::byt> <dttm>             
+    ## 1 miaSim_GLV_4species_new.csv                file     11.72K 2023-10-24 13:04:33
+    ## 2 miaSim_GLV_4species_oscillating_zero.csv   file     11.65K 2023-10-24 13:04:32
+    ## 3 miaSim_GLV_5species_25-75.csv              file      4.76K 2023-10-24 13:04:36
+    ## 4 ts_miaSim_GLV_4species_new_noise_0-005.csv file     11.13K 2023-10-24 13:04:34
+    ## 5 ts_miaSim_GLV_4species_new_noise_0-01.csv  file     11.13K 2023-10-24 13:04:34
+    ## 6 ts_miaSim_GLV_4species_new_noise_0-02.csv  file     11.17K 2023-10-24 13:04:34
+    ## 7 ts_miaSim_GLV_4species_new_noise_0-04.csv  file     11.21K 2023-10-24 13:04:35
