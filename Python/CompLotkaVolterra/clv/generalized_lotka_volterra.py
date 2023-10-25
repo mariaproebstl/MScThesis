@@ -6,6 +6,12 @@ from scipy.stats import linregress
 from scipy.integrate import RK45, solve_ivp
 from .timeout import *
 
+import seaborn as sns
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt
+import pandas as pd
+from matplotlib.patches import Rectangle
+
 
 def add_pseudo_counts(Y, pseudo_count=1e-3):
     """Adds pseudo counts to avoid zeros and compute relative abundances
@@ -113,7 +119,7 @@ class GeneralizedLotkaVolterra:
         if self.alpha is None or self.r_A is None or self.r_g is None or self.r_B is None:
             if verbose:
                 print("Estimating regularizers...")
-            self.alpha, self.r_A, self.r_g, self.r_B = estimate_elastic_net_regularizers_cv(self.X, self.U, self.T, folds=folds, no_effects=self.no_effects, verbose=verbose)
+            self.alpha, self.r_A, self.r_g, self.r_B = estimate_elastic_net_regularizers_glv(self.X, self.U, self.T, folds=folds, no_effects=self.no_effects, verbose=verbose)
             
         if verbose:
             print("Estimating model parameters...")
@@ -124,7 +130,7 @@ class GeneralizedLotkaVolterra:
 
 
     def train_ridge(self, verbose=False, folds=10):
-        r_A, r_g, r_B = estimate_ridge_regularizers_cv(self.X, self.U, self.T, folds=folds, no_effects=self.no_effects, verbose=verbose)
+        r_A, r_g, r_B = estimate_ridge_regularizers_glv(self.X, self.U, self.T, folds=folds, no_effects=self.no_effects, verbose=verbose)
         
         if verbose:
             print("Estimating model parameters...")
@@ -536,3 +542,61 @@ def compute_prediction_error(X, U, T, A, g, B):
         except TimeoutError:
             err += np.inf
     return err/len(X)
+
+
+## add function to plot outcome g and A as heatmaps:
+def plot_heatmaps(A, g, n_taxa, title = ""):
+    
+    if g is None:
+        max_value = max(A.max(), abs(A.min()))
+    else:
+        max_value = max(A.max(), g.max(), abs(A.min()), abs(g.min()))
+        g = round(pd.DataFrame(g), 3)
+    
+    A = round(pd.DataFrame(A), 3)
+
+    # Creating figure and gridspec
+    fig = plt.figure(figsize=(1.2 * n_taxa, n_taxa))
+    gs = gridspec.GridSpec(1, 2, width_ratios=[1, n_taxa], wspace=0.1)  
+
+    # Creating subplots
+    ax0 = plt.subplot(gs[0])
+    ax1 = plt.subplot(gs[1])
+
+    # Plotting the vector g as a heatmap
+    if g is None:
+        sns.heatmap(np.zeros((n_taxa, 1)), cmap="RdBu", vmin=-max_value, vmax=max_value, 
+                    cbar=False, ax=ax0)  #  linewidths=0.5, linecolor='black'
+        # ax0.set_title('growth vector g')
+        ax0.xaxis.tick_top()
+        ax0.set_xticklabels(['1'])
+        ax0.set_yticklabels([f'x{i+1}' for i in range(n_taxa)], rotation=0)
+        ax0.tick_params(left=False, top=False)
+    else:
+        sns.heatmap(g, cmap="RdBu", vmin=-max_value, vmax=max_value, annot=True, 
+                    cbar=False, ax=ax0)  #  linewidths=0.5, linecolor='black'
+        # ax0.set_title('growth vector g')
+        ax0.xaxis.tick_top()
+        ax0.set_xticklabels(['1'])
+        ax0.set_yticklabels([f'x{i+1}' for i in range(g.shape[0])], rotation=0)
+        ax0.tick_params(left=False, top=False)
+
+    # Plotting the matrix A as a heatmap
+    sns.heatmap(A, cmap="RdBu", vmin=-max_value, vmax=max_value, annot=True, yticklabels=False, 
+                cbar=False, ax=ax1)  #  linewidths=0.5, linecolor='black'
+    # ax1.set_title('interaction matrix A')
+    ax1.xaxis.tick_top()
+    ax1.set_xticklabels([f'x{i+1}' for i in range(A.shape[1])])
+    ax1.tick_params(left=False, top=False)
+
+    # Adding a colorbar for the entire figure
+    cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])
+    fig.colorbar(ax1.collections[0], cax=cbar_ax)
+        
+    # Add a border around the entire plot
+    for axis in [ax0, ax1]:
+        rect = Rectangle((0, 0), 1, 1, linewidth=2, edgecolor='black', facecolor='none', transform=axis.transAxes)
+        axis.add_patch(rect)
+    
+    title_text = ax1.set_title(title)
+    title_text.set_position((0.4, 1.1))
