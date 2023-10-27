@@ -79,6 +79,16 @@ def load_data(filepath):
     plt.savefig(f'{folderpath_out}plot_dataset_ALR.png', dpi=300, bbox_inches='tight')
     plt.close()
 
+    # save ALR transformed data csv
+    df_ALR = pd.DataFrame(data=ALR[0], columns=Names_alr)
+    df_ALR.insert(0, "Time", T[0])
+    df_ALR.to_csv(f'{folderpath_out}ts_ALR_denom-{denom}-{denom_name}_{data_name}.csv', index=False)
+
+    # save P as csv
+    df_P = pd.DataFrame(data=P[0], columns=Names)
+    df_P.insert(0, "Time", T[0])
+    df_P.to_csv(f'{folderpath_out}ts_clv_input_data_{data_name}.csv', index=False)
+
 # Compositional Lotka Volterra
 def apply_clv():
 
@@ -165,6 +175,11 @@ def predict_clv(clv, regularization = "elastic_net"):
 
     ### Predict time series using estimates from clv
     pred = clv.predict(p0 = np.array([P[0][0, :]]), times = T[0])
+    # save pred as csv
+    df_pred = pd.DataFrame(data=pred, columns=Names)
+    df_pred.insert(0, "Time", T[0])
+    df_pred.to_csv(f'{folderpath_out}ts_prediction_{data_name}.csv', index=False)
+
     n_col = 3
     n_row = math.ceil(n_taxa/3)
 
@@ -207,7 +222,7 @@ def run_clv(data_name, filename, run):
     ### generate output directory
     
     # folderpath for output
-    folderpath_out = f"C:/Users/Maria/Documents/Masterstudium/Masterarbeit/clv_output/output_{data_name}_run_{run}/"
+    folderpath_out = f"C:/Users/Maria/Documents/Masterstudium/Masterarbeit/clv_output/output_{data_name}/output_{data_name}_run_{run}/"
 
     # create output folder
     if not os.path.exists(folderpath_out):
@@ -259,7 +274,7 @@ if __name__ == "__main__":
         ['Bucci', 'ts_bucci_subject_all_rel_counts_denoised.csv']
     ]
     
-    for run in ["{:02}".format(i) for i in range(2, 10)]:
+    for run in ["{:02}".format(i) for i in range(1)]:
         print(f"run {run} starts")
         for data_name, filename in compositional_data:
             print(data_name, "started")
