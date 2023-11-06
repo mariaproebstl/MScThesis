@@ -1,6 +1,6 @@
 Simulation of the Van der Pol oscillator
 ================
-Compiled at 2023-10-13 14:16:34 UTC
+Compiled at 2023-11-06 22:32:11 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "ed3de31b-cc20-4300-90cc-e98faa8c0c62")
@@ -91,11 +91,11 @@ ggplot(df_VdP, aes(x = Time)) +
 ``` r
 # save time series as csv file
 write.csv(solution,
-          path_target(paste0("ts_VanderPol_R.csv")),
+          path_target(paste0("ts_VanderPol.csv")),
           row.names = F)
 ```
 
-## add noise
+## Add Gaussian noise
 
 ``` r
 set.seed(123)
@@ -105,25 +105,23 @@ ts_data <- ts(df_VdP[, 2:3])
 
 n <- dim(ts_data)[1]
 m <- dim(ts_data)[2]
-
-variances <- apply(ts_data, MARGIN = 2, FUN = var)
-
+ 
 # Standard deviation of the noise
-noise_sd_vec <- mean(variances) * c(0.05, 0.1, 0.5)
-# noise_sd_vec <- c(0.1, 0.5, 1)
+noise_sd_vec <- c(0.1, 0.2, 0.5, 1)
 print(noise_sd_vec)
 ```
 
-    ## [1] 0.1061537 0.2123074 1.0615368
+    ## [1] 0.1 0.2 0.5 1.0
 
 ``` r
 # add gaussian noise, plot and save file
 for(noise_sd in noise_sd_vec){
+  # add gaussian noise
   ts_noisy <- 
     ts_data + matrix(rnorm(n * m, mean = 0, sd = noise_sd), nrow = n, ncol = m)
   
   # show plot
-  print(autoplot(ts_noisy, facets = F) + ggtitle(paste("Noise level", round(noise_sd, 1))))
+  print(autoplot(ts_noisy, facets = F) + ggtitle(paste("Noise level", noise_sd)))
   
   # save noisy time series as csv file
   write.csv(
@@ -135,7 +133,7 @@ for(noise_sd in noise_sd_vec){
 }
 ```
 
-![](01g-timeseries-simulation-VdP_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->![](01g-timeseries-simulation-VdP_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->![](01g-timeseries-simulation-VdP_files/figure-gfm/unnamed-chunk-6-3.png)<!-- -->
+![](01g-timeseries-simulation-VdP_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->![](01g-timeseries-simulation-VdP_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->![](01g-timeseries-simulation-VdP_files/figure-gfm/unnamed-chunk-6-3.png)<!-- -->![](01g-timeseries-simulation-VdP_files/figure-gfm/unnamed-chunk-6-4.png)<!-- -->
 
 ## Files written
 
@@ -146,10 +144,11 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 4 × 4
-    ##   path                                    type         size modification_time  
-    ##   <fs::path>                              <fct> <fs::bytes> <dttm>             
-    ## 1 ts_VanderPol_noise_0-10615367844151.csv file        12.2K 2023-10-13 14:16:36
-    ## 2 ts_VanderPol_noise_0-21230735688302.csv file        12.2K 2023-10-13 14:16:36
-    ## 3 ts_VanderPol_noise_1-0615367844151.csv  file        12.2K 2023-10-13 14:16:36
-    ## 4 ts_VanderPol_R.csv                      file        12.2K 2023-10-13 14:16:36
+    ## # A tibble: 5 × 4
+    ##   path                       type         size modification_time  
+    ##   <fs::path>                 <fct> <fs::bytes> <dttm>             
+    ## 1 ts_VanderPol.csv           file        12.2K 2023-11-06 22:32:13
+    ## 2 ts_VanderPol_noise_0-1.csv file        12.2K 2023-11-06 22:32:13
+    ## 3 ts_VanderPol_noise_0-2.csv file        12.2K 2023-11-06 22:32:13
+    ## 4 ts_VanderPol_noise_0-5.csv file        12.2K 2023-11-06 22:32:13
+    ## 5 ts_VanderPol_noise_1.csv   file        12.2K 2023-11-06 22:32:14
