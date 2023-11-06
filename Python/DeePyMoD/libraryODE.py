@@ -53,6 +53,7 @@ class LibraryODE(Library):
         # list all 1-dimensional combinations (1, x1, x2, ..., xn)
         comb_1D = torch.cat((torch.ones(n_samples, 1), prediction), dim = 1)
 
+        # for only 2nd order interactions
         if self.int_order == 2:
             for output in np.arange(n_outputs):
                 int_2D = torch.mul(prediction[:, output : output + 1], comb_1D)
@@ -60,7 +61,8 @@ class LibraryODE(Library):
                     theta_i = torch.cat((torch.ones(n_samples, 1), int_2D), dim = 1)
                 else: # without intercept
                     theta_i = int_2D
-                theta.append(theta_i)  
+                theta.append(theta_i)   
+        # to include 2nd and 3rd order interactions
         elif self.int_order == 3:
             # list all 2-dimensional combinations (x1^2, x1*x2, ..., x1*xn, ..., xn^2)
             comb_2D = torch.empty(n_samples, 1)
@@ -147,7 +149,3 @@ class LibraryODE(Library):
             raise ValueError("int_order must be either 2 or 3!")
 
         return comb_all_chr
-        
-    
-
-    
