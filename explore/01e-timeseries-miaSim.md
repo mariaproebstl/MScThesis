@@ -1,7 +1,7 @@
 Simulation of synthetic time series with second order interactions
 (miaSim)
 ================
-Compiled at 2023-10-24 13:04:19 UTC
+Compiled at 2023-11-06 22:26:59 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "097d888c-3dd7-4302-ad02-3bed36ed3cfe")
@@ -10,7 +10,7 @@ here::i_am(paste0(params$name, ".Rmd"), uuid = "097d888c-3dd7-4302-ad02-3bed36ed
 The purpose of this document is to simulate some synthetic time series
 datasets with different numbers of species and some 2nd order
 interactions (using the miaSim package). These can then be used for
-testing the DeePyMoD algorithm.
+testing our methods.
 
 # Packages
 
@@ -22,9 +22,6 @@ library(data.table)
 # BiocManager::install("miaSim")
 library(miaSim)
 library(miaViz)
-
-library(deSolve)
-library(R.matlab)
 
 library(ggfortify) # to autoplot time series
 ```
@@ -48,57 +45,10 @@ path_source <- projthis::proj_path_source(params$name)
 # miaSimShiny::run_app()
 ```
 
-# miaSim manual Simulation
+# Simulation of miaSimS4
 
-## Function to simulate, save and plot GLV
-
-## Main Simulations
-
-### Simulation of miaSimS4
-
-A gLV with 4 species and 4 interactions:
-
-``` r
-n_species = 4
-
-A_matrix <- matrix(c(-0.5, 30, 0, 0,
-                     -15, -0.5, 0, 0,
-                     0, 0, -0.5, 20,
-                     0, 0, -10, -0.5), nrow = n_species)
-
-
-# specify growth rates or use rep(1, n) by default
-growth_rates = c(2/3, -1, 0.7, -3)
-
-# instead of setting a seed we generate a x0 by our self
-x0 = c(0.3,0.32,0.2,0.45)
-
-# simulate GLV
-glv_tmp <-
-  simulateGLV(
-    n_species = n_species,
-    A = A_matrix,
-    x = x0,
-    b = growth_rates,
-    t_start = 0,
-    t_store = 1000
-  )
-
-# bring into matrix format
-glv_tmp_mat <- data.matrix(cbind(1:150, t(glv_tmp[,1:150])))
-colnames(glv_tmp_mat) <- c("t", paste0("x_",1:n_species))
-
-# write csv
-write.csv(glv_tmp_mat,
-          paste0(path_target(),"/miaSim_GLV_4species_oscillating_zero.csv"),
-          row.names = F)
-
-autoplot(ts(glv_tmp_mat[, 1:n_species+1]), facets = F)
-```
-
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
-
-### Simulate other 4 species example
+Simulation of a generalized Lotka Volterra Model with 4 species and 4
+interactions:
 
 ``` r
 n_species = 4
@@ -107,8 +57,16 @@ A_matrix <- matrix(c(-0.5, 10, 0, 0,
                      -15,-0.5, 0, 0,
                      0, 0,-0.5, 25,
                      0, 0,-10,-0.5), nrow = n_species)
+print(A_matrix)
+```
 
+    ##      [,1]  [,2] [,3]  [,4]
+    ## [1,] -0.5 -15.0  0.0   0.0
+    ## [2,] 10.0  -0.5  0.0   0.0
+    ## [3,]  0.0   0.0 -0.5 -10.0
+    ## [4,]  0.0   0.0 25.0  -0.5
 
+``` r
 # specify growth rates or use rep(1, n) by default
 growth_rates = c(2/3, -1, 0.7, -3)
 
@@ -137,15 +95,15 @@ write.csv(glv_tmp_mat[100:250,],
 autoplot(ts(glv_tmp_mat[, 1:n_species+1]), facets = F)
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
 
 ``` r
 autoplot(ts(glv_tmp_mat[100:250, 1:n_species+1]), facets = F)
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->
 
-#### add noise
+## add Gaussian noise
 
 ``` r
 set.seed(123)
@@ -173,225 +131,196 @@ for(noise_sd in noise_sd_vec){
   
   # save noisy time series as csv file
   write.csv(
-    data.frame(ts_noisy),
-    path_target(paste0("ts_miaSim_GLV_4species_new_noise_", 
+    data.frame(Time = glv_tmp_mat[100:250, 1], ts_noisy),
+    path_target(paste0("ts_miaSim_GLV_4species_new_noise_",
                        gsub("\\.", "-", as.character(noise_sd)), ".csv")),
     row.names = F
   )
 }
 ```
 
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-5-3.png)<!-- -->![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-5-4.png)<!-- -->
+![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-3-3.png)<!-- -->![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-3-4.png)<!-- -->
 
-## Further Examples
-
-### General gLV simulation for arbitrary number n of species
-
-#### a) 5 Species
-
-``` r
-n_species = 5
-
-# Generate interaction matrix for GLV (5 Species)
-A_matrix <- matrix(c(-0.5, 20, 0, 0, 0,
-                     -28, -0.5, 0, 0, 0,
-                     0, 0, -0.5, 0, 0,
-                     0, 0, 0, -0.5, 40,
-                     0, 0, -20, -60, -0.5), nrow = n_species)
-
-# specify growth rates or use rep(1, n) by default
-growth_rates = c(10, -1, 3.5, 10, -10)
-
-set.seed(2)
-# simulate GLV
-glv_tmp <-
-  simulateGLV(
-    n_species = n_species,
-    A = A_matrix,
-    b = growth_rates,
-    t_start = 0,
-    t_store = 5000
-  )
-
-# bring into matrix format
-glv_tmp_mat <- data.matrix(cbind(1:500, t(glv_tmp[,1:500])))
-colnames(glv_tmp_mat) <- c("t", paste0("x_",1:n_species))
-
-# write csv
-write.csv(glv_tmp_mat[25:75,],
-          paste0(path_target(),"/miaSim_GLV_", n_species, "species_25-75.csv"),
-          row.names = F)
-
-autoplot(ts(glv_tmp_mat[25:75, 1:n_species+1]), facets = F)
-```
-
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
-
-#### b) 5 Species
-
-``` r
-n = 5
-
-# # Generate random interaction matrix for GLV (5 Species)
-# set.seed(246)
-# A_matrix <- randomA(n_species = n)
-A_matrix <- matrix(c(-0.5, 20, 0, 0, 0,
-                     -28, -0.5, -3, 0, 0,
-                     0, 10, -0.5, 0, 0,
-                     -3, 0, 0, -0.5, 7.5,
-                     5, 0, 0, -4.4, -0.5), nrow = n)
-A_matrix
-```
-
-    ##      [,1]  [,2] [,3] [,4] [,5]
-    ## [1,] -0.5 -28.0  0.0 -3.0  5.0
-    ## [2,] 20.0  -0.5 10.0  0.0  0.0
-    ## [3,]  0.0  -3.0 -0.5  0.0  0.0
-    ## [4,]  0.0   0.0  0.0 -0.5 -4.4
-    ## [5,]  0.0   0.0  0.0  7.5 -0.5
-
-``` r
-# specify growth rates or use rep(1, n) by default
-growth_rates = c(10, -1, 1, 1, -1)
-growth_rates
-```
-
-    ## [1] 10 -1  1  1 -1
-
-``` r
-sim_and_plot_glv(n_species = n, A_matrix, growth_rates, 
-                  sim_name = "_manyInteractions")
-```
-
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
-
-#### c) 4 Species
-
-``` r
-n = 4
-
-# Generate random interaction matrix for GLV
-A_matrix <- matrix(c(-0.5, 80, 0, 0,
-                     -50, -0.5, 3, 0,
-                     0, 0, -0.5, 20,
-                     0, 0, -10, -0.5), nrow = n)
-A_matrix
-```
-
-    ##      [,1]  [,2] [,3]  [,4]
-    ## [1,] -0.5 -50.0  0.0   0.0
-    ## [2,] 80.0  -0.5  0.0   0.0
-    ## [3,]  0.0   3.0 -0.5 -10.0
-    ## [4,]  0.0   0.0 20.0  -0.5
-
-``` r
-# specify growth rates or use rep(1, n) by default
-growth_rates = c(5, -10, 7, -2)
-
-
-sim_and_plot_glv(n_species = n, A_matrix, growth_rates, 
-                  sim_name = "_oscillating_three")
-```
-
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
-
-#### d) 4 Species
-
-``` r
-n = 4
-
-# Generate random interaction matrix for GLV
-A_matrix <- matrix(c(-0.5, 50, 0, 0,
-                     -15, -0.5, 0, 0,
-                     0, 0, -0.5, 150,
-                     0, 0, -200, -0.5), nrow = n)
-A_matrix
-```
-
-    ##      [,1]  [,2]  [,3]   [,4]
-    ## [1,] -0.5 -15.0   0.0    0.0
-    ## [2,] 50.0  -0.5   0.0    0.0
-    ## [3,]  0.0   0.0  -0.5 -200.0
-    ## [4,]  0.0   0.0 150.0   -0.5
-
-``` r
-# specify growth rates or use rep(1, n)
-growth_rates = c(15, -12, 17, -17)
-
-x0 = c(1, 1, 1, 1)
-
-sim_and_plot_glv(n_species = n, 
-                  A_matrix = A_matrix,
-                  growth_rates = growth_rates,
-                  x0 = x0,
-                  sim_name = "_higherX0")
-```
-
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
-
-### Large Example for simulating GLV
-
-#### a) with 30 Species
-
-``` r
-n = 30
-
-# Generate random interaction matrix for GLV (2 Species)
-set.seed(12)
-A_matrix <- randomA(n_species = 30)
-
-# simulate GLV
-sim_and_plot_glv(n_species = n, A_matrix)
-```
-
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
-
-#### b) with 10 Species
-
-``` r
-n = 10
-
-# Generate random interaction matrix for GLV (2 Species)
-# set.seed(2)
-# A_matrix <- randomA(n_species = n)
-A_matrix <- matrix(c(-0.5, 30, 0, 0, 0, 0, 0, 0, 0, 0,
-                     0, -0.5, 0, 0, 0, 0, 0, 0, 0, 0,
-                     0, 0, -0.5, 0, 0, 0, 0, 0, 0, 0,
-                     0, 0, 0, -0.5, 0, 0, 12, 0, 0, 0,
-                     0, 0, 0, 0, -0.5, 0, 0, 0, 0, 0,
-                     0, 0, 0, 0, 0, -0.5, 0, 0, 0, 0,
-                     0, 0, -15, 0, 0, 0, -0.5, 0, 0, 0,
-                     0, 0, 0, 0, 0, 0, 0, -0.5, 0, 0,
-                     0, 0, 0, 0, 0, 0, 0, 0, -0.5, 0,
-                     0, 0, 0, 0, 0, 0, 0, 0, 2, -0.5),
-                   nrow = n)
-A_matrix
-```
-
-    ##       [,1] [,2] [,3] [,4] [,5] [,6]  [,7] [,8] [,9] [,10]
-    ##  [1,] -0.5  0.0  0.0  0.0  0.0  0.0   0.0  0.0  0.0   0.0
-    ##  [2,] 30.0 -0.5  0.0  0.0  0.0  0.0   0.0  0.0  0.0   0.0
-    ##  [3,]  0.0  0.0 -0.5  0.0  0.0  0.0 -15.0  0.0  0.0   0.0
-    ##  [4,]  0.0  0.0  0.0 -0.5  0.0  0.0   0.0  0.0  0.0   0.0
-    ##  [5,]  0.0  0.0  0.0  0.0 -0.5  0.0   0.0  0.0  0.0   0.0
-    ##  [6,]  0.0  0.0  0.0  0.0  0.0 -0.5   0.0  0.0  0.0   0.0
-    ##  [7,]  0.0  0.0  0.0 12.0  0.0  0.0  -0.5  0.0  0.0   0.0
-    ##  [8,]  0.0  0.0  0.0  0.0  0.0  0.0   0.0 -0.5  0.0   0.0
-    ##  [9,]  0.0  0.0  0.0  0.0  0.0  0.0   0.0  0.0 -0.5   2.0
-    ## [10,]  0.0  0.0  0.0  0.0  0.0  0.0   0.0  0.0  0.0  -0.5
-
-``` r
-growth_rates = rep(1, n)
-growth_rates
-```
-
-    ##  [1] 1 1 1 1 1 1 1 1 1 1
-
-``` r
-sim_and_plot_glv(n_species = n, A_matrix, growth_rates)
-```
-
-![](01e-timeseries-miaSim_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+<!-- # Further Examples -->
+<!-- ## Function to simulate, save and plot GLV -->
+<!-- ```{r, echo=FALSE} -->
+<!-- # simulates generalized Lotka Volterra with miaSim (dx/dt = x(b + Ax)) -->
+<!-- # for t = 1,...,500 -->
+<!-- # saves the glv time series as .mat file -->
+<!-- # plots the glv time series -->
+<!-- # sim_name: give the simulation a name, e.g. "_oscillating" -->
+<!-- sim_and_plot_glv <- -->
+<!--   function(n_species, A_matrix, growth_rates = NULL, x0 = NULL, sim_name = "") { -->
+<!--     if(is.null(growth_rates)){ -->
+<!--       growth_rates <- runif(n_species) -->
+<!--     } -->
+<!--     if(is.null(x0)){ -->
+<!--       x0 <- runif(n_species) -->
+<!--     } -->
+<!--     # simulate GLV -->
+<!--     glv_tmp <- -->
+<!--       simulateGLV( -->
+<!--         n_species = n_species, -->
+<!--         A = A_matrix, -->
+<!--         x = x0, -->
+<!--         b = growth_rates, -->
+<!--         t_start = 0, -->
+<!--         t_store = 5000 -->
+<!--       ) -->
+<!--     # write .mat file for python -->
+<!--     glv_tmp_mat <- data.matrix(cbind(1:500, t(glv_tmp[,1:500]))) -->
+<!--     colnames(glv_tmp_mat) <- c("t", paste0("x_",1:n_species)) -->
+<!--     # # write csv -->
+<!--     # write.csv(glv_tmp_mat, -->
+<!--     #           paste0(path_target(),"/miaSim_GLV_", n_species, "species", -->
+<!--     #                 sim_name, ".csv"), -->
+<!--     #           row.names = F) -->
+<!--     autoplot(ts(glv_tmp_mat[1:500, 1:n_species+1]), facets = F) -->
+<!--   } -->
+<!-- ``` -->
+<!-- ## Simulate other 4 species example -->
+<!-- ```{r} -->
+<!-- n_species = 4 -->
+<!-- A_matrix <- matrix(c(-0.5, 30, 0, 0, -->
+<!--                      -15, -0.5, 0, 0, -->
+<!--                      0, 0, -0.5, 20, -->
+<!--                      0, 0, -10, -0.5), nrow = n_species) -->
+<!-- # specify growth rates or use rep(1, n) by default -->
+<!-- growth_rates = c(2/3, -1, 0.7, -3) -->
+<!-- # instead of setting a seed we generate a x0 by our self -->
+<!-- x0 = c(0.3,0.32,0.2,0.45) -->
+<!-- # simulate GLV -->
+<!-- glv_tmp <- -->
+<!--   simulateGLV( -->
+<!--     n_species = n_species, -->
+<!--     A = A_matrix, -->
+<!--     x = x0, -->
+<!--     b = growth_rates, -->
+<!--     t_start = 0, -->
+<!--     t_store = 1000 -->
+<!--   ) -->
+<!-- # bring into matrix format -->
+<!-- glv_tmp_mat <- data.matrix(cbind(1:150, t(glv_tmp[,1:150]))) -->
+<!-- colnames(glv_tmp_mat) <- c("t", paste0("x_",1:n_species)) -->
+<!-- # write csv -->
+<!-- write.csv(glv_tmp_mat, -->
+<!--           paste0(path_target(),"/miaSim_GLV_4species_oscillating_zero.csv"), -->
+<!--           row.names = F) -->
+<!-- autoplot(ts(glv_tmp_mat[, 1:n_species+1]), facets = F) -->
+<!-- ``` -->
+<!-- ## General gLV simulation for arbitrary number n of species -->
+<!-- ### a) 5 Species -->
+<!-- ```{r} -->
+<!-- n_species = 5 -->
+<!-- # Generate interaction matrix for GLV (5 Species) -->
+<!-- A_matrix <- matrix(c(-0.5, 20, 0, 0, 0, -->
+<!--                      -28, -0.5, 0, 0, 0, -->
+<!--                      0, 0, -0.5, 0, 0, -->
+<!--                      0, 0, 0, -0.5, 40, -->
+<!--                      0, 0, -20, -60, -0.5), nrow = n_species) -->
+<!-- # specify growth rates or use rep(1, n) by default -->
+<!-- growth_rates = c(10, -1, 3.5, 10, -10) -->
+<!-- set.seed(2) -->
+<!-- # simulate GLV -->
+<!-- glv_tmp <- -->
+<!--   simulateGLV( -->
+<!--     n_species = n_species, -->
+<!--     A = A_matrix, -->
+<!--     b = growth_rates, -->
+<!--     t_start = 0, -->
+<!--     t_store = 5000 -->
+<!--   ) -->
+<!-- # bring into matrix format -->
+<!-- glv_tmp_mat <- data.matrix(cbind(1:500, t(glv_tmp[,1:500]))) -->
+<!-- colnames(glv_tmp_mat) <- c("t", paste0("x_",1:n_species)) -->
+<!-- # write csv -->
+<!-- write.csv(glv_tmp_mat[25:75,], -->
+<!--           paste0(path_target(),"/miaSim_GLV_", n_species, "species_25-75.csv"), -->
+<!--           row.names = F) -->
+<!-- autoplot(ts(glv_tmp_mat[25:75, 1:n_species+1]), facets = F) -->
+<!-- ``` -->
+<!-- ### b) 5 Species -->
+<!-- ```{r} -->
+<!-- n = 5 -->
+<!-- # # Generate random interaction matrix for GLV (5 Species) -->
+<!-- # set.seed(246) -->
+<!-- # A_matrix <- randomA(n_species = n) -->
+<!-- A_matrix <- matrix(c(-0.5, 20, 0, 0, 0, -->
+<!--                      -28, -0.5, -3, 0, 0, -->
+<!--                      0, 10, -0.5, 0, 0, -->
+<!--                      -3, 0, 0, -0.5, 7.5, -->
+<!--                      5, 0, 0, -4.4, -0.5), nrow = n) -->
+<!-- A_matrix -->
+<!-- # specify growth rates or use rep(1, n) by default -->
+<!-- growth_rates = c(10, -1, 1, 1, -1) -->
+<!-- growth_rates -->
+<!-- sim_and_plot_glv(n_species = n, A_matrix, growth_rates,  -->
+<!--                   sim_name = "_manyInteractions") -->
+<!-- ``` -->
+<!-- ### c) 4 Species -->
+<!-- ```{r} -->
+<!-- n = 4 -->
+<!-- # Generate random interaction matrix for GLV -->
+<!-- A_matrix <- matrix(c(-0.5, 80, 0, 0, -->
+<!--                      -50, -0.5, 3, 0, -->
+<!--                      0, 0, -0.5, 20, -->
+<!--                      0, 0, -10, -0.5), nrow = n) -->
+<!-- A_matrix -->
+<!-- # specify growth rates or use rep(1, n) by default -->
+<!-- growth_rates = c(5, -10, 7, -2) -->
+<!-- sim_and_plot_glv(n_species = n, A_matrix, growth_rates,  -->
+<!--                   sim_name = "_oscillating_three") -->
+<!-- ``` -->
+<!-- ### d) 4 Species -->
+<!-- ```{r} -->
+<!-- n = 4 -->
+<!-- # Generate random interaction matrix for GLV -->
+<!-- A_matrix <- matrix(c(-0.5, 50, 0, 0, -->
+<!--                      -15, -0.5, 0, 0, -->
+<!--                      0, 0, -0.5, 150, -->
+<!--                      0, 0, -200, -0.5), nrow = n) -->
+<!-- A_matrix -->
+<!-- # specify growth rates or use rep(1, n) -->
+<!-- growth_rates = c(15, -12, 17, -17) -->
+<!-- x0 = c(1, 1, 1, 1) -->
+<!-- sim_and_plot_glv(n_species = n,  -->
+<!--                   A_matrix = A_matrix, -->
+<!--                   growth_rates = growth_rates, -->
+<!--                   x0 = x0, -->
+<!--                   sim_name = "_higherX0") -->
+<!-- ``` -->
+<!-- ## Large Example for simulating GLV  -->
+<!-- ### a) with 30 Species -->
+<!-- ```{r} -->
+<!-- n = 30 -->
+<!-- # Generate random interaction matrix for GLV (2 Species) -->
+<!-- set.seed(12) -->
+<!-- A_matrix <- randomA(n_species = 30) -->
+<!-- # simulate GLV -->
+<!-- sim_and_plot_glv(n_species = n, A_matrix) -->
+<!-- ``` -->
+<!-- ### b) with 10 Species -->
+<!-- ```{r} -->
+<!-- n = 10 -->
+<!-- # Generate random interaction matrix for GLV (2 Species) -->
+<!-- # set.seed(2) -->
+<!-- # A_matrix <- randomA(n_species = n) -->
+<!-- A_matrix <- matrix(c(-0.5, 30, 0, 0, 0, 0, 0, 0, 0, 0, -->
+<!--                      0, -0.5, 0, 0, 0, 0, 0, 0, 0, 0, -->
+<!--                      0, 0, -0.5, 0, 0, 0, 0, 0, 0, 0, -->
+<!--                      0, 0, 0, -0.5, 0, 0, 12, 0, 0, 0, -->
+<!--                      0, 0, 0, 0, -0.5, 0, 0, 0, 0, 0, -->
+<!--                      0, 0, 0, 0, 0, -0.5, 0, 0, 0, 0, -->
+<!--                      0, 0, -15, 0, 0, 0, -0.5, 0, 0, 0, -->
+<!--                      0, 0, 0, 0, 0, 0, 0, -0.5, 0, 0, -->
+<!--                      0, 0, 0, 0, 0, 0, 0, 0, -0.5, 0, -->
+<!--                      0, 0, 0, 0, 0, 0, 0, 0, 2, -0.5), -->
+<!--                    nrow = n) -->
+<!-- A_matrix -->
+<!-- growth_rates = rep(1, n) -->
+<!-- growth_rates -->
+<!-- sim_and_plot_glv(n_species = n, A_matrix, growth_rates) -->
+<!-- ``` -->
 
 # Files written
 
@@ -402,13 +331,11 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 7 × 4
+    ## # A tibble: 5 × 4
     ##   path                                       type       size modification_time  
     ##   <fs::path>                                 <fct> <fs::byt> <dttm>             
-    ## 1 miaSim_GLV_4species_new.csv                file     11.72K 2023-10-24 13:04:33
-    ## 2 miaSim_GLV_4species_oscillating_zero.csv   file     11.65K 2023-10-24 13:04:32
-    ## 3 miaSim_GLV_5species_25-75.csv              file      4.76K 2023-10-24 13:04:36
-    ## 4 ts_miaSim_GLV_4species_new_noise_0-005.csv file     11.13K 2023-10-24 13:04:34
-    ## 5 ts_miaSim_GLV_4species_new_noise_0-01.csv  file     11.13K 2023-10-24 13:04:34
-    ## 6 ts_miaSim_GLV_4species_new_noise_0-02.csv  file     11.17K 2023-10-24 13:04:34
-    ## 7 ts_miaSim_GLV_4species_new_noise_0-04.csv  file     11.21K 2023-10-24 13:04:35
+    ## 1 miaSim_GLV_4species_new.csv                file      11.7K 2023-11-06 22:27:09
+    ## 2 ts_miaSim_GLV_4species_new_noise_0-005.csv file      11.7K 2023-11-06 22:27:10
+    ## 3 ts_miaSim_GLV_4species_new_noise_0-01.csv  file      11.7K 2023-11-06 22:27:10
+    ## 4 ts_miaSim_GLV_4species_new_noise_0-02.csv  file      11.8K 2023-11-06 22:27:10
+    ## 5 ts_miaSim_GLV_4species_new_noise_0-04.csv  file      11.8K 2023-11-06 22:27:11
