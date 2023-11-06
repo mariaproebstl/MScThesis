@@ -52,9 +52,9 @@ def load_data(filepath):
     # plot time series over all taxa
     fig, ax = plt.subplots()
     for i in np.arange(n_taxa):
-        ax.plot(T[0], P[0][:,i], label = f"x{i} ({Names[i]})")
+        ax.plot(T[0], P[0][:,i], label = f"x{i+1} ({Names[i]})")
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.savefig(f'{folderpath_out}plot_dataset.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{folderpath_out}plot_dataset.pdf', dpi=300, bbox_inches='tight')
     plt.close()
 
 
@@ -62,6 +62,8 @@ def load_data(filepath):
     if "other" in Names:
         # use the genus "other" as deonominator
         denom = Names.index("other") # for 10_most_abundant_rel_counts datasets
+    elif "Clostridium-scindens" in Names and data_name == "Bucci":
+        denom = Names.index("Clostridium-scindens")
     else:
         denom = choose_denom(P)
     
@@ -76,7 +78,7 @@ def load_data(filepath):
         ax.plot(T[0], ALR[0][:,i], label = Names_alr[i])
     ax.set_title(f'ALR transformed dataset - chosen denominator is \"{denom_name}\" (x{denom})')
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.savefig(f'{folderpath_out}plot_dataset_ALR.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{folderpath_out}plot_dataset_ALR.pdf', dpi=300, bbox_inches='tight')
     plt.close()
 
     # save ALR transformed data csv
@@ -154,7 +156,7 @@ def save_results(clv, regularization = "elastic_net"):
     fig.colorbar(ax1.collections[0], cax=cbar_ax)
 
     # save the plot
-    plt.savefig(f'{folderpath_out}clv_{regularization}_g_A_heatmaps.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{folderpath_out}clv_{regularization}_g_A_heatmaps.pdf', dpi=300, bbox_inches='tight')
     plt.close()
 
 
@@ -165,7 +167,7 @@ def save_results(clv, regularization = "elastic_net"):
     plt.gca().xaxis.tick_top()
     plt.gca().tick_params(left=False, top=False)
     # save the plot
-    plt.savefig(f'{folderpath_out}clv_{regularization}_A_heatmap.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{folderpath_out}clv_{regularization}_A_heatmap.pdf', dpi=300, bbox_inches='tight')
     plt.close()
 
 
@@ -178,7 +180,7 @@ def predict_clv(clv, regularization = "elastic_net"):
     # save pred as csv
     df_pred = pd.DataFrame(data=pred, columns=Names)
     df_pred.insert(0, "Time", T[0])
-    df_pred.to_csv(f'{folderpath_out}ts_prediction_{data_name}.csv', index=False)
+    df_pred.to_csv(f'{folderpath_out}ts_clv_{regularization}_prediction_{data_name}.csv', index=False)
 
     n_col = 3
     n_row = math.ceil(n_taxa/3)
@@ -195,7 +197,7 @@ def predict_clv(clv, regularization = "elastic_net"):
         axs[math.floor(i/n_col), (i%n_col)].plot(T[0][1:], pred[1:,i], linewidth = 2, label = "fit")
         # axs[math.floor(i/n_col), (i%n_col)].plot(T[0], P[0][:,i], linewidth = 0.8, linestyle='--')
         # axs[math.floor(i/n_col), (i%n_col)].scatter(T[0], P[0][:,i], linewidth = 0.8, s = 1, color = colors[1])
-        axs[math.floor(i/n_col), (i%n_col)].set_title(f"{Names[i]} (x{i})")
+        axs[math.floor(i/n_col), (i%n_col)].set_title(f"{Names[i]} (x{i+1})")
         axs[math.floor(i/n_col), (i%n_col)].title.set_size(10)
                         
     # plt.setp(axs, ylim=(min(pred[1:,].min(), P[0].min()) - 0.01, max(pred[1:,].max(), P[0].max()) + 0.05))
@@ -209,7 +211,7 @@ def predict_clv(clv, regularization = "elastic_net"):
     fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(0.95, 0.99), ncol = 2)
 
     # save the plot
-    plt.savefig(f'{folderpath_out}clv_{regularization}_fits.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{folderpath_out}clv_{regularization}_fits.pdf', dpi=300, bbox_inches='tight')
     plt.close()
 
 
@@ -256,8 +258,7 @@ if __name__ == "__main__":
     # ### example input
     # data_name = "female"
     # # path of data file
-    # subject = "female"
-    # filename = f"ts_{subject}_Genus_10_most_abundant_rel_counts.csv"
+    # filename = f"ts_female_Genus_10_most_abundant_rel_counts.csv"
     # # specify name of run
     # run = datetime.now().strftime('%m-%d_%H-%M')
     # # start run
@@ -274,10 +275,11 @@ if __name__ == "__main__":
         ['Bucci', 'ts_bucci_subject_all_rel_counts_denoised.csv']
     ]
     
-    for run in ["{:02}".format(i) for i in range(1)]:
+    for run in ["{:02}".format(i) for i in range(1)]: # change if multiple runs should be started
+        # run = 10
         print(f"run {run} starts")
         for data_name, filename in compositional_data:
             print(data_name, "started")
             run_clv(data_name, filename, run)
             print(data_name, "finished")
-    
+        
