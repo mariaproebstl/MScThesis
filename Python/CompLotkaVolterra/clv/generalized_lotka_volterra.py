@@ -565,7 +565,7 @@ def plot_heatmaps(A, g, n_taxa, title = ""):
 
     # Plotting the vector g as a heatmap
     if g is None:
-        sns.heatmap(np.zeros((n_taxa, 1)), cmap="RdBu", vmin=-max_value, vmax=max_value, 
+        sns.heatmap(np.zeros((n_taxa, 1)), cmap="RdBu", center=0, vmin=-max_value, vmax=max_value, 
                     cbar=False, ax=ax0)  #  linewidths=0.5, linecolor='black'
         # ax0.set_title('growth vector g')
         ax0.xaxis.tick_top()
@@ -592,6 +592,14 @@ def plot_heatmaps(A, g, n_taxa, title = ""):
     # Adding a colorbar for the entire figure
     cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])
     fig.colorbar(ax1.collections[0], cax=cbar_ax)
+
+    # outline the largest 20% of the values in A
+    threshold = np.percentile(abs(A), 80) # threshold for the top 20% of values
+    positions = np.argwhere(abs(A) >= threshold) # positions of the top 20% of values
+    # Add rectangles around the top 20% of values
+    for pos in positions:
+        rect = Rectangle((pos[1], pos[0]), 1, 1, linewidth=1, edgecolor='black', facecolor='none')
+        ax1.add_patch(rect)
         
     # Add a border around the entire plot
     for axis in [ax0, ax1]:

@@ -152,7 +152,7 @@ class CompositionalLotkaVolterra:
         if self.alpha is None or self.r_A is None or self.r_g is None or self.r_B is None:
             if verbose:
                 print("Estimating regularizers...")
-            self.alpha, self.r_A, self.r_g, self.r_B = estimate_elastic_net_regularizers_cv(self.X, self.P, self.U, self.T, self.denom, folds=folds, no_effects=self.no_effects, verbose=verbose)
+            self.alpha, self.r_A, self.r_g, self.r_B = estimate_elastic_net_regularizers_clv(self.X, self.P, self.U, self.T, self.denom, folds=folds, no_effects=self.no_effects, verbose=verbose)
             
         if verbose:
             print("Estimating model parameters...")
@@ -164,7 +164,7 @@ class CompositionalLotkaVolterra:
 
     def train_ridge(self, verbose=False, folds=10):
         if self.alpha is not None or self.r_A is None or self.r_g is None or self.r_B is None:
-            self.r_A, self.r_g, self.r_B = estimate_ridge_regularizers_cv(self.X, self.P, self.U, self.T, self.denom, folds=folds, no_effects=self.no_effects, verbose=verbose)
+            self.r_A, self.r_g, self.r_B = estimate_ridge_regularizers_clv(self.X, self.P, self.U, self.T, self.denom, folds=folds, no_effects=self.no_effects, verbose=verbose)
         
         if verbose:
             print("Estimating model parameters...")
