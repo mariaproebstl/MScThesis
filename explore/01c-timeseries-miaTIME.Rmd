@@ -80,18 +80,61 @@ ps_Silverman <-
 ```
 
 
-### Rename NAs in tax_table to "unknown"
+### Rename NAs or unknown taxonomic ranks in tax_table
 
 ```{r, message=FALSE}
-tax_table(ps_Silverman)[is.na(tax_table(ps_Silverman))] <- 
-  "unknown"
+tax_table(ps_Silverman)[is.na(tax_table(ps_Silverman)) | 
+                          tax_table(ps_Silverman) == ""] <- "unknown"
 ```
+
+For Species/Genus/etc. were the name is unknown, we set their name to "unknown_Level_count".
+In this formulation, "Level" is the taxonomic level and "count" counts threw the number of unknowns at this rank.
+In the Species column for example the unknowns will then have names like "unknown_Species_1", "unknown_Species_2", etc.
+
+```{r, message=FALSE}
+physeq <- ps_Silverman
+
+# Access the taxonomy table from the phyloseq object
+taxonomy_table <- tax_table(physeq)
+
+# Function to rename unknown taxa at a specific level
+rename_unknown_taxa <- function(taxonomy, level) {
+  unknown_taxa <- grepl("unknown", taxonomy[, level], ignore.case = TRUE)
+  num_unknown_taxa <- sum(unknown_taxa)
+  renamed_taxa <- character(num_unknown_taxa)
+  
+  for (i in 1:num_unknown_taxa) {
+    renamed_taxa[i] <- paste("unknown_", level, "_", i, sep = "")
+  }
+  
+  taxonomy[unknown_taxa, level] <- renamed_taxa
+  return(taxonomy)
+}
+
+# List of taxonomic levels to rename
+taxonomic_levels <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+
+# Iterate through taxonomic levels and rename unknown taxa
+for (level in taxonomic_levels) {
+  taxonomy_table <- rename_unknown_taxa(taxonomy_table, level)
+}
+
+# Assign the updated taxonomy table back to the phyloseq object
+tax_table(physeq) <- taxonomy_table
+
+# Assign phyloseq object back to original ps
+ps_Silverman <- physeq
+
+```
+
 
 
 ### Add date to sample info in phyloseq
 
+Since the exact date of each sample is not clearly provided in the meta data, we extract the date information (day and hour) from the sample name.
+
 ```{r}
-# extract time info from sample names
+# extract time info from the sample names
 
 # create columns for day/hour info
 sample_names <- sample_names(ps_Silverman)
@@ -122,6 +165,10 @@ ps_Silverman <- merge_phyloseq(ps_Silverman, sam.new)
 # head(sample_data(ps_Silverman))
 ```
 
+
+### Remove samples of day 28
+
+Further, day 28 is the last day of the study and is removed from our data, since multiple samples are available which complicates their handling.
 
 ```{r, message=FALSE}
 # remove samples of day 28 from analysis
@@ -187,10 +234,10 @@ ps_Silverman_unique <-
 
 ```{r, message=FALSE}
 # load this R script which slightly modifies the merge_sample function of phyloseq package
-source("../R/merge-methods-modified.R")
+source("../R/functions/merge-methods-modified.R")
 ```
 
-Generate another phyloseq object ("ps_Silverman_noDuplicates") containing all samples of SilvermanAGutData (all counts for unique samples and for the duplicates the mean counts).
+We here generate an additional phyloseq object (called "ps_Silverman_noDuplicates") containing all samples of SilvermanAGutData as follows: all counts for unique samples as they are and for the duplicates the mean counts over these duplicated samples.
 
 ```{r, message=FALSE}
 # add group for merging
@@ -289,20 +336,20 @@ for(vessel in 1:4){
 
 ### Mean subsets
 
-```{r}
+```{r, message=FALSE}
 # Get a dataset, that contains mean over all vessels in one
-ps_Silverman_mean <- copy(ps_Silverman)
-sample_data(ps_Silverman_mean) <- 
-  sample_data(ps_Silverman_mean)[, c("Time", "Time_factor")]
-ps_Silverman_mean <-
-  merge_samples(ps_Silverman_mean, group = "Time") %>% 
+ps_Silverman_mean_all <- copy(ps_Silverman)
+sample_data(ps_Silverman_mean_all) <- 
+  sample_data(ps_Silverman_mean_all)[, c("Time", "Time_factor")]
+ps_Silverman_mean_all <-
+  merge_samples(ps_Silverman_mean_all, group = "Time") %>% 
   transform_sample_counts(function(x) x / sum(x))
 
 # devide into daily and hourly samples
 ps_Silverman_mean_daily <- 
-  subset_samples(ps_Silverman_mean, Time == as.integer(Time))
+  subset_samples(ps_Silverman_mean_all, Time == as.integer(Time))
 ps_Silverman_mean_hourly <- 
-  subset_samples(ps_Silverman_mean, Time > 19 & Time < 25)
+  subset_samples(ps_Silverman_mean_all, Time > 19 & Time < 25)
 ```
 
 
@@ -362,10 +409,155 @@ saveRDS(ps_Silverman_mean_daily,
         path_target("ps_Silverman_Vall_daily_rel_counts.rds"))
 saveRDS(ps_Silverman_mean_hourly,
         path_target("ps_Silverman_Vall_hourly_rel_counts.rds"))
-saveRDS(ps_Silverman_mean,
+saveRDS(ps_Silverman_mean_all,
         path_target("ps_Silverman_Vall_all_rel_counts.rds"))
 
 ```
+
+
+
+
+## Aggregate the dataset to the 10 most abundant Genera
+
+
+### Filter for the most abundant taxa are
+
+```{r, message=FALSE}
+for(time_type in c("all", "daily", "hourly")){
+  ps_tmp <- get(paste0("ps_Silverman_mean_", time_type))
+  
+  data <-
+    ps_tmp %>% 
+    psmelt() %>%
+    as_tibble()
+  
+  # get Genera with highest abundance (sum over all Counts for each Genus)
+  most_abundant_genera <-
+    data %>%
+      group_by(Genus) %>%
+      summarise(Sum_Abundance = sum(Abundance)) %>% # another possible criteria would be mean(Abundance)
+      arrange(-Sum_Abundance) %>%
+      .[1:10, "Genus"] %>% 
+    as.vector()
+
+  # Rename genera that are not in most_abundant_genera to "other"
+  ps_tmp <- ps_tmp %>%
+    tax_mutate(Genus = if_else(
+      Genus %in% most_abundant_genera$Genus,
+      as.character(Genus),
+      "other"
+    ))
+  
+  # select only Genus and Species column of tax_table
+  tax_table(ps_tmp) <- tax_table(ps_tmp)[, c("Genus", "Species")]
+  
+  ps_tmp <- ps_tmp %>%
+    # summarize over tax level, include NAs
+    tax_glom(taxrank = "Genus", NArm = FALSE) %>%
+    speedyseq::transmute_tax_table(Genus, .otu = Genus)
+
+  assign(paste0("ps_Silverman_mean_", time_type, "_Genus_10_most_abundant"),
+         ps_tmp)
+}
+```
+
+
+### Transform counts to relative abundances
+
+```{r, message=FALSE}
+ps_Silverman_mean_all_Genus_10_most_abundant_rel_counts <-
+  transform_sample_counts(ps_Silverman_mean_all_Genus_10_most_abundant,
+                          function(x) x / sum(x) )
+
+ps_Silverman_mean_daily_Genus_10_most_abundant_rel_counts <-
+  transform_sample_counts(ps_Silverman_mean_daily_Genus_10_most_abundant,
+                          function(x) x / sum(x) )
+
+ps_Silverman_mean_hourly_Genus_10_most_abundant_rel_counts <-
+  transform_sample_counts(ps_Silverman_mean_hourly_Genus_10_most_abundant,
+                          function(x) x / sum(x) )
+```
+
+
+### Plot Phyloseq objects (relative counts)
+
+```{r}
+# plot all time_types on Family level
+for(time_type in c("all", "daily", "hourly")){
+  plt_tmp <-
+    plot_bar(get(paste0("ps_Silverman_mean_", time_type, "_Genus_10_most_abundant_rel_counts")),
+             x = "Time", fill = "Genus") +
+    # theme(legend.position = "none") +
+    labs(title = time_type,
+         x = "Time [days]") +
+    geom_bar(aes(color = Genus, fill = Genus),
+             stat = "identity",
+             position = "stack")
+  print(plt_tmp)
+}
+
+```
+
+
+### Save these time series as csv files
+
+```{r, message=FALSE}
+for(time_type in c("all", "daily", "hourly")) { 
+  
+  # get the tmp phyloseq object
+  ps_tmp <- get(paste0("ps_Silverman_mean_", time_type, "_Genus_10_most_abundant_rel_counts"))
+  
+  if(taxa_are_rows(ps_tmp)) {
+    otu_tmp <- t(otu_table(ps_tmp))
+  } else {
+    otu_tmp <- otu_table(ps_tmp)
+  }
+  # combine count data with time information
+  ts_tmp <-
+    cbind(sample_data(ps_tmp)[, "Time"],
+          otu_tmp)
+  ts_tmp <- ts_tmp[order(ts_tmp$Time), ]
+  
+  # save time series as csv file
+  write.csv(
+    ts_tmp,
+    path_target(paste0("ts_Silverman_Vall_", time_type, "_Genus_10_most_abundant_rel_counts.csv")),
+    row.names = F
+  )
+}
+```
+
+
+<!-- ```{r, message=FALSE} -->
+<!-- # saving for vesselwise datasets with 10 most abundant genera -->
+<!-- # Warning: Genera are not equal over all vessels !!! -->
+<!-- for(time_type in c( "daily", "hourly")) { -->
+<!--   for(vessel in 1:4){ -->
+<!--     # get the tmp phyloseq object -->
+<!--     ps_tmp <- get(paste0("ps_Silverman_", time_type, "_V", vessel, "_Genus_10_most_abundant_rel_counts")) -->
+<!--     if(taxa_are_rows(ps_tmp)) { -->
+<!--       otu_tmp <- t(otu_table(ps_tmp)) -->
+<!--     } else { -->
+<!--       otu_tmp <- otu_table(ps_tmp) -->
+<!--     } -->
+<!--     # combine count data with time information -->
+<!--     ts_tmp <- -->
+<!--       cbind(sample_data(ps_tmp)[, "Time"], -->
+<!--             otu_tmp) -->
+<!--     ts_tmp <- ts_tmp[order(ts_tmp$Time), ] -->
+<!--     ts_tmp <- -->
+<!--       subset(ts_tmp,!Time %in% c(19.875, 21.125, 21.25, -->
+<!--                                  (21 + 11 / 24), (23 + 10 / 24))) # 100% Bacteroides at these samples -->
+<!--     # save time series as csv file -->
+<!--     write.csv( -->
+<!--       ts_tmp, -->
+<!--       path_target(paste0("ts_Silverman_Vall_", time_type, "_V", vessel, -->
+<!--                          "_Genus_10_most_abundant_rel_counts.csv")), -->
+<!--       row.names = F -->
+<!--     ) -->
+<!--   } -->
+<!-- } -->
+<!-- ``` -->
 
 
 ## Files written

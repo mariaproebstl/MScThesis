@@ -1,6 +1,6 @@
 Time series (miaTime)
 ================
-Compiled at 2023-09-28 10:08:32 UTC
+Compiled at 2023-11-06 22:44:54 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "87d828ae-2f1b-40a8-b559-3784df62c78d")
@@ -76,17 +76,62 @@ ps_Silverman <-
   subset_samples(ps_Silverman, !(SampleID %in% zero_samples))
 ```
 
-### Rename NAs in tax_table to “unknown”
+### Rename NAs or unknown taxonomic ranks in tax_table
 
 ``` r
-tax_table(ps_Silverman)[is.na(tax_table(ps_Silverman))] <- 
-  "unknown"
+tax_table(ps_Silverman)[is.na(tax_table(ps_Silverman)) | 
+                          tax_table(ps_Silverman) == ""] <- "unknown"
+```
+
+For Species/Genus/etc. were the name is unknown, we set their name to
+“unknown_Level_count”. In this formulation, “Level” is the taxonomic
+level and “count” counts threw the number of unknowns at this rank. In
+the Species column for example the unknowns will then have names like
+“unknown_Species_1”, “unknown_Species_2”, etc.
+
+``` r
+physeq <- ps_Silverman
+
+# Access the taxonomy table from the phyloseq object
+taxonomy_table <- tax_table(physeq)
+
+# Function to rename unknown taxa at a specific level
+rename_unknown_taxa <- function(taxonomy, level) {
+  unknown_taxa <- grepl("unknown", taxonomy[, level], ignore.case = TRUE)
+  num_unknown_taxa <- sum(unknown_taxa)
+  renamed_taxa <- character(num_unknown_taxa)
+  
+  for (i in 1:num_unknown_taxa) {
+    renamed_taxa[i] <- paste("unknown_", level, "_", i, sep = "")
+  }
+  
+  taxonomy[unknown_taxa, level] <- renamed_taxa
+  return(taxonomy)
+}
+
+# List of taxonomic levels to rename
+taxonomic_levels <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+
+# Iterate through taxonomic levels and rename unknown taxa
+for (level in taxonomic_levels) {
+  taxonomy_table <- rename_unknown_taxa(taxonomy_table, level)
+}
+
+# Assign the updated taxonomy table back to the phyloseq object
+tax_table(physeq) <- taxonomy_table
+
+# Assign phyloseq object back to original ps
+ps_Silverman <- physeq
 ```
 
 ### Add date to sample info in phyloseq
 
+Since the exact date of each sample is not clearly provided in the meta
+data, we extract the date information (day and hour) from the sample
+name.
+
 ``` r
-# extract time info from sample names
+# extract time info from the sample names
 
 # create columns for day/hour info
 sample_names <- sample_names(ps_Silverman)
@@ -114,6 +159,12 @@ sam.new <- sample_data(sam.new)
 ps_Silverman <- merge_phyloseq(ps_Silverman, sam.new)
 # head(sample_data(ps_Silverman))
 ```
+
+### Remove samples of day 28
+
+Further, day 28 is the last day of the study and is removed from our
+data, since multiple samples are available which complicates their
+handling.
 
 ``` r
 # remove samples of day 28 from analysis
@@ -158,7 +209,7 @@ ggplot(psmelt(ps_Silverman_duplicates),
   theme(legend.position = "none")
 ```
 
-![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 ``` r
 # # show otu table of all duplicates (zero entries excluded)
@@ -182,12 +233,13 @@ ps_Silverman_unique <-
 
 ``` r
 # load this R script which slightly modifies the merge_sample function of phyloseq package
-source("../R/merge-methods-modified.R")
+source("../R/functions/merge-methods-modified.R")
 ```
 
-Generate another phyloseq object (“ps_Silverman_noDuplicates”)
-containing all samples of SilvermanAGutData (all counts for unique
-samples and for the duplicates the mean counts).
+We here generate an additional phyloseq object (called
+“ps_Silverman_noDuplicates”) containing all samples of SilvermanAGutData
+as follows: all counts for unique samples as they are and for the
+duplicates the mean counts over these duplicated samples.
 
 ``` r
 # add group for merging
@@ -284,18 +336,18 @@ for(vessel in 1:4){
 
 ``` r
 # Get a dataset, that contains mean over all vessels in one
-ps_Silverman_mean <- copy(ps_Silverman)
-sample_data(ps_Silverman_mean) <- 
-  sample_data(ps_Silverman_mean)[, c("Time", "Time_factor")]
-ps_Silverman_mean <-
-  merge_samples(ps_Silverman_mean, group = "Time") %>% 
+ps_Silverman_mean_all <- copy(ps_Silverman)
+sample_data(ps_Silverman_mean_all) <- 
+  sample_data(ps_Silverman_mean_all)[, c("Time", "Time_factor")]
+ps_Silverman_mean_all <-
+  merge_samples(ps_Silverman_mean_all, group = "Time") %>% 
   transform_sample_counts(function(x) x / sum(x))
 
 # devide into daily and hourly samples
 ps_Silverman_mean_daily <- 
-  subset_samples(ps_Silverman_mean, Time == as.integer(Time))
+  subset_samples(ps_Silverman_mean_all, Time == as.integer(Time))
 ps_Silverman_mean_hourly <- 
-  subset_samples(ps_Silverman_mean, Time > 19 & Time < 25)
+  subset_samples(ps_Silverman_mean_all, Time > 19 & Time < 25)
 ```
 
 ### Plots
@@ -356,9 +408,147 @@ saveRDS(ps_Silverman_mean_daily,
         path_target("ps_Silverman_Vall_daily_rel_counts.rds"))
 saveRDS(ps_Silverman_mean_hourly,
         path_target("ps_Silverman_Vall_hourly_rel_counts.rds"))
-saveRDS(ps_Silverman_mean,
+saveRDS(ps_Silverman_mean_all,
         path_target("ps_Silverman_Vall_all_rel_counts.rds"))
 ```
+
+## Aggregate the dataset to the 10 most abundant Genera
+
+### Filter for the most abundant taxa are
+
+``` r
+for(time_type in c("all", "daily", "hourly")){
+  ps_tmp <- get(paste0("ps_Silverman_mean_", time_type))
+  
+  data <-
+    ps_tmp %>% 
+    psmelt() %>%
+    as_tibble()
+  
+  # get Genera with highest abundance (sum over all Counts for each Genus)
+  most_abundant_genera <-
+    data %>%
+      group_by(Genus) %>%
+      summarise(Sum_Abundance = sum(Abundance)) %>% # another possible criteria would be mean(Abundance)
+      arrange(-Sum_Abundance) %>%
+      .[1:10, "Genus"] %>% 
+    as.vector()
+
+  # Rename genera that are not in most_abundant_genera to "other"
+  ps_tmp <- ps_tmp %>%
+    tax_mutate(Genus = if_else(
+      Genus %in% most_abundant_genera$Genus,
+      as.character(Genus),
+      "other"
+    ))
+  
+  # select only Genus and Species column of tax_table
+  tax_table(ps_tmp) <- tax_table(ps_tmp)[, c("Genus", "Species")]
+  
+  ps_tmp <- ps_tmp %>%
+    # summarize over tax level, include NAs
+    tax_glom(taxrank = "Genus", NArm = FALSE) %>%
+    speedyseq::transmute_tax_table(Genus, .otu = Genus)
+
+  assign(paste0("ps_Silverman_mean_", time_type, "_Genus_10_most_abundant"),
+         ps_tmp)
+}
+```
+
+### Transform counts to relative abundances
+
+``` r
+ps_Silverman_mean_all_Genus_10_most_abundant_rel_counts <-
+  transform_sample_counts(ps_Silverman_mean_all_Genus_10_most_abundant,
+                          function(x) x / sum(x) )
+
+ps_Silverman_mean_daily_Genus_10_most_abundant_rel_counts <-
+  transform_sample_counts(ps_Silverman_mean_daily_Genus_10_most_abundant,
+                          function(x) x / sum(x) )
+
+ps_Silverman_mean_hourly_Genus_10_most_abundant_rel_counts <-
+  transform_sample_counts(ps_Silverman_mean_hourly_Genus_10_most_abundant,
+                          function(x) x / sum(x) )
+```
+
+### Plot Phyloseq objects (relative counts)
+
+``` r
+# plot all time_types on Family level
+for(time_type in c("all", "daily", "hourly")){
+  plt_tmp <-
+    plot_bar(get(paste0("ps_Silverman_mean_", time_type, "_Genus_10_most_abundant_rel_counts")),
+             x = "Time", fill = "Genus") +
+    # theme(legend.position = "none") +
+    labs(title = time_type,
+         x = "Time [days]") +
+    geom_bar(aes(color = Genus, fill = Genus),
+             stat = "identity",
+             position = "stack")
+  print(plt_tmp)
+}
+```
+
+![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-18-2.png)<!-- -->![](01c-timeseries-miaTIME_files/figure-gfm/unnamed-chunk-18-3.png)<!-- -->
+
+### Save these time series as csv files
+
+``` r
+for(time_type in c("all", "daily", "hourly")) { 
+  
+  # get the tmp phyloseq object
+  ps_tmp <- get(paste0("ps_Silverman_mean_", time_type, "_Genus_10_most_abundant_rel_counts"))
+  
+  if(taxa_are_rows(ps_tmp)) {
+    otu_tmp <- t(otu_table(ps_tmp))
+  } else {
+    otu_tmp <- otu_table(ps_tmp)
+  }
+  # combine count data with time information
+  ts_tmp <-
+    cbind(sample_data(ps_tmp)[, "Time"],
+          otu_tmp)
+  ts_tmp <- ts_tmp[order(ts_tmp$Time), ]
+  
+  # save time series as csv file
+  write.csv(
+    ts_tmp,
+    path_target(paste0("ts_Silverman_Vall_", time_type, "_Genus_10_most_abundant_rel_counts.csv")),
+    row.names = F
+  )
+}
+```
+
+<!-- ```{r, message=FALSE} -->
+<!-- # saving for vesselwise datasets with 10 most abundant genera -->
+<!-- # Warning: Genera are not equal over all vessels !!! -->
+<!-- for(time_type in c( "daily", "hourly")) { -->
+<!--   for(vessel in 1:4){ -->
+<!--     # get the tmp phyloseq object -->
+<!--     ps_tmp <- get(paste0("ps_Silverman_", time_type, "_V", vessel, "_Genus_10_most_abundant_rel_counts")) -->
+<!--     if(taxa_are_rows(ps_tmp)) { -->
+<!--       otu_tmp <- t(otu_table(ps_tmp)) -->
+<!--     } else { -->
+<!--       otu_tmp <- otu_table(ps_tmp) -->
+<!--     } -->
+<!--     # combine count data with time information -->
+<!--     ts_tmp <- -->
+<!--       cbind(sample_data(ps_tmp)[, "Time"], -->
+<!--             otu_tmp) -->
+<!--     ts_tmp <- ts_tmp[order(ts_tmp$Time), ] -->
+<!--     ts_tmp <- -->
+<!--       subset(ts_tmp,!Time %in% c(19.875, 21.125, 21.25, -->
+<!--                                  (21 + 11 / 24), (23 + 10 / 24))) # 100% Bacteroides at these samples -->
+<!--     # save time series as csv file -->
+<!--     write.csv( -->
+<!--       ts_tmp, -->
+<!--       path_target(paste0("ts_Silverman_Vall_", time_type, "_V", vessel, -->
+<!--                          "_Genus_10_most_abundant_rel_counts.csv")), -->
+<!--       row.names = F -->
+<!--     ) -->
+<!--   } -->
+<!-- } -->
+<!-- ``` -->
 
 ## Files written
 
@@ -369,15 +559,18 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 9 × 4
-    ##   path                                    type         size modification_time  
-    ##   <fs::path>                              <fct> <fs::bytes> <dttm>             
-    ## 1 duplicated_samples.xlsx                 file        13.8K 2023-09-28 10:08:45
-    ## 2 ps_Silverman_rel_counts.rds             file       364.1K 2023-09-28 10:09:45
-    ## 3 ps_Silverman_V1_rel_counts.rds          file       172.6K 2023-09-28 10:09:45
-    ## 4 ps_Silverman_V2_rel_counts.rds          file         177K 2023-09-28 10:09:45
-    ## 5 ps_Silverman_V3_rel_counts.rds          file       173.3K 2023-09-28 10:09:45
-    ## 6 ps_Silverman_V4_rel_counts.rds          file       177.4K 2023-09-28 10:09:45
-    ## 7 ps_Silverman_Vall_all_rel_counts.rds    file       106.1K 2023-09-28 10:09:45
-    ## 8 ps_Silverman_Vall_daily_rel_counts.rds  file        32.6K 2023-09-28 10:09:45
-    ## 9 ps_Silverman_Vall_hourly_rel_counts.rds file        91.1K 2023-09-28 10:09:45
+    ## # A tibble: 12 × 4
+    ##    path                                        type     size modification_time  
+    ##    <fs::path>                                  <fct> <fs::b> <dttm>             
+    ##  1 duplicated_samples.xlsx                     file   13.77K 2023-11-06 22:45:08
+    ##  2 ps_Silverman_rel_counts.rds                 file  365.48K 2023-11-06 22:46:06
+    ##  3 ps_Silverman_V1_rel_counts.rds              file  173.96K 2023-11-06 22:46:06
+    ##  4 ps_Silverman_V2_rel_counts.rds              file  178.29K 2023-11-06 22:46:06
+    ##  5 ps_Silverman_V3_rel_counts.rds              file  174.68K 2023-11-06 22:46:06
+    ##  6 ps_Silverman_V4_rel_counts.rds              file  178.63K 2023-11-06 22:46:06
+    ##  7 ps_Silverman_Vall_all_rel_counts.rds        file  107.61K 2023-11-06 22:46:06
+    ##  8 ps_Silverman_Vall_daily_rel_counts.rds      file   34.08K 2023-11-06 22:46:06
+    ##  9 ps_Silverman_Vall_hourly_rel_counts.rds     file   92.59K 2023-11-06 22:46:06
+    ## 10 …_all_Genus_10_most_abundant_rel_counts.csv file   29.47K 2023-11-06 22:46:11
+    ## 11 …aily_Genus_10_most_abundant_rel_counts.csv file    5.33K 2023-11-06 22:46:11
+    ## 12 …urly_Genus_10_most_abundant_rel_counts.csv file   25.35K 2023-11-06 22:46:11
