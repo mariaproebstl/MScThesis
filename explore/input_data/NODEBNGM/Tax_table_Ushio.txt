@@ -1,0 +1,19 @@
+Scientific Name	Kingdom	Phylum	Class	Order	Family	Genus	Species
+
+Moon Jelly	Aurelia sp.	Aurelia	Ulmaridae	Semaeostomeae	Scyphozoa	Cnidaria	Animalia
+Japanese Anchovy	Engraulis japonicus	Engraulis	Engraulidae	Clupeiformes	Actinopterygii	Chordata	Animalia
+Striped Eel Catfish	Plotosus lineatus	Plotosus	Plotosidae	Siluriformes	Actinopterygii	Chordata	Animalia
+Japanese Rockfish	Sebastes inermis	Sebastes	Sebastidae	Scorpaeniformes	Actinopterygii	Chordata	Animalia
+Japanese Horse Mackerel	Trachurus japonicus	Trachurus	Carangidae	Perciformes	Actinopterygii	Chordata	Animalia
+-	Girella punctata	Girella	Girellidae	Perciformes	Actinopterygii	Chordata	Animalia
+
+Halichoeres tenuispinnis	Animalia	Chordata	Actinopterygii	Perciformes	Labridae	Halichoeres	H. tenuispinnis
+Chaenogobius gulosus	Animalia	Chordata	Actinopterygii	Perciformes	Gobiidae	Chaenogobius	C. gulosus
+Pterogobius zonoleucus	Animalia	Chordata	Actinopterygii	Perciformes	Gobiidae	Pterogobius	P. z
+
+
+Scientific Name	Kingdom	Phylum	Class	Order	Family	Genus	Species
+Tridentiger trigonocephalus	Animalia	Chordata	Actinopterygii	Perciformes	Gobiidae	Tridentiger	trigonocephalus
+Siganus fuscescens	Animalia	Chordata	Actinopterygii	Perciformes	Siganidae	Siganus	fuscescens
+Sphyraena pinguis	Animalia	Chordata	Actinopterygii	Perciformes	Sphyraenidae	Sphyraena	pinguis
+Rudarius ercodes	Animalia	Chordata	Actinopterygii	Tetraodontiformes	Monacanthidae	Rudarius	ercodes
