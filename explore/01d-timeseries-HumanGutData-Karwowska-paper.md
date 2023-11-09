@@ -1,6 +1,6 @@
 01d-timeseries-HumanGutData-Karwowska-paper
 ================
-Compiled at 2023-10-11 16:42:55 UTC
+Compiled at 2023-11-09 10:35:42 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "4435c437-d4bf-4c0c-a851-45bef7011c59")
@@ -16,6 +16,7 @@ library(tidyverse)
 library(data.table)
 library(phyloseq)
 library(microViz)
+library(viridis)
 ```
 
 ``` r
@@ -34,7 +35,7 @@ path_source <- projthis::proj_path_source(params$name)
 ``` r
 # set path to the folder where the data files are in
 filepath_data <- 
-  "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/Literatur/Code/dynamo/data/data/"
+  "input_data/humanTS_data/"
 
 # vector of all four subject names
 four_subjects <-
@@ -357,22 +358,73 @@ ps_female_Genus_10_most_abundant_rel_counts <-
 ### Plot Phyloseq objects (relative counts)
 
 ``` r
-# plot all subjects on Family level
-for(subject in four_subjects){
-  plt_tmp <-
-    plot_bar(get(paste0("ps_", subject, "_Genus_10_most_abundant_rel_counts")),
-             x = "Time", fill = "Genus") +
-    # theme(legend.position = "none") +
-    labs(title = subject,
-         x = "Time [days]") +
-    geom_bar(aes(color = Genus, fill = Genus),
-             stat = "identity",
-             position = "stack")
-  print(plt_tmp)
+# calculate mean of Genus "other" over all samples
+for(subject in four_subjects) {
+  ps_tmp <-
+    get(paste0("ps_", subject, "_Genus_10_most_abundant_rel_counts"))
+  
+  # Extract OTU Table
+  otu_table_df <- as.data.frame(otu_table(ps_tmp))
+  
+  # Calculating the mean
+  mean_other <-
+    mean(as.numeric(otu_table_df["other",]), na.rm = TRUE)
+  
+  assign(paste0(subject, "_mean_other"), mean_other)
 }
 ```
 
-![](01d-timeseries-HumanGutData-Karwowska-paper_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->![](01d-timeseries-HumanGutData-Karwowska-paper_files/figure-gfm/unnamed-chunk-7-2.png)<!-- -->![](01d-timeseries-HumanGutData-Karwowska-paper_files/figure-gfm/unnamed-chunk-7-3.png)<!-- -->![](01d-timeseries-HumanGutData-Karwowska-paper_files/figure-gfm/unnamed-chunk-7-4.png)<!-- -->
+``` r
+# choose color palette
+col_palette <- 
+    c('#7f3b08','#b35806','#e08214','#fdb863','#fee0b6','#f7f7f7','#d8daeb','#b2abd2','#8073ac','#542788','#2d004b')
+    # c('#543005','#8c510a','#bf812d','#dfc27d','#f6e8c3','#f5f5f5','#c7eae5','#80cdc1','#35978f','#01665e','#003c30')
+    # c('#67001f','#b2182b','#d6604d','#f4a582','#fddbc7','#f7f7f7','#d1e5f0','#92c5de','#4393c3','#2166ac','#053061')
+```
+
+``` r
+# plot all subjects on Genus level
+for(subject in four_subjects){
+  # Extract the phyloseq object
+  ps_tmp <- get(paste0("ps_", subject, "_Genus_10_most_abundant_rel_counts"))
+  
+  # Transform Phyloseq to Data Frame
+  df_for_plotting <- psmelt(ps_tmp)
+  
+  # Adjust Factor Levels to move Genus "other" to the end
+  genus_order <- c(setdiff(df_for_plotting$Genus, "other"), "other")
+  df_for_plotting$Genus <- factor(df_for_plotting$Genus, levels = genus_order)
+  
+  # Create a lighter turbo-like color palette
+  lighter_turbo <-
+    viridis(n = length(levels(df_for_plotting$Genus)), option = "turbo", begin = 0.05, end = 0.85, direction = 1)
+ 
+  # mean_other = get(paste0(subject, "mean_other_"))
+
+  # Plot with ggplot2
+  plt_tmp <- ggplot(df_for_plotting, aes(x = Time, y = Abundance, fill = Genus)) +
+    geom_bar(stat = "identity", position = "stack", aes(color = Genus)) +
+    labs(title = subject, x = "Time [days]", y = "rel. Abundance") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank()) +
+    # # add horizontal line for mean over "other"
+    # geom_hline(yintercept = mean_other, linetype = "dashed", color = "black") +
+    # annotate("text", x = Inf, y = mean_other, label = sprintf("Mean: %.2f", mean_other), 
+    #          vjust = 1.5, hjust = 1) + 
+    scale_fill_manual(values = col_palette) +
+    scale_color_manual(values = col_palette)
+  
+  # Show the plot
+  print(plt_tmp)
+    
+  # Save the plot
+  ggsave(path_target(paste0("plot_", subject, "Genus10_rel_counts.pdf")),
+         plt_tmp, width = 7, height = 4)
+}
+```
+
+![](01d-timeseries-HumanGutData-Karwowska-paper_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->![](01d-timeseries-HumanGutData-Karwowska-paper_files/figure-gfm/unnamed-chunk-9-2.png)<!-- -->![](01d-timeseries-HumanGutData-Karwowska-paper_files/figure-gfm/unnamed-chunk-9-3.png)<!-- -->![](01d-timeseries-HumanGutData-Karwowska-paper_files/figure-gfm/unnamed-chunk-9-4.png)<!-- -->
 
 ### Save these time series as csv files
 
@@ -381,8 +433,6 @@ for(subject in four_subjects) {
   
   # get the tmp phyloseq object
   ps_tmp <- get(paste0("ps_", subject, "_Genus_10_most_abundant"))
-  
-  ps_tmp <- subset_taxa(ps_tmp, !grepl("other", taxa_names(ps_tmp)))
   
   if(taxa_are_rows(ps_tmp)) {
     otu_tmp <- t(otu_table(ps_tmp))
@@ -418,7 +468,10 @@ for(subject in four_subjects) {
   ts_tmp <-
     cbind(sample_data(ps_tmp)[, "Time"],
           otu_tmp)
-  print(head(ts_tmp))
+  
+  # rearange ts_tmp such that "other" is last column
+  ts_tmp <- 
+    ts_tmp[, c(setdiff(names(ts_tmp), "other"), "other")]
   
   # save time series as csv file
   write.csv(
@@ -429,98 +482,6 @@ for(subject in four_subjects) {
 }
 ```
 
-    ##        Time Phocaeicola_A_858004 Faecalibacterium Gemmiger_A_73129 Anaerostipes
-    ## ID-000    0            0.2157222        0.2991667       0.02783333   0.03244444
-    ## ID-001    1            0.1967222        0.2684444       0.05505556   0.06316667
-    ## ID-002    2            0.2342222        0.2695000       0.05750000   0.04922222
-    ## ID-003    3            0.2635105        0.3058140       0.04933555   0.03875969
-    ## ID-004    4            0.2787222        0.3388333       0.04250000   0.03377778
-    ## ID-005    5            0.2579444        0.2967778       0.07561111   0.04666667
-    ##        Fusicatenibacter Blautia_A_141781 Faecalibacillus Bacteroides_H
-    ## ID-000       0.01633333       0.03066667     0.029777778    0.12177778
-    ## ID-001       0.02583333       0.04355556     0.050111111    0.10583333
-    ## ID-002       0.02200000       0.03633333     0.037833333    0.10150000
-    ## ID-003       0.01771872       0.03859358     0.018549280    0.09501661
-    ## ID-004       0.01472222       0.04116667     0.006222222    0.08644444
-    ## ID-005       0.01361111       0.02788889     0.014722222    0.07105556
-    ##            other Agathobaculum unknown_Genus_79
-    ## ID-000 0.1892222    0.03633333     0.0007222222
-    ## ID-001 0.1661111    0.02477778     0.0003888889
-    ## ID-002 0.1577778    0.03388889     0.0002222222
-    ## ID-003 0.1444075    0.02812846     0.0001661130
-    ## ID-004 0.1356111    0.02183333     0.0001666667
-    ## ID-005 0.1747222    0.02061111     0.0003888889
-    ##        Time Phocaeicola_A_858004 Anaerostipes Faecalibacterium
-    ## ID-000    0            0.3682222 0.0041666667       0.08688889
-    ## ID-001    1            0.3924444 0.0013333333       0.11244444
-    ## ID-002    2            0.4950556 0.0005555556       0.07538889
-    ## ID-003    3            0.4468333 0.0027777778       0.10922222
-    ## ID-004    4            0.4987778 0.0002777778       0.02944444
-    ## ID-005    5            0.3799444 0.0018333333       0.08116667
-    ##        Coprococcus_A_121497 Mediterraneibacter_A_155507 Butyrivibrio_A_180067
-    ## ID-000          0.013277778                 0.004722222            0.07505556
-    ## ID-001          0.025888889                 0.003222222            0.05338889
-    ## ID-002          0.016944444                 0.001722222            0.07238889
-    ## ID-003          0.017611111                 0.002222222            0.08883333
-    ## ID-004          0.007055556                 0.001222222            0.14300000
-    ## ID-005          0.026888889                 0.005777778            0.06394444
-    ##        Bacteroides_H     other Phascolarctobacterium_A Paramuribaculum
-    ## ID-000    0.09422222 0.3004444              0.02205556      0.03094444
-    ## ID-001    0.14433333 0.2133333              0.03116667      0.02244444
-    ## ID-002    0.14055556 0.1435556              0.02211111      0.03172222
-    ## ID-003    0.09738889 0.1832222              0.02188889      0.03000000
-    ## ID-004    0.11527778 0.1456111              0.02561111      0.03283333
-    ## ID-005    0.10927778 0.2663889              0.02705556      0.03455556
-    ##        Ruminococcus_E
-    ## ID-000   0.0000000000
-    ## ID-001   0.0000000000
-    ## ID-002   0.0000000000
-    ## ID-003   0.0000000000
-    ## ID-004   0.0008888889
-    ## ID-005   0.0031666667
-    ##        Time Phocaeicola_A_858004 Bacteroides_H Faecalibacterium Paramuribaculum
-    ## ID-000    0            0.4481111     0.2770556     0.0002222222    0.0001111111
-    ## ID-001    1            0.3461667     0.2896667     0.0008888889    0.0002777778
-    ## ID-002    2            0.3482222     0.3178333     0.0002777778    0.0071666667
-    ## ID-003    3            0.3992778     0.3072222     0.0068333333    0.0006111111
-    ## ID-004    4            0.1964444     0.1650556     0.0160000000    0.0043333333
-    ## ID-005    5            0.2381111     0.0895000     0.0231111111    0.0040555556
-    ##        Lachnospira     other Parabacteroides_B_862066 Phascolarctobacterium_A
-    ## ID-000 0.021222222 0.2414444             0.0000000000              0.01066667
-    ## ID-001 0.025666667 0.3237222             0.0000000000              0.01155556
-    ## ID-002 0.015777778 0.2963889             0.0000000000              0.01244444
-    ## ID-003 0.035888889 0.2141667             0.0000000000              0.03105556
-    ## ID-004 0.009388889 0.5340000             0.0000000000              0.01355556
-    ## ID-005 0.002833333 0.4084444             0.0008888889              0.01505556
-    ##        Ruminococcus_E Gemmiger_A_73129   Prevotella
-    ## ID-000              0     0.0006666667 0.0005000000
-    ## ID-001              0     0.0015000000 0.0005555556
-    ## ID-002              0     0.0017777778 0.0001111111
-    ## ID-003              0     0.0049444444 0.0000000000
-    ## ID-004              0     0.0097777778 0.0514444444
-    ## ID-005              0     0.0045000000 0.2135000000
-    ##        Time Phocaeicola_A_858004 Faecalibacterium Bacteroides_H Lachnospira
-    ## ID-001    1            0.4736111      0.000000000     0.3084444 0.000000000
-    ## ID-002    2            0.4369819      0.000000000     0.2303944 0.000000000
-    ## ID-003    3            0.4102244      0.000000000     0.1809680 0.000000000
-    ## ID-004    4            0.3877222      0.000000000     0.1692222 0.000000000
-    ## ID-005    5            0.3842705      0.001549701     0.1911667 0.002490591
-    ## ID-006    6            0.3922424      0.006398641     0.2334655 0.008720272
-    ##        unknown_Genus_4 Phascolarctobacterium_A Mesosutterella Blautia_A_141781
-    ## ID-001    0.0005555556            0.0003333333              0      0.007444444
-    ## ID-002    0.0124915976            0.0085144522              0      0.017196953
-    ## ID-003    0.0207435956            0.0185898889              0      0.023067332
-    ## ID-004    0.0232222222            0.0293888889              0      0.024555556
-    ## ID-005    0.0198140359            0.0458268762              0      0.019592650
-    ## ID-006    0.0140430351            0.0659116648              0      0.011155153
-    ##        Akkermansia unknown_Genus_55      other
-    ## ID-001 0.001722222       0.11950000 0.08838889
-    ## ID-002 0.019101501       0.15942191 0.11589738
-    ## ID-003 0.036613013       0.17734074 0.13245296
-    ## ID-004 0.052555556       0.17683333 0.13650000
-    ## ID-005 0.072061103       0.14312597 0.12010184
-    ## ID-006 0.093657984       0.07893545 0.09546999
-
 ## Files written
 
 These files have been written to the target directory,
@@ -530,22 +491,26 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 16 × 4
+    ## # A tibble: 20 × 4
     ##    path                                        type     size modification_time  
     ##    <fs::path>                                  <fct> <fs::b> <dttm>             
-    ##  1 ps_donorA.rds                               file  188.94K 2023-10-11 16:48:17
-    ##  2 ps_donorA_rel_counts.rds                    file  258.04K 2023-10-11 16:48:17
-    ##  3 ps_donorB.rds                               file   164.2K 2023-10-11 16:48:17
-    ##  4 ps_donorB_rel_counts.rds                    file   210.4K 2023-10-11 16:48:17
-    ##  5 ps_female.rds                               file   68.39K 2023-10-11 16:48:18
-    ##  6 ps_female_rel_counts.rds                    file   89.98K 2023-10-11 16:48:18
-    ##  7 ps_male.rds                                 file  221.51K 2023-10-11 16:48:17
-    ##  8 ps_male_rel_counts.rds                      file   299.9K 2023-10-11 16:48:18
-    ##  9 ts_donorA_Genus_10_most_abundant.csv        file   16.97K 2023-10-11 16:49:00
-    ## 10 …norA_Genus_10_most_abundant_rel_counts.csv file   70.05K 2023-10-11 16:49:00
-    ## 11 ts_donorB_Genus_10_most_abundant.csv        file   10.75K 2023-10-11 16:49:00
-    ## 12 …norB_Genus_10_most_abundant_rel_counts.csv file   42.34K 2023-10-11 16:49:00
-    ## 13 ts_female_Genus_10_most_abundant.csv        file    8.39K 2023-10-11 16:49:00
-    ## 14 …male_Genus_10_most_abundant_rel_counts.csv file   34.78K 2023-10-11 16:49:00
-    ## 15 ts_male_Genus_10_most_abundant.csv          file   19.92K 2023-10-11 16:49:00
-    ## 16 …male_Genus_10_most_abundant_rel_counts.csv file   83.81K 2023-10-11 16:49:00
+    ##  1 plot_donorAGenus10_rel_counts.pdf           file   42.61K 2023-11-09 10:41:54
+    ##  2 plot_donorBGenus10_rel_counts.pdf           file   29.01K 2023-11-09 10:41:55
+    ##  3 plot_femaleGenus10_rel_counts.pdf           file   23.64K 2023-11-09 10:41:56
+    ##  4 plot_maleGenus10_rel_counts.pdf             file   49.54K 2023-11-09 10:41:56
+    ##  5 ps_donorA.rds                               file  188.94K 2023-11-09 10:41:13
+    ##  6 ps_donorA_rel_counts.rds                    file  258.04K 2023-11-09 10:41:13
+    ##  7 ps_donorB.rds                               file   164.2K 2023-11-09 10:41:13
+    ##  8 ps_donorB_rel_counts.rds                    file   210.4K 2023-11-09 10:41:13
+    ##  9 ps_female.rds                               file   68.39K 2023-11-09 10:41:13
+    ## 10 ps_female_rel_counts.rds                    file   89.98K 2023-11-09 10:41:13
+    ## 11 ps_male.rds                                 file  221.51K 2023-11-09 10:41:13
+    ## 12 ps_male_rel_counts.rds                      file   299.9K 2023-11-09 10:41:13
+    ## 13 ts_donorA_Genus_10_most_abundant.csv        file   18.76K 2023-11-09 10:41:58
+    ## 14 …norA_Genus_10_most_abundant_rel_counts.csv file   70.05K 2023-11-09 10:41:58
+    ## 15 ts_donorB_Genus_10_most_abundant.csv        file      12K 2023-11-09 10:41:58
+    ## 16 …norB_Genus_10_most_abundant_rel_counts.csv file   42.34K 2023-11-09 10:41:58
+    ## 17 ts_female_Genus_10_most_abundant.csv        file    9.31K 2023-11-09 10:41:58
+    ## 18 …male_Genus_10_most_abundant_rel_counts.csv file   34.78K 2023-11-09 10:41:58
+    ## 19 ts_male_Genus_10_most_abundant.csv          file   22.11K 2023-11-09 10:41:58
+    ## 20 …male_Genus_10_most_abundant_rel_counts.csv file   83.81K 2023-11-09 10:41:58

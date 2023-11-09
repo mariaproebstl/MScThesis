@@ -18,6 +18,7 @@ library(tidyverse)
 library(data.table)
 library(phyloseq)
 library(microViz)
+library(viridis)
 ```
 
 ```{r directories}
@@ -37,7 +38,7 @@ path_source <- projthis::proj_path_source(params$name)
 ```{r read data}
 # set path to the folder where the data files are in
 filepath_data <- 
-  "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/Literatur/Code/dynamo/data/data/"
+  "input_data/humanTS_data/"
 
 # vector of all four subject names
 four_subjects <-
@@ -275,7 +276,6 @@ for(subject in four_subjects){
 
 ## Summarize over 10 most abundant Genera
 
-
 ### Check what the most abundant taxa are
 
 ```{r}
@@ -342,18 +342,74 @@ ps_female_Genus_10_most_abundant_rel_counts <-
 ### Plot Phyloseq objects (relative counts)
 
 ```{r}
-# plot all subjects on Family level
+# calculate mean of Genus "other" over all samples
+for(subject in four_subjects) {
+  ps_tmp <-
+    get(paste0("ps_", subject, "_Genus_10_most_abundant_rel_counts"))
+  
+  # Extract OTU Table
+  otu_table_df <- as.data.frame(otu_table(ps_tmp))
+  
+  # Calculating the mean
+  mean_other <-
+    mean(as.numeric(otu_table_df["other",]), na.rm = TRUE)
+  
+  assign(paste0(subject, "_mean_other"), mean_other)
+}
+
+```
+
+
+```{r}
+# choose color palette
+col_palette <- 
+    c('#7f3b08','#b35806','#e08214','#fdb863','#fee0b6','#f7f7f7','#d8daeb','#b2abd2','#8073ac','#542788','#2d004b')
+    # c('#543005','#8c510a','#bf812d','#dfc27d','#f6e8c3','#f5f5f5','#c7eae5','#80cdc1','#35978f','#01665e','#003c30')
+    # c('#67001f','#b2182b','#d6604d','#f4a582','#fddbc7','#f7f7f7','#d1e5f0','#92c5de','#4393c3','#2166ac','#053061')
+
+```
+
+
+
+```{r}
+# plot all subjects on Genus level
 for(subject in four_subjects){
-  plt_tmp <-
-    plot_bar(get(paste0("ps_", subject, "_Genus_10_most_abundant_rel_counts")),
-             x = "Time", fill = "Genus") +
-    # theme(legend.position = "none") +
-    labs(title = subject,
-         x = "Time [days]") +
-    geom_bar(aes(color = Genus, fill = Genus),
-             stat = "identity",
-             position = "stack")
+  # Extract the phyloseq object
+  ps_tmp <- get(paste0("ps_", subject, "_Genus_10_most_abundant_rel_counts"))
+  
+  # Transform Phyloseq to Data Frame
+  df_for_plotting <- psmelt(ps_tmp)
+  
+  # Adjust Factor Levels to move Genus "other" to the end
+  genus_order <- c(setdiff(df_for_plotting$Genus, "other"), "other")
+  df_for_plotting$Genus <- factor(df_for_plotting$Genus, levels = genus_order)
+  
+  # Create a lighter turbo-like color palette
+  lighter_turbo <-
+    viridis(n = length(levels(df_for_plotting$Genus)), option = "turbo", begin = 0.05, end = 0.85, direction = 1)
+ 
+  # mean_other = get(paste0(subject, "mean_other_"))
+
+  # Plot with ggplot2
+  plt_tmp <- ggplot(df_for_plotting, aes(x = Time, y = Abundance, fill = Genus)) +
+    geom_bar(stat = "identity", position = "stack", aes(color = Genus)) +
+    labs(title = subject, x = "Time [days]", y = "rel. Abundance") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank()) +
+    # # add horizontal line for mean over "other"
+    # geom_hline(yintercept = mean_other, linetype = "dashed", color = "black") +
+    # annotate("text", x = Inf, y = mean_other, label = sprintf("Mean: %.2f", mean_other), 
+    #          vjust = 1.5, hjust = 1) + 
+    scale_fill_manual(values = col_palette) +
+    scale_color_manual(values = col_palette)
+  
+  # Show the plot
   print(plt_tmp)
+    
+  # Save the plot
+  ggsave(path_target(paste0("plot_", subject, "Genus10_rel_counts.pdf")),
+         plt_tmp, width = 7, height = 4)
 }
 
 ```
@@ -366,8 +422,6 @@ for(subject in four_subjects) {
   
   # get the tmp phyloseq object
   ps_tmp <- get(paste0("ps_", subject, "_Genus_10_most_abundant"))
-  
-  ps_tmp <- subset_taxa(ps_tmp, !grepl("other", taxa_names(ps_tmp)))
   
   if(taxa_are_rows(ps_tmp)) {
     otu_tmp <- t(otu_table(ps_tmp))
@@ -403,6 +457,10 @@ for(subject in four_subjects) {
   ts_tmp <-
     cbind(sample_data(ps_tmp)[, "Time"],
           otu_tmp)
+  
+  # rearange ts_tmp such that "other" is last column
+  ts_tmp <- 
+    ts_tmp[, c(setdiff(names(ts_tmp), "other"), "other")]
   
   # save time series as csv file
   write.csv(
