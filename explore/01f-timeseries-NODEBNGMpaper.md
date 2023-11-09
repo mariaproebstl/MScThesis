@@ -1,6 +1,6 @@
 01f-timeseries-NODEBNGMpaper
 ================
-Compiled at 2023-10-20 20:55:21 UTC
+Compiled at 2023-11-09 10:46:23 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "9506fa44-f8a3-401c-aa4c-950659e05f3f")
@@ -31,7 +31,7 @@ path_source <- projthis::proj_path_source(params$name)
 
 ``` r
 folderpath_data <-
-  "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/Literatur/Code/NODEBNGM/data/"
+  "input_data/NODEBNGM/"
 
 files <- c("3DLV",
            "AFR1",
@@ -281,19 +281,19 @@ projthis::proj_dir_info(path_target())
     ## # A tibble: 16 × 4
     ##    path                  type         size modification_time  
     ##    <fs::path>            <fct> <fs::bytes> <dttm>             
-    ##  1 ps_3DLV.rds           file        2.04K 2023-10-20 20:55:30
-    ##  2 ps_AFR1.rds           file         2.2K 2023-10-20 20:55:30
-    ##  3 ps_AFR2.rds           file        1.63K 2023-10-20 20:55:30
-    ##  4 ps_AFR3.rds           file        1.49K 2023-10-20 20:55:30
-    ##  5 ps_HL.rds             file        1.44K 2023-10-20 20:55:30
-    ##  6 ps_RPS.rds            file        7.99K 2023-10-20 20:55:30
-    ##  7 ps_RPS_rel_counts.rds file       18.22K 2023-10-20 20:55:30
-    ##  8 ps_Ushio.rds          file       12.23K 2023-10-20 20:55:30
-    ##  9 ts_3DLV.csv           file        3.41K 2023-10-20 20:55:30
-    ## 10 ts_AFR1.csv           file        3.91K 2023-10-20 20:55:30
-    ## 11 ts_AFR2.csv           file        3.81K 2023-10-20 20:55:30
-    ## 12 ts_AFR3.csv           file        2.37K 2023-10-20 20:55:30
-    ## 13 ts_HL.csv             file        1.56K 2023-10-20 20:55:30
-    ## 14 ts_RPS.csv            file       12.57K 2023-10-20 20:55:30
-    ## 15 ts_RPS_rel_counts.csv file       36.97K 2023-10-20 20:55:30
-    ## 16 ts_Ushio.csv          file       13.14K 2023-10-20 20:55:30
+    ##  1 ps_3DLV.rds           file        2.04K 2023-11-09 10:46:31
+    ##  2 ps_AFR1.rds           file         2.2K 2023-11-09 10:46:31
+    ##  3 ps_AFR2.rds           file        1.63K 2023-11-09 10:46:31
+    ##  4 ps_AFR3.rds           file        1.49K 2023-11-09 10:46:31
+    ##  5 ps_HL.rds             file        1.44K 2023-11-09 10:46:31
+    ##  6 ps_RPS.rds            file        7.99K 2023-11-09 10:46:31
+    ##  7 ps_RPS_rel_counts.rds file       18.22K 2023-11-09 10:46:31
+    ##  8 ps_Ushio.rds          file       12.23K 2023-11-09 10:46:31
+    ##  9 ts_3DLV.csv           file        3.41K 2023-11-09 10:46:31
+    ## 10 ts_AFR1.csv           file        3.91K 2023-11-09 10:46:31
+    ## 11 ts_AFR2.csv           file        3.81K 2023-11-09 10:46:31
+    ## 12 ts_AFR3.csv           file        2.37K 2023-11-09 10:46:31
+    ## 13 ts_HL.csv             file        1.56K 2023-11-09 10:46:31
+    ## 14 ts_RPS.csv            file       12.57K 2023-11-09 10:46:31
+    ## 15 ts_RPS_rel_counts.csv file       36.97K 2023-11-09 10:46:31
+    ## 16 ts_Ushio.csv          file       13.14K 2023-11-09 10:46:31
