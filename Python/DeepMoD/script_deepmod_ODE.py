@@ -40,6 +40,11 @@ input_folder = "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/MScThesis/ex
 output_folder = "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/deepmod_output/"
 
 
+# Example Commands to start the script
+# python script_deepmod_ODE.py -data_name 'humanTS_female_Genus10_ALR_2_100_only-fitting' -filename 'ALR_denom-10-other_ts_female_Genus_10_most_abundant_rel_counts.csv' -hl_number 2 -hl_size 100 -max_iterations 100000 -only_fitting
+# python script_deepmod_ODE.py -data_name 'miaSimS4_5_100_th0-01_int2' -filename 'miaSim_GLV_4species_new.csv' -hl_number 5 -hl_size 100 -int_order 2 -max_iterations 100000 -threshold 0.01 -set_threshold
+
+
 ################################### Variables ######################################
 
 # help functions to parse arguments
