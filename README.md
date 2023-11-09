@@ -37,7 +37,7 @@ Contains scripts for alr transformation, the application of compositional Lotka 
 
 Includes scripts for running the NODEBNGM model and some help functions.
 
-- `NODEBNGM`: Contains a script to run the NODEBNGM on time series datasets, with examples and code from the NODEBNGM repository.
+- `NODEBNGM`: Contains the data and script from https://github.com/WillemBonnaffe/NODEBNGM/tree/main plus two additional scripts: `m_main_general.r` and `run_NODEBNGM.R` to run the NODEBNGM algorithm on our time series datasets.
 - `Functions`: Houses helper functions "merge-methods-modified" and "fct_save_time_series".
 
 
