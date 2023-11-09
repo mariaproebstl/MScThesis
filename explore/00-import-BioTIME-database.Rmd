@@ -12,11 +12,12 @@ here::i_am(paste0(params$name, ".Rmd"), uuid = "92e0b108-b72d-4d77-bf7a-4e46e4cd
 
 The purpose of this document is to import and have a first look into the BioTIME database from *BioTIME: A database of biodiversity time series for the Anthropocene*.
 
-```{r packages}
+```{r packages, meassage = F}
 library("conflicted")
 library(dplyr)
 library(data.table)
 library(ggplot2)
+library(stringr)
 ```
 
 ```{r directories}
@@ -38,20 +39,55 @@ path_source <- projthis::proj_path_source(params$name)
 ```{r}
 #### read the file
 dt_fullquery <- 
-  fread("data/BioTIME/BioTIMEquery_24_06_2021.csv")
+  fread("input_data/BioTIME/BioTIMEquery_24_06_2021.csv")
 
-# number of entries
-dt_fullquery[,.N]
+colnames(dt_fullquery)[1] <- "ID_SAMPLE"
+
+# remove whitespaces at beginning/end of species name
+dt_fullquery[, GENUS_SPECIES := str_trim(GENUS_SPECIES, side = c("both"))] %>% 
+  # correct spelling mistake
+  .[GENUS == "Zanthoxylem", GENUS := "Zanthoxylum"]
 
 # number of studies
-dt_fullquery$STUDY_ID %>% uniqueN()
+print(paste("number of studies:", 
+            dt_fullquery$STUDY_ID %>% uniqueN()))
+```
 
+#### Prepare for phyloseq
+
+```{r}
+# show list of duplicated species IDs which will be removed in tax table
+dt_fullquery[,.(ID_SPECIES, GENUS, SPECIES)] %>% 
+  unique() %>%
+  .[duplicated(ID_SPECIES)]
+    
+# create taxonomic table
+dt_tax_table <-
+  dt_fullquery[,.(ID_SPECIES, GENUS, SPECIES)] %>% 
+  unique() %>%
+  .[!duplicated(ID_SPECIES)]
+
+# extract sample information
+dt_sample_info <-
+  dt_fullquery[,.(ID_SAMPLE, STUDY_ID, DAY, MONTH, YEAR, SAMPLE_DESC, PLOT, 
+                  ID_SPECIES, LATITUDE, LONGITUDE)]
+
+# extract count table
+dt_count_table <-
+  dt_fullquery[,.(ID_SAMPLE, ID_SPECIES,
+                  ABUNDANCE = sum.allrawdata.ABUNDANCE)]
+
+```
+
+
+
+#### Focus on only one study (ID = 63)
+
+```{r}
 # focus on one study
 study_id = 63
 ```
 
-
-#### Focus on only one study (ID = `r study_id`)
 
 ```{r}
 # extract one study
@@ -162,7 +198,7 @@ for(i in 1:(length(dsList))) {
 }
 
 write.csv(rf,
-          paste0("data/BioTIME-Study-", study_id, ".csv"))
+          path_target(paste0("BioTIME-Study-", study_id, ".csv")))
 ```
 
 
@@ -203,7 +239,7 @@ knitr::kable(rf_time)
 ```{r}
 #### read the file
 dt_biotimeMeta <-
-  fread("data/BioTIME/biotimeMetadata_24_06_2021.csv")
+  fread("input_data/BioTIME/biotimeMetadata_24_06_2021.csv")
 
 ```
 
@@ -269,11 +305,11 @@ dt_biotimeMeta_small <-
   )]
 
 write.csv(dt_biotimeMeta_small,
-          "data/00-import-BioTIME-database/BioTIME_Meta_reduced.csv",
+          path_target("BioTIME_Meta_reduced.csv"),
           row.names = FALSE)
 
 dt_biotimeMeta_small <-
-  fread("data/00-import-BioTIME-database/BioTIME_Meta_reduced.csv") %>%
+  dt_biotimeMeta_small %>%
   .[, .(
     STUDY_ID,
     REALM,

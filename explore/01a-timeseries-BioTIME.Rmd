@@ -15,7 +15,7 @@ The purpose of this document is to analyse different time series from the BioTIM
 
 ## Packages
 
-```{r packages}
+```{r packages, message=FALSE}
 library("conflicted")
 library(dplyr)
 library(data.table)
@@ -43,13 +43,12 @@ path_source <- projthis::proj_path_source(params$name)
 ```{r}
 #### read the file
 dt_fullquery <- 
-  fread("data/BioTIME/BioTIMEquery_24_06_2021.csv")
+  fread("input_data/BioTIME/BioTIMEquery_24_06_2021.csv")
 colnames(dt_fullquery)[1] <- "ID_SAMPLE"
 
 #### read BioTIME Metadata
 dt_biotimeMeta <-
-  # fread("data/00-import-BioTIME-database/BioTIME_Meta_reduced.csv")
-  fread("data/BioTIME/biotimeMetadata_24_06_2021.csv")
+  fread("input_data/BioTIME/biotimeMetadata_24_06_2021.csv")
 
 ```
 
@@ -167,34 +166,14 @@ for (study_id in possible_IDs) {
 ```{r}
 ps_study_339
 ps_study_363
-# ps_study_414
 ps_study_478
 ps_study_39
+
+# ps_study_414
 # ps_study_46
 # ps_study_413
 ```
 
-## Available Species per time point
-
-```{r}
-# for study 39
-n_species_notZero <- psmelt(ps_study_478) %>% 
-  as.data.table() %>% 
-  .[, .(count = .N - sum(Abundance == 0)), by = Time]
-
-n_species_notZero$count %>% min()
-n_species_notZero$count %>% max()
-n_species_notZero$count %>% mean()
-
-# most frequently occuring species
-occuring_freq <-
-  psmelt(ps_study_478) %>% 
-  as.data.table() %>% 
-  .[, .(Abundance = sum(Abundance!= 0)), by = Species] %>% 
-  .[order(-Abundance)]
-(occuring_freq)
-
-```
 
 
 ## Transform densities to relative abundances for study 39
@@ -209,7 +188,7 @@ ps_study_39_rel_counts <-
 
 ## Group dataset by Genus
 
-Aggregate the timeseries by summarizing counts over Genus level.
+Aggregate the time series by summarizing counts over Genus level.
 
 ```{r, message=FALSE}
 for(study_id in possible_IDs) {
@@ -227,10 +206,12 @@ for(study_id in possible_IDs) {
 
 
 
-## Summarize over 10 most abundant Genera
+## Summarize over 10 most abundant Genera / 15 most abundant species
 
 
 ### Get the 10 most abundant genera and 15 most abundant species
+
+and add pseudo counts of 0.001 to the count table
 
 ```{r}
 for(study_id in possible_IDs){
@@ -265,6 +246,9 @@ for(study_id in possible_IDs){
     # summarize over tax level, include NAs
     tax_glom(taxrank = "Genus", NArm = FALSE) %>%
     speedyseq::transmute_tax_table(Genus, .otu = Genus)
+  
+  # add pseudo counts of 0.001
+  otu_table(ps_tmp) <- otu_table(ps_tmp) + 0.001
 
   assign(paste0("ps_study_", study_id, "_Genus_10_most_abundant"),
          ps_tmp)
@@ -293,10 +277,11 @@ for(study_id in possible_IDs){
   
   ps_tmp <- ps_tmp %>%
     # summarize over tax level, include NAs
-    tax_glom(taxrank = "Species", NArm = FALSE)
+    tax_glom(taxrank = "Species", NArm = FALSE) %>%
+    speedyseq::transmute_tax_table(Species, .otu = Species)
   
-  # select only Genus and Species column of tax_table
-  tax_table(ps_tmp) <- tax_table(ps_tmp)[, c("Species")]
+  # add pseudo counts of 0.001
+  otu_table(ps_tmp) <- otu_table(ps_tmp) + 0.001
 
   assign(paste0("ps_study_", study_id, "_Species_15_most_abundant"),
          ps_tmp)
@@ -420,256 +405,6 @@ for(study_id in possible_IDs) {
   )
     
 }
-```
-
-
-
-<br>
-
-
-## OLD SECTION: Data Preprocessing and Plotting
-
-### Preprocessing steps of the sample data for each study:
-
-1. extracting the study ID from the whole dataset
-2. for Genus add Abundances at the same Date / same Genus
-3. calculating relative abundance by
-    a) Species
-    b) Genus (sum of abundance over the samples)
-4. Check how many Species/Genus have relative abundance below certain threshold
-   -> group them as "other"
-5. sum up abundances for group "other"
-
-```{r}
-# create color vector for plotting
-qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
-col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
-
-```
-
-
-### Function to preprocess data given a study ID and plot abundances afterwards
-
-```{r, function}
-
-study_processing_bioTIME <-
-  function(study_id, th_species = 0.05, th_genus = 0.05) {
-    
-    # Metadata (Information about this study)
-    study_Meta <-
-      dt_biotimeMeta[STUDY_ID == study_id] %>% 
-      .[, METHODS := NULL]
-    
-    table_Meta <-
-      data.table(Column = colnames(study_Meta),
-                 Info = as.character(study_Meta[1,]))
-    
-    print(knitr::kable(table_Meta))
-    cat("\n")
-    
-    
-    # 1)  extract data of the specific study
-    dt_study <-
-      extract_study(dt_fullquery, ID = study_id)
-    
-    ## add zeros for missing values
-    
-    ### generate data.table with all combinations of Species/Genus and Time
-    all_combinations <-
-      as.data.table(tidyr::crossing(unique(dt_study$Time), unique(dt_study$Species)))
-    colnames(all_combinations) <- c("Time", "Species")
-    all_combinations[, Abundance := 0] %>% 
-      .[, c("Genus", "tmp") := tstrsplit(Species, " ")] %>% 
-      .[, tmp := NULL]
-    
-    ### merge combinations and zero values to dt_study
-    dt_study <- 
-      merge(dt_study, all_combinations,
-            by = c("Time", "Species", "Genus"),
-            all = T) %>% 
-      .[, Abundance := Abundance.x] %>% 
-      .[is.na(Abundance.x), Abundance := Abundance.y] %>% 
-      .[, c("Abundance.x", "Abundance.y") := NULL]
-    
-    
-    # 2)  summarize over multiple entries in the same year
-    dt_study_genus <-
-      dt_study[, .(Abundance_sum = sum(Abundance)),
-        by = c("Time", "Genus")]
-    
-    
-    # 3)  add relative abundance
-    
-    ## Species
-    dt_study[, Abundance_rel := Abundance/ sum(Abundance), 
-             by = c("Time")]
-    
-    ## Genus
-    dt_study_genus[, Abundance_rel := Abundance_sum / sum(Abundance_sum), 
-             by = c("Time")]
-    
-    
-    # 3)  Group Species/Genus with relative abundance below a certain threshold as "other"
-    
-    ## add Species "other" for max. rel. abundance < threshold
-    Species_other <-
-      dt_study[, .(max_Abundance = max(Abundance_rel)),
-             by = c("Species")] %>% 
-      .[max_Abundance < th_species, .(Species)]
-    
-    dt_study_species <-
-      dt_study[, Species_grouped := Species] %>% 
-      .[Species %in% Species_other$Species, Species_grouped := "other"]
-    
-    ## add Genus "other" for max. rel. abundance < threshold
-    Genus_other <-
-      dt_study_genus[, .(max_Abundance = max(Abundance_rel)),
-             by = c("Genus")] %>% 
-      .[max_Abundance < th_genus, .(Genus)]
-    
-    dt_study_genus[, Genus_grouped := Genus] %>% 
-      .[Genus %in% Genus_other$Genus, Genus_grouped := "other"]
-    
-    
-    # 5)  sum up abundances for group "other"
-    
-    ## Species
-    dt_study_species <-
-      dt_study_species[, .(Abundance = sum(Abundance),
-                           Abundance_rel = sum(Abundance_rel)),
-        by = c("Time", "Species_grouped")]
-    
-    ## Genus
-    dt_study_genus <-
-      dt_study_genus[, .(Abundance_sum = sum(Abundance_sum),
-                         Abundance_rel = sum(Abundance_rel)),
-        by = c("Time", "Genus_grouped")]
-    
-    ### save timeseries
-    ## Genus
-    ts_study_genus <-
-      dcast(dt_study_genus, Time ~ Genus_grouped, 
-            value.var = "Abundance_sum")
-    write.csv(ts_study_genus,
-              path_target(paste0("ts_study_", study_id, "_Genus_grouped.csv")),
-              row.names = F)
-    ## Species
-    ts_study_species <-
-      dcast(dt_study_species, Time ~ Species_grouped, 
-            value.var = "Abundance")
-    write.csv(ts_study_species,
-              path_target(paste0("ts_study_", study_id,
-                                 "_Species_grouped.csv")),
-              row.names = F)
-    
-    ### plot timeseries
-    
-    # if number of species/genus is too large, then do not plot legend
-    # Species
-    n_species <- uniqueN(dt_study_species$Species)
-    if(n_species > 20){
-      legend_species = "none"
-    } else {
-      legend_species = "right"
-    }
-    # Genus
-    n_genus <- uniqueN(dt_study_genus$Genus)
-    if(n_genus > 20){
-      legend_genus = "none"
-    } else {
-      legend_genus = "right"
-    }
-    
-    # by Species, total
-    pl_species_total <-
-      ggplot(dt_study_species, aes(Time, Abundance)) +
-      geom_line(aes(col = Species_grouped))  +
-      labs(title = "by Species, total Abundances",
-           subtitle = paste0("Study ", study_id)) +
-      theme(legend.position = legend_species) +
-      scale_color_viridis(discrete = TRUE, option = "turbo")
-      # scale_color_discrete(type = sample(col_vector, n_species))
-    
-    # by Species, relative
-    pl_species_rel <-
-      ggplot(dt_study_species, aes(Time, Abundance_rel)) +
-      geom_bar(aes(fill = Species_grouped), stat = "identity") +
-      labs(title = "by Species, relative Abundances",
-           subtitle = paste0("Study ", study_id)) +
-      theme(legend.position = legend_species) +
-      scale_fill_viridis(discrete = TRUE, option = "turbo")
-      # scale_fill_discrete(type = sample(col_vector, n_species))
-    
-    # by Genus, total (Abundance summed up)
-    pl_genus_total <-
-      ggplot(dt_study_genus, aes(Time, Abundance_sum)) +
-      geom_line(aes(col = Genus_grouped))  +
-      labs(title = "by Genus, total Abundances",
-           subtitle = paste0("Study ", study_id)) +
-      theme(legend.position = legend_genus) +
-      scale_color_viridis(discrete = TRUE, option = "turbo") 
-    
-    # by Genus, relative (Abundance summed up)
-    pl_genus_rel <-
-      ggplot(dt_study_genus, aes(Time, Abundance_rel)) +
-      geom_bar(aes(fill = Genus_grouped), stat = "identity")  +
-      labs(title = "by Genus, relative Abundances",
-           subtitle = paste0("Study ", study_id)) +
-      theme(legend.position = legend_genus) +
-      scale_fill_viridis(discrete = TRUE, option = "turbo") 
-    
-    print(pl_species_total)
-    print(pl_species_rel)
-    print(pl_genus_total)
-    print(pl_genus_rel)
-  }
-
-```
-
-
-## Examples
-
-### (1) 339
-
-```{r}
-
-study_processing_bioTIME(study_id = 339)
-
-```
-
-
-<br>
-
-### (2) 478
-
-```{r}
-
-study_processing_bioTIME(study_id = 478)
-
-```
-
-
-<br>
-
-### (3) 363
-
-```{r}
-
-study_processing_bioTIME(study_id = 363)
-
-```
-
-
-<br>
-
-
-### other Examples
-
-```{r}
-study_processing_bioTIME(study_id = 414)
-study_processing_bioTIME(study_id = 46, th_species = 0.01, th_genus = 0.01)
-study_processing_bioTIME(study_id = 39)
-study_processing_bioTIME(study_id = 413, th_species = 0.08, th_genus = 0.08)
 ```
 
 

@@ -1,20 +1,21 @@
 00-import-BioTIME-database
 ================
-Compiled at 2023-04-27 13:09:22 UTC
+Compiled at 2023-11-09 09:55:57 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "92e0b108-b72d-4d77-bf7a-4e46e4cde787")
 ```
 
 The purpose of this document is to import and have a first look into the
-BioTIME database from the paper *BioTIME: A database of biodiversity
-time series for the Anthropocene*.
+BioTIME database from *BioTIME: A database of biodiversity time series
+for the Anthropocene*.
 
 ``` r
 library("conflicted")
 library(dplyr)
 library(data.table)
 library(ggplot2)
+library(stringr)
 ```
 
 ``` r
@@ -35,27 +36,66 @@ path_source <- projthis::proj_path_source(params$name)
 ``` r
 #### read the file
 dt_fullquery <- 
-  fread("data/BioTIME/BioTIMEquery_24_06_2021.csv")
+  fread("input_data/BioTIME/BioTIMEquery_24_06_2021.csv")
 
-# number of entries
-dt_fullquery[,.N]
+colnames(dt_fullquery)[1] <- "ID_SAMPLE"
+
+# remove whitespaces at beginning/end of species name
+dt_fullquery[, GENUS_SPECIES := str_trim(GENUS_SPECIES, side = c("both"))] %>% 
+  # correct spelling mistake
+  .[GENUS == "Zanthoxylem", GENUS := "Zanthoxylum"]
+
+# number of studies
+print(paste("number of studies:", 
+            dt_fullquery$STUDY_ID %>% uniqueN()))
 ```
 
-    ## [1] 8552249
+    ## [1] "number of studies: 381"
+
+#### Prepare for phyloseq
 
 ``` r
-# number of studies
-dt_fullquery$STUDY_ID %>% uniqueN()
+# show list of duplicated species IDs which will be removed in tax table
+dt_fullquery[,.(ID_SPECIES, GENUS, SPECIES)] %>% 
+  unique() %>%
+  .[duplicated(ID_SPECIES)]
 ```
 
-    ## [1] 381
+    ##    ID_SPECIES           GENUS          SPECIES
+    ## 1:      41778      Mollinedia      pinchotiana
+    ## 2:      43979    Aspidosperma       desmanthum
+    ## 3:      44093         Cestrum schlechtendahlii
+    ## 4:      44336           Ficus        matiziana
+    ## 5:      44401    Handroanthus         guayacan
+    ## 6:      44640       Nectandra            fuzzy
+    ## 7:      44784           Piper        imperiale
+    ## 8:      45049 Tabernaemontana      grandiflora
+    ## 9:      45084           Trema     unidentified
+
+``` r
+# create taxonomic table
+dt_tax_table <-
+  dt_fullquery[,.(ID_SPECIES, GENUS, SPECIES)] %>% 
+  unique() %>%
+  .[!duplicated(ID_SPECIES)]
+
+# extract sample information
+dt_sample_info <-
+  dt_fullquery[,.(ID_SAMPLE, STUDY_ID, DAY, MONTH, YEAR, SAMPLE_DESC, PLOT, 
+                  ID_SPECIES, LATITUDE, LONGITUDE)]
+
+# extract count table
+dt_count_table <-
+  dt_fullquery[,.(ID_SAMPLE, ID_SPECIES,
+                  ABUNDANCE = sum.allrawdata.ABUNDANCE)]
+```
+
+#### Focus on only one study (ID = 63)
 
 ``` r
 # focus on one study
 study_id = 63
 ```
-
-#### Focus on only one study (ID = 63)
 
 ``` r
 # extract one study
@@ -65,14 +105,14 @@ dt_query <-
 knitr::kable(head(dt_query))
 ```
 
-|    V1 | STUDY_ID | DAY | MONTH | YEAR | SAMPLE_DESC                                     | PLOT | ID_SPECIES | LATITUDE | LONGITUDE | sum.allrawdata.ABUNDANCE | sum.allrawdata.BIOMASS | GENUS     | SPECIES        | GENUS_SPECIES            |
-|------:|---------:|----:|------:|-----:|:------------------------------------------------|:-----|-----------:|---------:|----------:|-------------------------:|-----------------------:|:----------|:---------------|:-------------------------|
-| 78181 |       63 |  NA |    NA | 1959 | 52.422100\_-0.180928_WoodwaltonFen_20smallPonds | NA   |       1414 |  52.4221 | -0.180928 |                      130 |                      0 | Libellula | quadrimaculata | Libellula quadrimaculata |
-| 78182 |       63 |  NA |    NA | 1961 | 52.422100\_-0.180928_WoodwaltonFen_20smallPonds | NA   |       1414 |  52.4221 | -0.180928 |                       45 |                      0 | Libellula | quadrimaculata | Libellula quadrimaculata |
-| 78183 |       63 |  NA |    NA | 1962 | 52.422100\_-0.180928_WoodwaltonFen_20smallPonds | NA   |       1309 |  52.4221 | -0.180928 |                       12 |                      0 | Ischnura  | elegans        | Ischnura elegans         |
-| 78184 |       63 |  NA |    NA | 1962 | 52.422100\_-0.180928_WoodwaltonFen_20smallPonds | NA   |       1414 |  52.4221 | -0.180928 |                       95 |                      0 | Libellula | quadrimaculata | Libellula quadrimaculata |
-| 78185 |       63 |  NA |    NA | 1962 | 52.422100\_-0.180928_WoodwaltonFen_20smallPonds | NA   |       2258 |  52.4221 | -0.180928 |                       19 |                      0 | Sympetrum | striolatum     | Sympetrum striolatum     |
-| 78186 |       63 |  NA |    NA | 1963 | 52.422100\_-0.180928_WoodwaltonFen_20smallPonds | NA   |       1309 |  52.4221 | -0.180928 |                       26 |                      0 | Ischnura  | elegans        | Ischnura elegans         |
+| ID_SAMPLE | STUDY_ID | DAY | MONTH | YEAR | SAMPLE_DESC                                     | PLOT | ID_SPECIES | LATITUDE | LONGITUDE | sum.allrawdata.ABUNDANCE | sum.allrawdata.BIOMASS | GENUS     | SPECIES        | GENUS_SPECIES            |
+|----------:|---------:|----:|------:|-----:|:------------------------------------------------|:-----|-----------:|---------:|----------:|-------------------------:|-----------------------:|:----------|:---------------|:-------------------------|
+|     78181 |       63 |  NA |    NA | 1959 | 52.422100\_-0.180928_WoodwaltonFen_20smallPonds | NA   |       1414 |  52.4221 | -0.180928 |                      130 |                      0 | Libellula | quadrimaculata | Libellula quadrimaculata |
+|     78182 |       63 |  NA |    NA | 1961 | 52.422100\_-0.180928_WoodwaltonFen_20smallPonds | NA   |       1414 |  52.4221 | -0.180928 |                       45 |                      0 | Libellula | quadrimaculata | Libellula quadrimaculata |
+|     78183 |       63 |  NA |    NA | 1962 | 52.422100\_-0.180928_WoodwaltonFen_20smallPonds | NA   |       1309 |  52.4221 | -0.180928 |                       12 |                      0 | Ischnura  | elegans        | Ischnura elegans         |
+|     78184 |       63 |  NA |    NA | 1962 | 52.422100\_-0.180928_WoodwaltonFen_20smallPonds | NA   |       1414 |  52.4221 | -0.180928 |                       95 |                      0 | Libellula | quadrimaculata | Libellula quadrimaculata |
+|     78185 |       63 |  NA |    NA | 1962 | 52.422100\_-0.180928_WoodwaltonFen_20smallPonds | NA   |       2258 |  52.4221 | -0.180928 |                       19 |                      0 | Sympetrum | striolatum     | Sympetrum striolatum     |
+|     78186 |       63 |  NA |    NA | 1963 | 52.422100\_-0.180928_WoodwaltonFen_20smallPonds | NA   |       1309 |  52.4221 | -0.180928 |                       26 |                      0 | Ischnura  | elegans        | Ischnura elegans         |
 
 ### plot time series for selected study
 
@@ -87,7 +127,7 @@ ggplot(rf, aes(Year, Abundance, col = Species)) +
   geom_line() #+
 ```
 
-![](00-import-BioTIME-database_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](00-import-BioTIME-database_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 ``` r
   # theme(legend.position = "none")
@@ -111,6 +151,8 @@ knitr::kable(rf_time)
 | Libellula quadrimaculata |  130 |   45 |   95 |  210 |   13 |    2 |    5 |    1 |    2 |    3 |    9 |    2 |   NA |    1 |   NA |    2 |    4 |    4 |    6 |   13 |   16 |   20 |   17 |   13 |   15 |   12 |   19 |   13 |   14 |
 | Sympetrum striolatum     |   NA |   NA |   19 |   18 |   16 |   12 |   16 |   12 |   17 |    7 |    8 |    4 |    4 |    9 |    8 |    2 |    6 |    9 |   11 |    8 |    4 |    4 |    6 |    6 |    4 |   11 |    7 |   12 |   19 |
 
+<br>
+
 ## BioTime Metadata
 
 #### Read file
@@ -118,7 +160,7 @@ knitr::kable(rf_time)
 ``` r
 #### read the file
 dt_biotimeMeta <-
-  fread("data/BioTIME/biotimeMetadata_24_06_2021.csv")
+  fread("input_data/BioTIME/biotimeMetadata_24_06_2021.csv")
 ```
 
 #### List of all columns
@@ -152,8 +194,8 @@ dt_biotimeMeta <-
 - AREA_SQ_KM
 - CONTACT_1
 - CONTACT_2
-- CONT_1\_MAIL
-- CONT_2\_MAIL
+- CONT_1_MAIL
+- CONT_2_MAIL
 - LICENSE
 - WEB_LINK
 - DATA_SOURCE
@@ -209,7 +251,7 @@ ggplot(dt_biotimeMeta, aes(DATA_POINTS)) +
   scale_x_continuous(breaks = seq(0,100,10))
 ```
 
-![](00-import-BioTIME-database_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](00-import-BioTIME-database_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 ##### AB_BIO
 
@@ -300,14 +342,14 @@ ggplot(dt_biotimeMeta, aes(NUMBER_OF_SPECIES)) +
   geom_histogram(binwidth = 100)
 ```
 
-![](00-import-BioTIME-database_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](00-import-BioTIME-database_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
 
 ``` r
 ggplot(dt_biotimeMeta[NUMBER_OF_SPECIES < 200], aes(NUMBER_OF_SPECIES)) +
   geom_histogram(binwidth = 1)
 ```
 
-![](00-import-BioTIME-database_files/figure-gfm/unnamed-chunk-18-2.png)<!-- -->
+![](00-import-BioTIME-database_files/figure-gfm/unnamed-chunk-20-2.png)<!-- -->
 
 <!-- ##### NUMBER_OF_SAMPLES -->
 <!-- Number of unique samples in study -->
@@ -337,7 +379,8 @@ These files have been written to the target directory,
 projthis::proj_dir_info(path_target())
 ```
 
-    ## # A tibble: 1 × 4
+    ## # A tibble: 2 × 4
     ##   path                     type         size modification_time  
     ##   <fs::path>               <fct> <fs::bytes> <dttm>             
-    ## 1 BioTIME_Meta_reduced.csv file        60.4K 2023-04-27 13:09:28
+    ## 1 BioTIME-Study-63.csv     file        5.59K 2023-11-09 09:56:06
+    ## 2 BioTIME_Meta_reduced.csv file       60.37K 2023-11-09 09:56:07
