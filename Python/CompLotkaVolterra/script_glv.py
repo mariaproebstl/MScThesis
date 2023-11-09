@@ -222,7 +222,8 @@ def run_glv(data_name, filename, run):
     ### generate output directory
     
     # folderpath for output
-    folderpath_out = f"C:/Users/Maria/Documents/Masterstudium/Masterarbeit/glv_output/output_{data_name}/output_{data_name}_run_{run}/"
+    output_folder = "glv_output/"
+    folderpath_out = f"{output_folder}output_{data_name}/output_{data_name}_run_{run}/"
 
     # create output folder
     if not os.path.exists(folderpath_out):
@@ -251,7 +252,7 @@ def run_glv(data_name, filename, run):
 
 if __name__ == "__main__":
 
-    folderpath_in = "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/MScThesis/explore/data/final_datasets/"
+    folderpath_in = "MScThesis/explore/data/final_datasets/"
 
     # ### example input
     # data_name = "miaSim"
