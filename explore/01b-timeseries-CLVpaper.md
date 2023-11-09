@@ -1,6 +1,6 @@
 Time series (Bucci Dataset from cLV paper)
 ================
-Compiled at 2023-09-24 18:56:48 UTC
+Compiled at 2023-11-09 10:16:06 UTC
 
 ``` r
 here::i_am(paste0(params$name, ".Rmd"), uuid = "fbad9ade-134a-4a83-a801-9900003f3395")
@@ -33,17 +33,32 @@ path_target <- projthis::proj_path_target(params$name)
 path_source <- projthis::proj_path_source(params$name)
 ```
 
+``` r
+folderpath <- 
+  "input_data/clv/bucci/"
+  # "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/Literatur/Code/clv/data/bucci/data_cdiff/"
+```
+
+# C.diff. dataset using denoised data from cLV
+
+Use pyhton-timeseries_Bucci_denoised.py to load and save denoised data
+and take the mean over all subjects.
+
+<!-- ```{r} -->
+<!-- library(reticulate) -->
+<!-- pd <- reticulate::import("pandas") -->
+<!-- list_bucci_denoised <- pd$read_pickle(paste0(folderpath, "Y_cdiff-denoised.pkl")) -->
+<!-- list_bucci_time <- pd$read_pickle(paste0(folderpath, "T_cdiff.pkl")) -->
+<!-- ``` -->
+
 # Bucci dataset
 
 ## Read data
 
 ``` r
-folderpath <- 
-  "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/Literatur/Code/clv/data/bucci/data_cdiff/"
-  
 #### read the file
 dt_bucci_raw <- 
-  fread("data/clv/bucci/data_cdiff/counts.txt", header = T)
+  fread("input_data/clv/bucci/data_cdiff/counts.txt", header = T)
 
 knitr::kable(head(dt_bucci_raw))
 ```
@@ -60,7 +75,7 @@ knitr::kable(head(dt_bucci_raw))
 ``` r
 # read metadata file
 dt_bucci_meta <-
-  fread("data/clv/bucci/data_cdiff/metadata.txt", header = T) %>% 
+  fread("input_data/clv/bucci/data_cdiff/metadata.txt", header = T) %>% 
   .[, Time := measurementid] %>% 
   .[, Time_factor := ordered(Time)] %>% 
   .[, measurementid := NULL]
@@ -79,7 +94,7 @@ head(dt_bucci_meta)
 ``` r
 # read taxonomic information
 dt_tax_bucci <-
-  fread(paste0(folderpath, "taxonomy_table.csv"), header = T)
+  fread(paste0(folderpath, "data_cdiff/taxonomy_table.csv"), header = T)
 ```
 
 ## Info
@@ -133,16 +148,65 @@ TAX_bucci = tax_table(as.matrix(mat_tax_bucci))
 ps_bucci_all <- phyloseq(OTU_bucci, TAX_bucci, samples_bucci)
 ```
 
-## Transform counts to relative counts
+## Calculate relative abundances
 
 ``` r
 # change count data to relative counts
-# filter for most abundant species
 
 ps_bucci_rel <- 
   ps_bucci_all %>% 
   transform_sample_counts(function(x) x / sum(x))
 ```
+
+## Filter for relevant taxa
+
+``` r
+# two possibilities
+ps_bucci_all <-
+  ps_bucci_all %>%
+      filter_taxa(function(x)
+        {sum(x > 5) > (0.2 * nsamples(.))},
+        TRUE)
+
+ps_bucci_all <-
+  ps_bucci_all %>%
+      filter_taxa(function(x)
+        mean(x) > 50,
+        # mean(x) > 1e-3, # for relative values
+        TRUE)
+
+
+# filter for most abundant species
+ps_bucci_rel <-
+  ps_bucci_rel %>%
+      filter_taxa(function(x)
+        mean(x) > 1e-3, # for relative values
+        TRUE)
+
+# list mean of abundances for each species
+occuring_freq <-
+  psmelt(ps_bucci_rel) %>%
+  as.data.table() %>%
+  .[, .(mean_Abundance = round(mean(Abundance),4)), by = Species] %>%
+  .[order(-mean_Abundance)]
+occuring_freq
+```
+
+    ##         Species mean_Abundance
+    ##  1: muciniphila         0.2652
+    ##  2:      ovatus         0.2596
+    ##  3:    fragilis         0.1297
+    ##  4:    vulgatus         0.0869
+    ##  5:     ramosum         0.0744
+    ##  6:        coli         0.0520
+    ##  7:     oxytoca         0.0445
+    ##  8:       obeum         0.0220
+    ##  9:     hominis         0.0208
+    ## 10:  distasonis         0.0166
+    ## 11:   mirabilis         0.0131
+    ## 12:   difficile         0.0092
+    ## 13:    scindens         0.0029
+    ## 14:   hiranonis         0.0023
 
 ### Devide dataset by subjects
 
@@ -169,7 +233,9 @@ ps_bucci_5 <-
 
 ``` r
 ps_bucci_mean <-
+  # summarize over all subject at each time point
   merge_samples(ps_bucci_all, "Time") %>% 
+  # take the mean (devide abundance by number of subjects)
   transform_sample_counts(function(x) x / sum(x))
 ```
 
@@ -180,45 +246,45 @@ ps_bucci_1
 ```
 
     ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:         [ 23 taxa and 26 samples ]
+    ## otu_table()   OTU Table:         [ 14 taxa and 26 samples ]
     ## sample_data() Sample Data:       [ 26 samples by 7 sample variables ]
-    ## tax_table()   Taxonomy Table:    [ 23 taxa by 7 taxonomic ranks ]
+    ## tax_table()   Taxonomy Table:    [ 14 taxa by 7 taxonomic ranks ]
 
 ``` r
 ps_bucci_2
 ```
 
     ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:         [ 23 taxa and 26 samples ]
+    ## otu_table()   OTU Table:         [ 14 taxa and 26 samples ]
     ## sample_data() Sample Data:       [ 26 samples by 7 sample variables ]
-    ## tax_table()   Taxonomy Table:    [ 23 taxa by 7 taxonomic ranks ]
+    ## tax_table()   Taxonomy Table:    [ 14 taxa by 7 taxonomic ranks ]
 
 ``` r
 ps_bucci_3
 ```
 
     ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:         [ 23 taxa and 26 samples ]
+    ## otu_table()   OTU Table:         [ 14 taxa and 26 samples ]
     ## sample_data() Sample Data:       [ 26 samples by 7 sample variables ]
-    ## tax_table()   Taxonomy Table:    [ 23 taxa by 7 taxonomic ranks ]
+    ## tax_table()   Taxonomy Table:    [ 14 taxa by 7 taxonomic ranks ]
 
 ``` r
 ps_bucci_4
 ```
 
     ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:         [ 23 taxa and 26 samples ]
+    ## otu_table()   OTU Table:         [ 14 taxa and 26 samples ]
     ## sample_data() Sample Data:       [ 26 samples by 7 sample variables ]
-    ## tax_table()   Taxonomy Table:    [ 23 taxa by 7 taxonomic ranks ]
+    ## tax_table()   Taxonomy Table:    [ 14 taxa by 7 taxonomic ranks ]
 
 ``` r
 ps_bucci_5
 ```
 
     ## phyloseq-class experiment-level object
-    ## otu_table()   OTU Table:         [ 23 taxa and 26 samples ]
+    ## otu_table()   OTU Table:         [ 14 taxa and 26 samples ]
     ## sample_data() Sample Data:       [ 26 samples by 7 sample variables ]
-    ## tax_table()   Taxonomy Table:    [ 23 taxa by 7 taxonomic ranks ]
+    ## tax_table()   Taxonomy Table:    [ 14 taxa by 7 taxonomic ranks ]
 
 ``` r
 # # summarize how many unique levels are available for each taxonomic rank
@@ -248,7 +314,7 @@ plot_bar(ps_bucci_mean,
   geom_bar(aes(color=Species, fill=Species), stat="identity", position="stack")
 ```
 
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 ``` r
 # plots for each subject separately
@@ -264,14 +330,14 @@ for (id in 1:5) {
 }
 ```
 
-![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-11-2.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-11-3.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-11-4.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-11-5.png)<!-- -->
+![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-13-2.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-13-3.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-13-4.png)<!-- -->![](01b-timeseries-CLVpaper_files/figure-gfm/unnamed-chunk-13-5.png)<!-- -->
 
 ## Save Phyloseq Objects
 
 ``` r
 for (id in c(1:5, "mean")) {
   saveRDS(get(paste0("ps_bucci_", id)),
-          path_target(paste0("ps_bucci_subject_", id, "_rel_count.rds")))
+          path_target(paste0("ps_bucci_subject_", id, "_rel_counts_most_abundant.rds")))
 }
 ```
 
@@ -285,11 +351,11 @@ projthis::proj_dir_info(path_target())
 ```
 
     ## # A tibble: 6 × 4
-    ##   path                                type         size modification_time  
-    ##   <fs::path>                          <fct> <fs::bytes> <dttm>             
-    ## 1 ps_bucci_subject_1_rel_count.rds    file        4.77K 2023-09-24 18:56:59
-    ## 2 ps_bucci_subject_2_rel_count.rds    file         4.8K 2023-09-24 18:56:59
-    ## 3 ps_bucci_subject_3_rel_count.rds    file        4.75K 2023-09-24 18:56:59
-    ## 4 ps_bucci_subject_4_rel_count.rds    file        4.75K 2023-09-24 18:56:59
-    ## 5 ps_bucci_subject_5_rel_count.rds    file        4.73K 2023-09-24 18:56:59
-    ## 6 ps_bucci_subject_mean_rel_count.rds file        4.83K 2023-09-24 18:56:59
+    ##   path                                           type   size modification_time  
+    ##   <fs::path>                                     <fct> <fs:> <dttm>             
+    ## 1 …_bucci_subject_1_rel_counts_most_abundant.rds file  3.96K 2023-11-09 10:16:16
+    ## 2 …_bucci_subject_2_rel_counts_most_abundant.rds file  4.05K 2023-11-09 10:16:16
+    ## 3 …_bucci_subject_3_rel_counts_most_abundant.rds file  4.01K 2023-11-09 10:16:16
+    ## 4 …_bucci_subject_4_rel_counts_most_abundant.rds file     4K 2023-11-09 10:16:16
+    ## 5 …_bucci_subject_5_rel_counts_most_abundant.rds file  3.97K 2023-11-09 10:16:16
+    ## 6 …cci_subject_mean_rel_counts_most_abundant.rds file  3.96K 2023-11-09 10:16:16

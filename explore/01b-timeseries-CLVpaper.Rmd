@@ -38,23 +38,42 @@ path_source <- projthis::proj_path_source(params$name)
 ```
 
 
+
+```{r}
+folderpath <- 
+  "input_data/clv/bucci/"
+  # "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/Literatur/Code/clv/data/bucci/data_cdiff/"
+```
+
+
+# C.diff. dataset using denoised data from cLV
+
+Use pyhton-timeseries_Bucci_denoised.py to load and save denoised data and take the mean over all subjects.
+
+<!-- ```{r} -->
+<!-- library(reticulate) -->
+<!-- pd <- reticulate::import("pandas") -->
+<!-- list_bucci_denoised <- pd$read_pickle(paste0(folderpath, "Y_cdiff-denoised.pkl")) -->
+<!-- list_bucci_time <- pd$read_pickle(paste0(folderpath, "T_cdiff.pkl")) -->
+<!-- ``` -->
+
+
+
 # Bucci dataset
 
 ## Read data
 
 ```{r}
-folderpath <- 
-  "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/Literatur/Code/clv/data/bucci/data_cdiff/"
   
 #### read the file
 dt_bucci_raw <- 
-  fread("data/clv/bucci/data_cdiff/counts.txt", header = T)
+  fread("input_data/clv/bucci/data_cdiff/counts.txt", header = T)
 
 knitr::kable(head(dt_bucci_raw))
 
 # read metadata file
 dt_bucci_meta <-
-  fread("data/clv/bucci/data_cdiff/metadata.txt", header = T) %>% 
+  fread("input_data/clv/bucci/data_cdiff/metadata.txt", header = T) %>% 
   .[, Time := measurementid] %>% 
   .[, Time_factor := ordered(Time)] %>% 
   .[, measurementid := NULL]
@@ -63,7 +82,7 @@ head(dt_bucci_meta)
 
 # read taxonomic information
 dt_tax_bucci <-
-  fread(paste0(folderpath, "taxonomy_table.csv"), header = T)
+  fread(paste0(folderpath, "data_cdiff/taxonomy_table.csv"), header = T)
 
 ```
 
@@ -125,15 +144,50 @@ ps_bucci_all <- phyloseq(OTU_bucci, TAX_bucci, samples_bucci)
 ```
 
 
-## Transform counts to relative counts
+## Calculate relative abundances
 
 ```{r}
 # change count data to relative counts
-# filter for most abundant species
 
 ps_bucci_rel <- 
   ps_bucci_all %>% 
   transform_sample_counts(function(x) x / sum(x))
+
+```
+
+
+## Filter for relevant taxa
+
+```{r}
+# two possibilities
+ps_bucci_all <-
+  ps_bucci_all %>%
+      filter_taxa(function(x)
+        {sum(x > 5) > (0.2 * nsamples(.))},
+        TRUE)
+
+ps_bucci_all <-
+  ps_bucci_all %>%
+      filter_taxa(function(x)
+        mean(x) > 50,
+        # mean(x) > 1e-3, # for relative values
+        TRUE)
+
+
+# filter for most abundant species
+ps_bucci_rel <-
+  ps_bucci_rel %>%
+      filter_taxa(function(x)
+        mean(x) > 1e-3, # for relative values
+        TRUE)
+
+# list mean of abundances for each species
+occuring_freq <-
+  psmelt(ps_bucci_rel) %>%
+  as.data.table() %>%
+  .[, .(mean_Abundance = round(mean(Abundance),4)), by = Species] %>%
+  .[order(-mean_Abundance)]
+occuring_freq
 
 ```
 
@@ -165,10 +219,11 @@ ps_bucci_5 <-
 
 ```{r}
 ps_bucci_mean <-
+  # summarize over all subject at each time point
   merge_samples(ps_bucci_all, "Time") %>% 
+  # take the mean (devide abundance by number of subjects)
   transform_sample_counts(function(x) x / sum(x))
 ```
-
 
 
 ### Overview of datasets (and their taxonimic levels)
@@ -230,7 +285,7 @@ for (id in 1:5) {
 ```{r}
 for (id in c(1:5, "mean")) {
   saveRDS(get(paste0("ps_bucci_", id)),
-          path_target(paste0("ps_bucci_subject_", id, "_rel_counts.rds")))
+          path_target(paste0("ps_bucci_subject_", id, "_rel_counts_most_abundant.rds")))
 }
 ```
 
