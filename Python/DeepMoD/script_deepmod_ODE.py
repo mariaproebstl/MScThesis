@@ -36,8 +36,10 @@ else:
     device = "cpu"
 
 # specify input and output folder
-input_folder = "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/MScThesis/explore/data/final_datasets/"
-output_folder = "C:/Users/Maria/Documents/Masterstudium/Masterarbeit/deepmod_output/"
+input_folder = "MScThesis/explore/data/final_datasets/"
+# input_folder = "MScThesis/Python/ALR_transformation/ALR_transformed_data/" # for the compositional (ALR transformed) datasets
+
+output_folder = "deepmod_output/"
 
 
 # Example Commands to start the script
