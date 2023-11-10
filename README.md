@@ -30,7 +30,7 @@ Contains scripts for alr transformation, the application of compositional Lotka 
 
 - `ALR_transformation`: Code for ALR transformation of datasets, along with a folder for all ALR-transformed time series in CSV format.
 - `CompLotkaVolterra`: Provides scripts for both generalized and compositional Lotka-Volterra applications, plus code from the CLV repository.
-- `DeePyMoD`: Contains code to run the DeePyMoD framework on time series data.
+- `DeepMoD`: Contains code to run the DeePyMoD framework on time series data.
 - `Analysis_and_Plots`: Includes code for post-modeling analyses and the construction of plots for the thesis.
 
 ### `R` Directory
@@ -49,3 +49,6 @@ To use the code and datasets provided in this repository, clone the repo to your
 git clone https://github.com/mariaproebstl/MScThesis.git
 ```
 
+Additional output material from the application of generalized and compositional Lotka Volterra, as well as DeepMoD and NODEBGNM to the syntheic and real-world datasets can be found on
+
+https://zenodo.org/records/10103346?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6ImQ3OTlkYWEzLWRjNjAtNDNiMS1hMjkxLTY3MGFkNTE1NjM2NyIsImRhdGEiOnt9LCJyYW5kb20iOiJiZGQwY2Y4ODgzMzI5OGI1ZDA5NGU0MDhhMzhhMTg5YiJ9.5Ro6CLUfIIt3a1w6jeNLg7Kh8VnWeDumMl1YXAbJV1lxX4dVqR_jCCpbIJCNKUNc3IrKHbM6kTkUIs0NgDkR6A
