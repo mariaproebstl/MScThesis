@@ -49,13 +49,3 @@ To use the code and datasets provided in this repository, clone the repo to your
 git clone https://github.com/mariaproebstl/MScThesis.git
 ```
 
-
-## Installation
-
-You can install the development version of MScThesis from [GitHub](https://github.com/) with:
-
-``` r
-# install.packages("devtools")
-devtools::install_github("mariaproebstl/MScThesis")
-```
-
