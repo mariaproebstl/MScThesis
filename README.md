@@ -54,4 +54,4 @@ git clone https://github.com/mariaproebstl/MScThesis.git
 
 Additional output material from the application of generalized and compositional Lotka Volterra, as well as DeepMoD and NODEBGNM to the syntheic and real-world datasets can be found on
 
-https://zenodo.org/records/10103346?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6ImQ3OTlkYWEzLWRjNjAtNDNiMS1hMjkxLTY3MGFkNTE1NjM2NyIsImRhdGEiOnt9LCJyYW5kb20iOiJiZGQwY2Y4ODgzMzI5OGI1ZDA5NGU0MDhhMzhhMTg5YiJ9.5Ro6CLUfIIt3a1w6jeNLg7Kh8VnWeDumMl1YXAbJV1lxX4dVqR_jCCpbIJCNKUNc3IrKHbM6kTkUIs0NgDkR6A
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10103346.svg)](https://doi.org/10.5281/zenodo.10103346)
