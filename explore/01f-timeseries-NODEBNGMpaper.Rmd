@@ -10,7 +10,7 @@ params:
 here::i_am(paste0(params$name, ".Rmd"), uuid = "9506fa44-f8a3-401c-aa4c-950659e05f3f")
 ```
 
-The purpose of this document is ...
+The purpose of this document is to collect the datasets from https://github.com/WillemBonnaffe/NODEBNGM/tree/main/data .
 
 ```{r packages, message=FALSE}
 library("conflicted")
@@ -199,7 +199,7 @@ ps_RPS_rel_counts <-
 # bar plot phyloseq objects
 plot_bar(ps_RPS_rel_counts, x = "Time", fill = "OTU") +
   geom_bar(aes(color = OTU, fill = OTU), stat = "identity", position = "stack") +
-  labs(title = "Ushio relative Abundances",
+  labs(title = "RPS, relative Abundances",
        x = "Time")
 
 ```
